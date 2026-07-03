@@ -1,15 +1,14 @@
 // Supabase helper functions will go here.
 // Connection is created in supabase-config.js.
 
-async function getFirstSiteSettings() {
+async function getSiteSettings() {
   const { data, error } = await supabaseClient
     .from("site_settings")
     .select("*")
-    .limit(1)
     .single();
 
   if (error) {
-    console.error("Error loading site settings:", error);
+    console.error(error);
     return null;
   }
 

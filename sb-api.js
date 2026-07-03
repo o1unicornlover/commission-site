@@ -14,3 +14,17 @@ async function getSiteSettings() {
 
   return data;
 }
+
+async function getSlots() {
+  const { data, error } = await supabaseClient
+    .from("slots")
+    .select("*")
+    .order("sort_order");
+
+  if (error) {
+    console.error("Error loading slots:", error);
+    return [];
+  }
+
+  return data;
+}

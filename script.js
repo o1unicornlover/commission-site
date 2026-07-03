@@ -47,6 +47,15 @@ function saveCommissions(commissions) {
   localStorage.setItem("commissions", JSON.stringify(commissions));
 }
 
+function fileToDataURL(file) {
+  return new Promise((resolve) => {
+    if (!file) return resolve("");
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
 function randomPassword() {
   const words = ["mango", "fox", "star", "pearl", "moon", "lace", "berry", "pixel", "cloud", "milk", "rose", "sketch"];
   const a = words[Math.floor(Math.random() * words.length)];
@@ -61,7 +70,7 @@ function placeholderHTML(text = "Private Commission") {
 
 function imageHTML(c) {
   if (c.privacy === "private" || !c.previewImage) return placeholderHTML(c.privacy === "private" ? "Private Preview" : "No Image Yet");
-  return `<img class="preview" src="${c.previewImage}" alt="${c.clientName} character preview">`;
+  return `<img class="preview" src="${c.previewImage}" alt="${c.clientName} character preview" onerror="this.outerHTML='<div class=&quot;preview placeholder&quot;>Image Error</div>'">`;
 }
 
 function renderQueue() {
@@ -137,7 +146,7 @@ function renderProgressPage() {
   }
 
   const doneCount = c.stages.filter(s => s.done).length;
-  const progress = Math.round((doneCount / c.stages.length) * 100);
+  const progress = c.stages.length ? Math.round((doneCount / c.stages.length) * 100) : 0;
   area.innerHTML = `
     <div class="progress-card">
       <p class="eyebrow">Private progress page</p>
@@ -162,21 +171,24 @@ function adminLogin() {
   const pass = document.getElementById("adminPassword").value;
   if (pass !== ADMIN_PASSWORD) return alert("Wrong admin password.");
   isAdmin = true;
+  sessionStorage.setItem("adminOpen", "true");
   document.getElementById("adminLogin").classList.add("hidden");
   document.getElementById("adminDashboard").classList.remove("hidden");
   renderAdmin();
 }
 
-function addCommission() {
+async function addCommission() {
   const commissions = loadCommissions();
   const statusValue = document.getElementById("status").value || "Waiting";
+  const file = document.getElementById("previewFile")?.files?.[0];
+  const previewImage = await fileToDataURL(file);
   const newCommission = {
     id: `CM-${String(Date.now()).slice(-5)}`,
     clientName: document.getElementById("clientName").value || "Anonymous",
     type: document.getElementById("commissionType").value || "Commission",
     status: statusValue,
     privacy: document.getElementById("privacy").value,
-    previewImage: document.getElementById("previewImage").value,
+    previewImage,
     password: randomPassword(),
     archived: false,
     stages: [
@@ -187,8 +199,51 @@ function addCommission() {
   commissions.push(newCommission);
   saveCommissions(commissions);
   alert(`Created! Send this to the client:\nID: ${newCommission.id}\nPassword: ${newCommission.password}`);
+  document.getElementById("clientName").value = "";
+  document.getElementById("commissionType").value = "";
+  document.getElementById("status").value = "";
+  document.getElementById("previewFile").value = "";
   renderQueue();
   renderGallery();
+  renderAdmin();
+}
+
+async function addUpdate(id) {
+  const commissions = loadCommissions();
+  const c = commissions.find(item => item.id === id && !item.archived);
+  if (!c) return;
+
+  const title = document.getElementById(`updateTitle-${id}`).value || "Progress Update";
+  const desc = document.getElementById(`updateDesc-${id}`).value || "New progress added.";
+  const done = document.getElementById(`updateDone-${id}`).checked;
+  const status = document.getElementById(`newStatus-${id}`).value.trim();
+  const file = document.getElementById(`updateImage-${id}`)?.files?.[0];
+  const image = await fileToDataURL(file);
+
+  c.stages.push({ title, desc, image, done });
+  if (status) c.status = status;
+  saveCommissions(commissions);
+  renderAdmin();
+  alert("Update added to the client's progress page.");
+}
+
+function markStageDone(id, index) {
+  const commissions = loadCommissions();
+  const c = commissions.find(item => item.id === id && !item.archived);
+  if (!c || !c.stages[index]) return;
+  c.stages[index].done = !c.stages[index].done;
+  saveCommissions(commissions);
+  renderAdmin();
+}
+
+async function replacePreview(id) {
+  const commissions = loadCommissions();
+  const c = commissions.find(item => item.id === id && !item.archived);
+  const file = document.getElementById(`previewReplace-${id}`)?.files?.[0];
+  if (!c || !file) return alert("Choose an image first.");
+  c.previewImage = await fileToDataURL(file);
+  c.privacy = "public";
+  saveCommissions(commissions);
   renderAdmin();
 }
 
@@ -218,10 +273,36 @@ function renderAdmin() {
         <h4>${c.id} — ${c.clientName}</h4>
         <p>${c.type} • ${c.status}</p>
         <p class="small">Password: <code>${c.password}</code></p>
+        <div class="button-row">
+          <input id="previewReplace-${c.id}" type="file" accept="image/*">
+          <button class="btn" onclick="replacePreview('${c.id}')">Replace board image</button>
+        </div>
+        <div class="update-box">
+          <h4>Add progress update</h4>
+          <div class="update-form">
+            <input id="updateTitle-${c.id}" placeholder="Update title, e.g. Blocking">
+            <textarea id="updateDesc-${c.id}" placeholder="Description for the client"></textarea>
+            <input id="newStatus-${c.id}" placeholder="Optional new public status">
+            <input id="updateImage-${c.id}" type="file" accept="image/*">
+            <label class="small"><input id="updateDone-${c.id}" type="checkbox"> Mark this update as finished</label>
+            <button class="btn primary" onclick="addUpdate('${c.id}')">Add Update</button>
+          </div>
+        </div>
+        <div class="update-box">
+          <h4>Current stages</h4>
+          ${c.stages.map((s, i) => `<p class="small">${s.done ? "✓" : "○"} ${s.title} <button class="text-btn" onclick="markStageDone('${c.id}', ${i})">toggle</button></p>`).join("")}
+        </div>
       </div>
       <button class="btn danger" onclick="archiveCommission('${c.id}')">Finish / Archive</button>
     </article>
   `).join("") || `<p class="small">No active commissions.</p>`;
+}
+
+if (sessionStorage.getItem("adminOpen") === "true" && document.getElementById("adminDashboard")) {
+  isAdmin = true;
+  document.getElementById("adminLogin").classList.add("hidden");
+  document.getElementById("adminDashboard").classList.remove("hidden");
+  renderAdmin();
 }
 
 renderQueue();

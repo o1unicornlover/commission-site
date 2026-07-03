@@ -1,18 +1,17 @@
-console.log("supabase-api.js loaded");
+// Supabase helper functions will go here.
+// Connection is created in supabase-config.js.
 
-async function testSupabaseConnection() {
+async function getFirstSiteSettings() {
   const { data, error } = await supabaseClient
-  .from("site_settings")
-  .select("*")
-  .limit(1)
-  .single();
-  
+    .from("site_settings")
+    .select("*")
+    .limit(1)
+    .single();
+
   if (error) {
-    console.error("Supabase test failed:", error);
-    return;
+    console.error("Error loading site settings:", error);
+    return null;
   }
 
-  console.log("Supabase test worked:", data);
+  return data;
 }
-
-testSupabaseConnection();

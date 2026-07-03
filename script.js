@@ -935,51 +935,129 @@ function showSettingsTab(name) {
   const panel = document.getElementById(`settings-${name}`);
   if (panel) panel.classList.remove("hidden");
 }
-function loadSettingsAdmin() {
+async function loadSettingsAdmin() {
   const settings = loadSiteSettings();
-  const setVal = (id, value) => { const el = document.getElementById(id); if (el) el.value = value; };
-  const setCheck = (id, value) => { const el = document.getElementById(id); if (el) el.checked = Boolean(value); };
-  setVal("settingTitle", settings.title);
-  setVal("settingSubtitle", settings.subtitle);
-  setVal("settingNote", settings.commissionNote);
+  const supa = await getSiteSettings();
+
+  const setVal = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value ?? "";
+  };
+  const setCheck = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = Boolean(value);
+  };
+
+  setVal("settingTitle", supa?.homepage_title || settings.title);
+  setVal("settingSubtitle", supa?.homepage_subtitle || settings.subtitle);
+  setVal("settingNote", supa?.homepage_news || settings.commissionNote);
   setCheck("holidayEnabled", settings.holidayEnabled);
   setVal("manualTheme", settings.manualTheme || "default");
   setVal("navIconInput", settings.navIcon || "✧");
   setCheck("galleryBorderEnabled", settings.galleryBorderEnabled);
+
   renderSocialAdmin();
   renderPricingAdmin();
   renderNewsAdmin();
   renderTosAdmin();
   loadThemeEditor();
 }
-function saveTextSettings() {
+async function saveTextSettings() {
+  const homepage_title = document.getElementById("settingTitle")?.value || "Welcome!";
+  const homepage_subtitle = document.getElementById("settingSubtitle")?.value || "";
+  const homepage_news = document.getElementById("settingNote")?.value || "";
+
+  const updated = await updateSiteSettings({
+    homepage_title,
+    homepage_subtitle,
+    homepage_news
+  });
+
+  if (!updated) return alert("Homepage text could not be saved.");
+
   const settings = loadSiteSettings();
-  settings.title = document.getElementById("settingTitle")?.value || settings.title;
-  settings.subtitle = document.getElementById("settingSubtitle")?.value || settings.subtitle;
-  settings.commissionNote = document.getElementById("settingNote")?.value || settings.commissionNote;
-  saveSiteSettings(settings); applySiteSettings(); alert("Homepage text saved.");
+  settings.title = homepage_title;
+  settings.subtitle = homepage_subtitle;
+  settings.commissionNote = homepage_news;
+  saveSiteSettings(settings);
+
+  applySiteSettings();
+  applySupabaseHomepageSettings();
+  alert("Homepage text saved.");
 }
 async function saveDefaultAppearance() {
   const settings = loadSiteSettings();
-  const banner = await fileToDataURL(document.getElementById("defaultBannerFile")?.files?.[0]);
-  const doll = await fileToDataURL(document.getElementById("defaultDollFile")?.files?.[0]);
-  const bg = await fileToDataURL(document.getElementById("backgroundFile")?.files?.[0]);
-  const fav = await fileToDataURL(document.getElementById("faviconFile")?.files?.[0]);
-  const galleryBorder = await fileToDataURL(document.getElementById("galleryBorderFile")?.files?.[0]);
+  const updates = {};
+
+  const bannerFile = document.getElementById("defaultBannerFile")?.files?.[0];
+  const dollFile = document.getElementById("defaultDollFile")?.files?.[0];
+  const bgFile = document.getElementById("backgroundFile")?.files?.[0];
+  const favFile = document.getElementById("faviconFile")?.files?.[0];
+  const galleryBorderFile = document.getElementById("galleryBorderFile")?.files?.[0];
   const navIcon = document.getElementById("navIconInput")?.value.trim();
-  if (banner) settings.defaultBanner = banner;
-  if (doll) settings.defaultDoll = doll;
-  if (bg) settings.backgroundImage = bg;
+
+  if (bannerFile) {
+    const url = await uploadImage(bannerFile, "banners");
+    if (!url) return alert("Banner upload failed.");
+    updates.banner_url = url;
+  }
+
+  if (dollFile) {
+    const url = await uploadImage(dollFile, "pagedolls");
+    if (!url) return alert("Page doll upload failed.");
+    updates.pagedoll_url = url;
+  }
+
+  if (bgFile) {
+    const url = await uploadImage(bgFile, "backgrounds");
+    if (!url) return alert("Background upload failed.");
+    updates.background_url = url;
+  }
+
+  // These are still local-only until we add matching Supabase columns.
+  const fav = await fileToDataURL(favFile);
+  const galleryBorder = await fileToDataURL(galleryBorderFile);
   if (fav) settings.favicon = fav;
   if (galleryBorder) settings.galleryBorderImage = galleryBorder;
   settings.galleryBorderEnabled = Boolean(document.getElementById("galleryBorderEnabled")?.checked);
   if (navIcon) settings.navIcon = navIcon;
-  saveSiteSettings(settings); applySiteSettings(); alert("Default appearance saved.");
+
+  if (Object.keys(updates).length) {
+    const saved = await updateSiteSettings(updates);
+    if (!saved) return alert("Appearance could not be saved to Supabase.");
+
+    if (saved.banner_url) settings.defaultBanner = saved.banner_url;
+    if (saved.pagedoll_url) settings.defaultDoll = saved.pagedoll_url;
+    if (saved.background_url) settings.backgroundImage = saved.background_url;
+  }
+
+  saveSiteSettings(settings);
+  applySiteSettings();
+  applySupabaseHomepageSettings();
+  alert("Default appearance saved.");
 }
-function clearDefaultImages() {
+async function clearDefaultImages() {
   const settings = loadSiteSettings();
-  settings.defaultBanner = ""; settings.defaultDoll = ""; settings.backgroundImage = ""; settings.favicon = ""; settings.galleryBorderImage = ""; settings.galleryBorderEnabled = false;
-  saveSiteSettings(settings); applySiteSettings(); alert("Default images cleared.");
+
+  const saved = await updateSiteSettings({
+    banner_url: "",
+    pagedoll_url: "",
+    background_url: ""
+  });
+
+  if (!saved) return alert("Could not clear Supabase appearance images.");
+
+  settings.defaultBanner = "";
+  settings.defaultDoll = "";
+  settings.backgroundImage = "";
+  settings.favicon = "";
+  settings.galleryBorderImage = "";
+  settings.galleryBorderEnabled = false;
+
+  saveSiteSettings(settings);
+  applySiteSettings();
+  applySupabaseHomepageSettings();
+  alert("Default images cleared.");
 }
 function loadThemeEditor() {
   const settings = loadSiteSettings();
@@ -1082,10 +1160,10 @@ function showAdminPage(name) {
   document.querySelectorAll('.admin-nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.adminPage === name));
   updateAdminOverview();
 }
-function updateAdminOverview() {
+async function updateAdminOverview() {
   const commissions = loadCommissions();
   const active = commissions.filter(c => !c.archived);
-  const gallery = loadGallery();
+  const gallery = await getGalleryItems();
   const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
   set('adminTotalCommissions', commissions.length);
   set('adminActiveCommissions', active.length);
@@ -1208,22 +1286,29 @@ async function addPricingItem() {
   const categoryId = document.getElementById("priceCategorySelect")?.value;
   const name = document.getElementById("priceItemName")?.value.trim();
   const price = document.getElementById("priceItemAmount")?.value.trim();
+  const file = document.getElementById("priceItemImage")?.files?.[0];
 
   if (!categoryId) return alert("Add or choose a pricing category first.");
   if (!name || !price) return alert("Add an item name and price first.");
+
+  let imageUrl = "";
+  if (file) {
+    imageUrl = await uploadImage(file, "gallery");
+    if (!imageUrl) return alert("Pricing image upload failed.");
+  }
 
   const added = await createPricingItem({
     category_id: Number(categoryId),
     name,
     price,
     description: "",
-    image_url: "",
+    image_url: imageUrl,
     sort_order: 0
   });
 
   if (!added) return alert("Could not add pricing item.");
 
-  ["priceItemName", "priceItemAmount"].forEach(id => {
+  ["priceItemName", "priceItemAmount", "priceItemImage"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
@@ -1267,22 +1352,33 @@ async function applySupabaseHomepageSettings() {
   if (note) note.textContent = settings.homepage_news || "";
 
   const hero = document.getElementById("homeHero");
-  if (hero && settings.banner_url) {
-    hero.style.backgroundImage =
-      `linear-gradient(90deg, rgba(7,6,10,.62), rgba(7,6,10,.25)), url('${settings.banner_url}')`;
+  if (hero) {
+    if (settings.banner_url) {
+      hero.style.backgroundImage =
+        `linear-gradient(90deg, rgba(7,6,10,.62), rgba(7,6,10,.25)), url('${settings.banner_url}')`;
+    } else {
+      hero.style.backgroundImage = "";
+    }
   }
 
   if (settings.background_url) {
     document.body.style.setProperty("--custom-bg-image", `url('${settings.background_url}')`);
+  } else {
+    document.body.style.removeProperty("--custom-bg-image");
   }
 
   const doll = document.getElementById("pageDoll");
   const fallback = document.getElementById("pageDollFallback");
 
-  if (doll && settings.pagedoll_url) {
-    doll.src = settings.pagedoll_url;
-    doll.classList.remove("hidden");
-    if (fallback) fallback.classList.add("hidden");
+  if (doll) {
+    if (settings.pagedoll_url) {
+      doll.src = settings.pagedoll_url;
+      doll.classList.remove("hidden");
+      if (fallback) fallback.classList.add("hidden");
+    } else {
+      doll.classList.add("hidden");
+      if (fallback) fallback.classList.remove("hidden");
+    }
   }
 }
 

@@ -13,6 +13,29 @@ async function getSiteSettings() {
   return data;
 }
 
+async function updateSiteSettings(values) {
+  const existing = await getSiteSettings();
+
+  if (!existing || !existing.id) {
+    console.error("Could not update site settings because no settings row was found.");
+    return null;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("site_settings")
+    .update(values)
+    .eq("id", existing.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating site settings:", error);
+    return null;
+  }
+
+  return data;
+}
+
 async function getSlots() {
   const { data, error } = await supabaseClient
     .from("slots")
@@ -25,7 +48,7 @@ async function getSlots() {
     return [];
   }
 
-  return data;
+  return data || [];
 }
 
 async function updateSlot(id, values) {
@@ -57,7 +80,7 @@ async function getSocials() {
     return [];
   }
 
-  return data;
+  return data || [];
 }
 
 async function addSocial(values) {
@@ -172,7 +195,6 @@ async function updateTos(content) {
   return data;
 }
 
-
 async function uploadImage(file, bucket) {
   if (!file) return null;
 
@@ -202,7 +224,6 @@ async function uploadImage(file, bucket) {
 
   return data.publicUrl;
 }
-
 
 async function getPricingCategories() {
   const { data, error } = await supabaseClient

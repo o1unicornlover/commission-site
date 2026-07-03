@@ -1812,131 +1812,67 @@ async function updateAdminOverview() {
   set("adminActiveCommissions", active.length);
   set("adminGalleryCount", gallery.length);
 }
+
 /* =========================================================
-   REALTIME V1
-   Live refreshes for Supabase-powered pages.
-   Requires tables enabled in Supabase publication: supabase_realtime.
+   REALTIME V2 STABLE BLOCK
+   Listens for Supabase database changes and re-renders only
+   the page sections that exist on the current page.
 ========================================================= */
-
+let realtimeChannel = null;
 let realtimeRefreshTimer = null;
-let realtimeReady = false;
 
-function scheduleRealtimeRefresh(tableName) {
+function queueRealtimeRefresh(reason = "change") {
+  console.log("Realtime refresh queued:", reason);
   clearTimeout(realtimeRefreshTimer);
-  realtimeRefreshTimer = setTimeout(() => {
-    refreshRealtimeSections(tableName);
+  realtimeRefreshTimer = setTimeout(async () => {
+    try {
+      if (document.getElementById("queueGrid")) await renderQueue?.();
+      if (document.getElementById("progressArea")) await renderProgressPage?.();
+      if (document.getElementById("homeQueuePreview")) await renderHomeQueuePreview?.();
+      if (document.getElementById("adminDashboard")) {
+        await renderAdmin?.();
+        await updateAdminOverview?.();
+      }
+    } catch (error) {
+      console.error("Realtime refresh failed:", error);
+    }
   }, 250);
 }
 
-async function refreshRealtimeSections(tableName = "all") {
-  try {
-    const table = String(tableName || "all");
-
-    const affectsCommissions = ["all", "commissions", "progress_updates"].includes(table);
-    const affectsGallery = ["all", "gallery"].includes(table);
-    const affectsSlots = ["all", "slots"].includes(table);
-    const affectsSettings = ["all", "site_settings"].includes(table);
-    const affectsSocials = ["all", "socials"].includes(table);
-    const affectsPricing = ["all", "pricing_categories", "pricing_items"].includes(table);
-    const affectsTos = ["all", "tos"].includes(table);
-
-    if (affectsCommissions) {
-      await renderQueue();
-      await renderHomeQueuePreview();
-      await renderProgressPage();
-      if (isAdmin) {
-        await renderAdmin();
-        await updateAdminOverview();
-      }
-    }
-
-    if (affectsGallery) {
-      await renderGallery();
-      await renderFeaturedGallery();
-      if (isAdmin) {
-        await renderAdminGallery();
-        await updateAdminOverview();
-      }
-    }
-
-    if (affectsSlots) {
-      await renderCommissionInfo();
-      if (isAdmin) await renderSlotAdmin();
-    }
-
-    if (affectsSettings) {
-      await applySupabaseHomepageSettings();
-    }
-
-    if (affectsSocials) {
-      await renderSocialLinks();
-      if (isAdmin) await renderSocialAdmin();
-    }
-
-    if (affectsPricing) {
-      await renderPricingPage();
-      if (isAdmin) await renderPricingAdmin();
-    }
-
-    if (affectsTos) {
-      await renderTosPage();
-      if (isAdmin) await renderTosAdmin();
-    }
-  } catch (error) {
-    console.error("Realtime refresh failed:", error);
-  }
-}
-
-function setupRealtimeV1() {
-  if (realtimeReady) return;
-  if (typeof supabaseClient === "undefined" || !supabaseClient?.channel) {
-    console.warn("Realtime skipped: Supabase client is not ready.");
-    return;
-  }
-
-  realtimeReady = true;
-
-  supabaseClient
-    .channel("commission-site-realtime-v1")
-    .on("postgres_changes", { event: "*", schema: "public", table: "commissions" }, () => scheduleRealtimeRefresh("commissions"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "progress_updates" }, () => scheduleRealtimeRefresh("progress_updates"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "gallery" }, () => scheduleRealtimeRefresh("gallery"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "slots" }, () => scheduleRealtimeRefresh("slots"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "site_settings" }, () => scheduleRealtimeRefresh("site_settings"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "socials" }, () => scheduleRealtimeRefresh("socials"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "pricing_categories" }, () => scheduleRealtimeRefresh("pricing_categories"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "pricing_items" }, () => scheduleRealtimeRefresh("pricing_items"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "tos" }, () => scheduleRealtimeRefresh("tos"))
-    .subscribe(status => {
-      console.log("Realtime v1 status:", status);
-    });
-}
-
-// Start realtime after the normal page initialization has finished.
-document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(setupRealtimeV1, 600);
-});
 function setupRealtime() {
-  if (!window.supabaseClient) return;
+  if (!window.supabaseClient) {
+    console.error("Realtime failed: supabaseClient not found.");
+    return null;
+  }
 
-  supabaseClient
-    .channel("site-realtime-v1")
-    .on("postgres_changes", { event: "*", schema: "public", table: "commissions" }, () => {
-      renderQueue?.();
-      renderAdmin?.();
-      renderHomeQueuePreview?.();
-      updateAdminOverview?.();
-      renderProgressPage?.();
+  if (realtimeChannel) {
+    supabaseClient.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+
+  realtimeChannel = supabaseClient
+    .channel(`site-realtime-${Date.now()}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "commissions" }, payload => {
+      console.log("Realtime commissions event:", payload);
+      queueRealtimeRefresh("commissions");
     })
-    .on("postgres_changes", { event: "*", schema: "public", table: "progress_updates" }, () => {
-      renderQueue?.();
-      renderAdmin?.();
-      renderHomeQueuePreview?.();
-      renderProgressPage?.();
+    .on("postgres_changes", { event: "*", schema: "public", table: "progress_updates" }, payload => {
+      console.log("Realtime progress event:", payload);
+      queueRealtimeRefresh("progress_updates");
     })
-    .subscribe(status => console.log("Realtime status:", status));
+    .subscribe(status => {
+      console.log("Realtime status:", status);
+    });
+
+  return realtimeChannel;
 }
 
+window.setupRealtime = setupRealtime;
+
+// Start realtime after the normal app initialization finishes.
 document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(setupRealtime, 500);
+  setTimeout(() => {
+    setupRealtime();
+  }, 1200);
 });
+

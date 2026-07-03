@@ -1812,3 +1812,107 @@ async function updateAdminOverview() {
   set("adminActiveCommissions", active.length);
   set("adminGalleryCount", gallery.length);
 }
+/* =========================================================
+   REALTIME V1
+   Live refreshes for Supabase-powered pages.
+   Requires tables enabled in Supabase publication: supabase_realtime.
+========================================================= */
+
+let realtimeRefreshTimer = null;
+let realtimeReady = false;
+
+function scheduleRealtimeRefresh(tableName) {
+  clearTimeout(realtimeRefreshTimer);
+  realtimeRefreshTimer = setTimeout(() => {
+    refreshRealtimeSections(tableName);
+  }, 250);
+}
+
+async function refreshRealtimeSections(tableName = "all") {
+  try {
+    const table = String(tableName || "all");
+
+    const affectsCommissions = ["all", "commissions", "progress_updates"].includes(table);
+    const affectsGallery = ["all", "gallery"].includes(table);
+    const affectsSlots = ["all", "slots"].includes(table);
+    const affectsSettings = ["all", "site_settings"].includes(table);
+    const affectsSocials = ["all", "socials"].includes(table);
+    const affectsPricing = ["all", "pricing_categories", "pricing_items"].includes(table);
+    const affectsTos = ["all", "tos"].includes(table);
+
+    if (affectsCommissions) {
+      await renderQueue();
+      await renderHomeQueuePreview();
+      await renderProgressPage();
+      if (isAdmin) {
+        await renderAdmin();
+        await updateAdminOverview();
+      }
+    }
+
+    if (affectsGallery) {
+      await renderGallery();
+      await renderFeaturedGallery();
+      if (isAdmin) {
+        await renderAdminGallery();
+        await updateAdminOverview();
+      }
+    }
+
+    if (affectsSlots) {
+      await renderCommissionInfo();
+      if (isAdmin) await renderSlotAdmin();
+    }
+
+    if (affectsSettings) {
+      await applySupabaseHomepageSettings();
+    }
+
+    if (affectsSocials) {
+      await renderSocialLinks();
+      if (isAdmin) await renderSocialAdmin();
+    }
+
+    if (affectsPricing) {
+      await renderPricingPage();
+      if (isAdmin) await renderPricingAdmin();
+    }
+
+    if (affectsTos) {
+      await renderTosPage();
+      if (isAdmin) await renderTosAdmin();
+    }
+  } catch (error) {
+    console.error("Realtime refresh failed:", error);
+  }
+}
+
+function setupRealtimeV1() {
+  if (realtimeReady) return;
+  if (typeof supabaseClient === "undefined" || !supabaseClient?.channel) {
+    console.warn("Realtime skipped: Supabase client is not ready.");
+    return;
+  }
+
+  realtimeReady = true;
+
+  supabaseClient
+    .channel("commission-site-realtime-v1")
+    .on("postgres_changes", { event: "*", schema: "public", table: "commissions" }, () => scheduleRealtimeRefresh("commissions"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "progress_updates" }, () => scheduleRealtimeRefresh("progress_updates"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "gallery" }, () => scheduleRealtimeRefresh("gallery"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "slots" }, () => scheduleRealtimeRefresh("slots"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "site_settings" }, () => scheduleRealtimeRefresh("site_settings"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "socials" }, () => scheduleRealtimeRefresh("socials"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "pricing_categories" }, () => scheduleRealtimeRefresh("pricing_categories"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "pricing_items" }, () => scheduleRealtimeRefresh("pricing_items"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "tos" }, () => scheduleRealtimeRefresh("tos"))
+    .subscribe(status => {
+      console.log("Realtime v1 status:", status);
+    });
+}
+
+// Start realtime after the normal page initialization has finished.
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(setupRealtimeV1, 600);
+});

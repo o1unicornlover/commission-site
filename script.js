@@ -2161,8 +2161,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 setInterval(() => {
-  const path = window.location.pathname;
-
   renderQueue?.();
   renderHomeQueuePreview?.();
   renderCommissionInfo?.();
@@ -2174,8 +2172,4 @@ setInterval(() => {
   renderTosPage?.();
   renderSocialLinks?.();
   applySupabaseHomepageSettings?.();
-
-  // IMPORTANT:
-  // Do NOT call renderProgressPage() here.
-  // It rebuilds chat and causes flicker.
 }, 3000);

@@ -1,6 +1,7 @@
 const ADMIN_PASSWORD = "admin123"; // Concept only. Real security needs a backend.
 let selectedCommissionId = null;
 let isAdmin = false;
+let expandedAdminIds = new Set();
 
 const PROGRESS_STAGE_GROUPS = [
   {
@@ -110,7 +111,7 @@ function randomPassword() {
 }
 function getStage(key) { return PROGRESS_STAGES.find(s => s.key === key) || PROGRESS_STAGES[0]; }
 function stageOptions(selected="accepted", includeNone=false) {
-  const none = includeNone ? `<option value="custom" ${selected === "custom" ? "selected" : ""}>Custom title only — keep current progress</option>` : "";
+  const none = includeNone ? `<option value="custom" ${selected === "custom" ? "selected" : ""}>Optional — no progress change</option>` : "";
   return none + PROGRESS_STAGE_GROUPS.map(group => `
     <optgroup label="${group.group}">
       ${group.stages.map(s => `<option value="${s.key}" ${s.key === selected ? "selected" : ""}>${s.label} — ${s.percent}%</option>`).join("")}
@@ -242,19 +243,20 @@ function adminLogin() {
 
 async function addCommission() {
   const commissions = loadCommissions();
-  const firstStage = getStage(document.getElementById("startingStage").value);
+  const selectedStartingStage = document.getElementById("startingStage").value;
+  const firstStage = selectedStartingStage === "custom" ? null : getStage(selectedStartingStage);
   const file = document.getElementById("previewFile")?.files?.[0];
   const previewImage = await fileToDataURL(file);
   const newCommission = {
     id: `CM-${String(Date.now()).slice(-5)}`,
     clientName: document.getElementById("clientName").value || "Anonymous",
     type: document.getElementById("commissionType").value || "Commission",
-    status: firstStage.label,
+    status: firstStage ? firstStage.label : "Waiting / Not started",
     privacy: document.getElementById("privacy").value,
     previewImage,
     password: randomPassword(),
     archived: false,
-    stages: [{ stageKey: firstStage.key, title: firstStage.label, desc: "Commission added to the tracker.", image: "", done: firstStage.percent <= 10, percent: firstStage.percent }]
+    stages: firstStage ? [{ stageKey: firstStage.key, title: firstStage.label, desc: "Commission added to the tracker.", image: "", done: firstStage.percent <= 10, percent: firstStage.percent }] : []
   };
   commissions.push(newCommission); saveCommissions(commissions);
   alert(`Created! Send this to the client:\nID: ${newCommission.id}\nPassword: ${newCommission.password}`);
@@ -287,6 +289,7 @@ async function addUpdate(id) {
   }
 
   c.stages.push({ stageKey, title, desc, image, done, percent });
+  expandedAdminIds.add(id);
   saveCommissions(commissions);
   renderAdmin();
   alert(`Update added. Client progress is now ${getCommissionProgress(c)}%.`);
@@ -321,7 +324,9 @@ function markStageDone(id, index) {
   const c = commissions.find(item => item.id === id && !item.archived);
   if (!c || !c.stages[index]) return;
   c.stages[index].done = !c.stages[index].done;
-  saveCommissions(commissions); renderAdmin();
+  expandedAdminIds.add(id);
+  saveCommissions(commissions);
+  renderAdmin();
 }
 async function replacePreview(id) {
   const commissions = loadCommissions();
@@ -333,7 +338,11 @@ async function replacePreview(id) {
 }
 function toggleAdminCommission(id) {
   const el = document.getElementById(`adminDetails-${id}`);
-  if (el) el.classList.toggle("hidden");
+  if (!el) return;
+  const willOpen = el.classList.contains("hidden");
+  if (willOpen) expandedAdminIds.add(id);
+  else expandedAdminIds.delete(id);
+  el.classList.toggle("hidden", !willOpen);
 }
 function archiveCommission(id) {
   if (!confirm("Are you sure you want to archive this commission? It will disappear from the queue and the password will stop working.")) return;
@@ -383,7 +392,7 @@ function renderAdmin() {
         <span><strong>${c.id} — ${c.clientName}</strong><br><small>${c.type} • ${c.status} • ${getCommissionProgress(c)}%</small></span>
         <span class="pill">Open</span>
       </button>
-      <div id="adminDetails-${c.id}" class="admin-details hidden">
+      <div id="adminDetails-${c.id}" class="admin-details ${expandedAdminIds.has(c.id) ? "" : "hidden"}">
         <p class="small">Password: <code>${c.password}</code></p>
         <div class="button-row"><input id="previewReplace-${c.id}" type="file" accept="image/*"><button class="btn" onclick="replacePreview('${c.id}')">Replace board image</button></div>
         <div class="update-box">
@@ -391,14 +400,14 @@ function renderAdmin() {
           <div class="update-form">
             <input id="updateTitle-${c.id}" placeholder="Custom update title, e.g. Blocking out the pose">
             <select id="updateStage-${c.id}" title="Optional: choose a progress preset. Custom title stays separate.">${stageOptions("custom", true)}</select>
-            <p class="small">The dropdown only changes the progress percentage/status. Your title stays custom.</p>
+            <p class="small">Optional dropdown: use it only when you want to change the progress percentage/status. Your update title stays custom.</p>
             <textarea id="updateDesc-${c.id}" placeholder="Description for the client"></textarea>
             <input id="updateImage-${c.id}" type="file" accept="image/*">
             <label class="small"><input id="updateDone-${c.id}" type="checkbox" checked> Mark this stage as finished</label>
             <button class="btn primary" onclick="addUpdate('${c.id}')">Add Update</button>
           </div>
         </div>
-        <div class="update-box"><h4>Current updates</h4>${c.stages.map((s,i)=>`<p class="small">${s.done?"✓":"○"} ${s.title} — ${s.percent ?? getStage(s.stageKey).percent}% <button class="text-btn" onclick="markStageDone('${c.id}', ${i})">toggle</button></p>`).join("")}</div>
+        <div class="update-box"><h4>Current updates</h4>${c.stages.map((s,i)=>`<p class="small">${s.done?"✓":"○"} ${s.title} — ${s.percent ?? getStage(s.stageKey).percent}% <button class="text-btn" onclick="markStageDone('${c.id}', ${i})">toggle done</button></p>`).join("")}</div>
         <div class="update-box"><h4>Client chat</h4><div id="adminChatMessages-${c.id}" class="chat-messages small-chat"></div><textarea id="adminChatInput-${c.id}" placeholder="Reply to this client..."></textarea><button class="btn primary" onclick="sendChatMessage('${c.id}', 'admin')">Send Reply</button></div>
         <button class="btn danger" onclick="archiveCommission('${c.id}')">Finish / Archive</button>
       </div>
@@ -410,7 +419,7 @@ function renderAdmin() {
   `).join("") || `<p class="small">No archived commissions.</p>`;
 }
 
-if (document.getElementById("startingStage")) document.getElementById("startingStage").innerHTML = stageOptions("accepted");
+if (document.getElementById("startingStage")) document.getElementById("startingStage").innerHTML = stageOptions("custom", true);
 if (sessionStorage.getItem("adminOpen") === "true" && document.getElementById("adminDashboard")) {
   isAdmin = true;
   document.getElementById("adminLogin").classList.add("hidden");

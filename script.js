@@ -1916,3 +1916,27 @@ function setupRealtimeV1() {
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(setupRealtimeV1, 600);
 });
+function setupRealtime() {
+  if (!window.supabaseClient) return;
+
+  supabaseClient
+    .channel("site-realtime-v1")
+    .on("postgres_changes", { event: "*", schema: "public", table: "commissions" }, () => {
+      renderQueue?.();
+      renderAdmin?.();
+      renderHomeQueuePreview?.();
+      updateAdminOverview?.();
+      renderProgressPage?.();
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "progress_updates" }, () => {
+      renderQueue?.();
+      renderAdmin?.();
+      renderHomeQueuePreview?.();
+      renderProgressPage?.();
+    })
+    .subscribe(status => console.log("Realtime status:", status));
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(setupRealtime, 500);
+});

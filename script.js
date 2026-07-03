@@ -2085,14 +2085,6 @@ setInterval(() => {
   renderSocialLinks?.();
   applySupabaseHomepageSettings?.();
 
-  if (isAdmin) {
-    renderAdmin?.();
-    renderAdminGallery?.();
-    renderSlotAdmin?.();
-    renderPricingAdmin?.();
-    renderSocialAdmin?.();
-    renderTosAdmin?.();
-    loadPaymentSettingsAdmin?.();
-    updateAdminOverview?.();
-  }
+  // Do NOT auto-render admin forms here.
+  // It clears text fields while typing.
 }, 3000);

@@ -960,8 +960,29 @@ async function loadSettingsAdmin() {
   renderPricingAdmin();
   renderNewsAdmin();
   renderTosAdmin();
+  loadPaymentSettingsAdmin();
   loadThemeEditor();
 }
+async function loadPaymentSettingsAdmin() {
+  const settings = await getSiteSettings?.();
+  const username = document.getElementById("paymentPaypalUsername");
+  const currency = document.getElementById("paymentCurrency");
+  if (username) username.value = settings?.paypal_username || "";
+  if (currency) currency.value = settings?.currency || "USD";
+}
+
+async function savePaymentSettings() {
+  const paypal_username = normalizePayPalUsername(document.getElementById("paymentPaypalUsername")?.value || "");
+  const currency = document.getElementById("paymentCurrency")?.value || "USD";
+
+  const updated = await updateSiteSettings({ paypal_username, currency });
+  if (!updated) return alert("Payment settings could not be saved. Did you run the payment settings SQL?");
+
+  await renderAdmin?.();
+  await renderProgressPage?.();
+  alert("Payment settings saved.");
+}
+
 async function saveTextSettings() {
   const homepage_title = document.getElementById("settingTitle")?.value || "Welcome!";
   const homepage_subtitle = document.getElementById("settingSubtitle")?.value || "";
@@ -1536,16 +1557,55 @@ function paymentStatusClass(status) {
   return `payment-${key}`;
 }
 
+function normalizePayPalUsername(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^https?:\/\/(www\.)?paypal\.me\//i, "")
+    .replace(/^@/, "")
+    .replace(/\s+/g, "");
+}
+
+function extractPayPalAmount(price) {
+  const match = String(price || "").replace(/,/g, "").match(/\d+(?:\.\d{1,2})?/);
+  return match ? match[0] : "";
+}
+
+function formatPriceDisplay(price) {
+  const raw = String(price || "").trim();
+  if (!raw) return "Price TBA";
+  if (/^\$/.test(raw)) return raw;
+  if (/^\d+(?:\.\d{1,2})?$/.test(raw.replace(/,/g, ""))) return `$${raw}`;
+  return raw;
+}
+
+async function getPayPalUsername() {
+  const settings = await getSiteSettings?.();
+  return normalizePayPalUsername(settings?.paypal_username || "");
+}
+
+function buildPayPalLink(username, price) {
+  const cleanUser = normalizePayPalUsername(username);
+  const amount = extractPayPalAmount(price);
+  if (!cleanUser || !amount) return "";
+  return `https://paypal.me/${encodeURIComponent(cleanUser)}/${encodeURIComponent(amount)}`;
+}
+
+async function getCommissionPayPalLink(c) {
+  if (String(c?.paypal_link || "").trim()) return safeLink(c.paypal_link);
+  const username = await getPayPalUsername();
+  const generated = buildPayPalLink(username, c?.price || "");
+  return generated ? safeLink(generated) : "#";
+}
+
 function hasPaymentRequest(c) {
   return Boolean(
     String(c?.price || "").trim() ||
     String(c?.paypal_link || "").trim() ||
-    String(c?.cashapp_link || "").trim() ||
     String(c?.payment_status || "").toLowerCase() !== "not requested"
   );
 }
 
-function paymentCardHTML(c) {
+async function paymentCardHTML(c) {
   if (!hasPaymentRequest(c)) {
     return `
       <div class="payment-card muted-payment-card">
@@ -1558,22 +1618,20 @@ function paymentCardHTML(c) {
   const status = c.payment_status || "Not requested";
   const isPaid = String(status).toLowerCase() === "paid";
   const isRefunded = String(status).toLowerCase() === "refunded";
-  const paypal = safeLink(c.paypal_link || "");
-  const cashapp = safeLink(c.cashapp_link || "");
+  const paypal = await getCommissionPayPalLink(c);
 
   return `
     <div class="payment-card ${paymentStatusClass(status)}">
       <p class="eyebrow">Commission payment</p>
-      <h2>${c.price ? escapeHTML(c.price) : "Price TBA"}</h2>
+      <h2>${escapeHTML(formatPriceDisplay(c.price))}</h2>
       <p class="payment-status-pill">${escapeHTML(paymentStatusLabel(status))}</p>
       ${isPaid ? `<p class="small">Payment received. Thank you!</p>` : ""}
       ${isRefunded ? `<p class="small">This payment is marked as refunded.</p>` : ""}
       ${!isPaid && !isRefunded ? `
         <div class="button-row payment-buttons">
-          ${paypal !== "#" ? `<a class="btn primary" href="${escapeHTML(paypal)}" target="_blank" rel="noopener">PayPal</a>` : ""}
-          ${cashapp !== "#" ? `<a class="btn primary" href="${escapeHTML(cashapp)}" target="_blank" rel="noopener">Cash App</a>` : ""}
+          ${paypal !== "#" ? `<a class="btn primary" href="${escapeHTML(paypal)}" target="_blank" rel="noopener">Pay with PayPal</a>` : ""}
         </div>
-        ${paypal === "#" && cashapp === "#" ? `<p class="small">Payment link will appear here when it is ready.</p>` : ""}
+        ${paypal === "#" ? `<p class="small">PayPal link will appear here after the artist adds a PayPal username and commission price.</p>` : ""}
       ` : ""}
     </div>
   `;
@@ -1617,7 +1675,7 @@ async function renderProgressPage() {
         </div>
       </div>
       <aside class="client-chat">
-        ${paymentCardHTML(c)}
+        ${await paymentCardHTML(c)}
         <div class="payment-card muted-payment-card">
           <h2>Notes</h2>
           <p class="small">Revision chat is still planned. For now, use your normal contact method for replies.</p>
@@ -1666,8 +1724,7 @@ async function addCommission() {
     status: startingStatus,
     price: "",
     payment_status: "Not requested",
-    paypal_link: "",
-    cashapp_link: ""
+    paypal_link: ""
   });
 
   if (!created) return alert("Could not create commission. Check the console for details.");
@@ -1793,17 +1850,27 @@ async function deleteProgressUpdateAdmin(updateId, commissionId) {
 }
 
 
+async function previewGeneratedPayPalLink(id) {
+  const price = document.getElementById(`paymentPrice-${id}`)?.value.trim() || "";
+  const username = await getPayPalUsername();
+  const link = buildPayPalLink(username, price);
+  const box = document.getElementById(`paypalPreview-${id}`);
+  if (!box) return;
+  box.innerHTML = link
+    ? `<a href="${escapeHTML(link)}" target="_blank" rel="noopener">${escapeHTML(link)}</a>`
+    : `<span>Add your PayPal username in Site Settings → Payments and enter a numeric price.</span>`;
+}
+
 async function saveCommissionPayment(id) {
   const price = document.getElementById(`paymentPrice-${id}`)?.value.trim() || "";
   const payment_status = document.getElementById(`paymentStatus-${id}`)?.value || "Not requested";
-  const paypal_link = document.getElementById(`paypalLink-${id}`)?.value.trim() || "";
-  const cashapp_link = document.getElementById(`cashappLink-${id}`)?.value.trim() || "";
+  const username = await getPayPalUsername();
+  const paypal_link = buildPayPalLink(username, price);
 
   const updated = await updateCommission(id, {
     price,
     payment_status,
-    paypal_link,
-    cashapp_link
+    paypal_link
   });
 
   if (!updated) return alert("Payment settings could not be saved.");
@@ -1814,6 +1881,24 @@ async function saveCommissionPayment(id) {
   await renderProgressPage?.();
   await updateAdminOverview?.();
   alert("Payment request saved.");
+}
+
+async function markCommissionPaid(id) {
+  const updated = await updateCommission(id, { payment_status: "Paid" });
+  if (!updated) return alert("Could not mark this commission as paid.");
+  expandedAdminIds.add(String(id));
+  await renderAdmin();
+  await renderProgressPage?.();
+  await updateAdminOverview?.();
+}
+
+async function requestCommissionPayment(id) {
+  const price = document.getElementById(`paymentPrice-${id}`)?.value.trim() || "";
+  if (!price) return alert("Add a price first.");
+  const username = await getPayPalUsername();
+  if (!username) return alert("Add your PayPal username in Site Settings → Payments first.");
+  document.getElementById(`paymentStatus-${id}`).value = "Awaiting payment";
+  await saveCommissionPayment(id);
 }
 
 async function renderAdmin() {
@@ -1841,18 +1926,21 @@ async function renderAdmin() {
           <div class="update-box payment-admin-box">
             <h4>Payment Request</h4>
             <div class="form-grid">
-              <input id="paymentPrice-${c.id}" placeholder="Price, e.g. $85" value="${escapeHTML(c.price || "")}">
+              <input id="paymentPrice-${c.id}" placeholder="Price, e.g. 85" value="${escapeHTML(c.price || "")}" oninput="previewGeneratedPayPalLink('${c.id}')">
               <select id="paymentStatus-${c.id}">
                 <option value="Not requested" ${String(c.payment_status || "Not requested") === "Not requested" ? "selected" : ""}>Not requested</option>
                 <option value="Awaiting payment" ${String(c.payment_status || "") === "Awaiting payment" ? "selected" : ""}>Awaiting payment</option>
                 <option value="Paid" ${String(c.payment_status || "") === "Paid" ? "selected" : ""}>Paid</option>
                 <option value="Refunded" ${String(c.payment_status || "") === "Refunded" ? "selected" : ""}>Refunded</option>
               </select>
-              <input id="paypalLink-${c.id}" placeholder="PayPal link" value="${escapeHTML(c.paypal_link || "")}">
-              <input id="cashappLink-${c.id}" placeholder="Cash App link" value="${escapeHTML(c.cashapp_link || "")}">
             </div>
-            <button type="button" class="btn primary" onclick="saveCommissionPayment('${c.id}')">Save Payment Request</button>
-            <p class="small">Client sees this on their progress page. Mark it Paid after you confirm the payment.</p>
+            <p class="small paypal-preview" id="paypalPreview-${c.id}">PayPal link auto-generates from Site Settings → Payments.</p>
+            <div class="button-row">
+              <button type="button" class="btn primary" onclick="requestCommissionPayment('${c.id}')">Send Payment Request</button>
+              <button type="button" class="btn" onclick="saveCommissionPayment('${c.id}')">Save Payment Info</button>
+              <button type="button" class="btn" onclick="markCommissionPaid('${c.id}')">Mark Paid</button>
+            </div>
+            <p class="small">Client sees this on their progress page. Confirm the payment in PayPal, then mark it Paid here.</p>
           </div>
           <div class="button-row">
             <input id="previewReplace-${c.id}" type="file" accept="image/*">
@@ -2004,6 +2092,7 @@ setInterval(() => {
     renderPricingAdmin?.();
     renderSocialAdmin?.();
     renderTosAdmin?.();
+    loadPaymentSettingsAdmin?.();
     updateAdminOverview?.();
   }
 }, 3000);

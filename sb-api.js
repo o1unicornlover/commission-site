@@ -383,8 +383,7 @@ async function createCommission(values) {
     status: values.status || "Waiting / Not started",
     price: values.price || "",
     payment_status: values.payment_status || "Not requested",
-    paypal_link: values.paypal_link || "",
-    cashapp_link: values.cashapp_link || ""
+    paypal_link: values.paypal_link || ""
   };
 
   const { data, error } = await supabaseClient

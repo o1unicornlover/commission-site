@@ -711,3 +711,22 @@ button:disabled, .btn:disabled { transform: none !important; opacity: .6; cursor
 .payment-admin-box .form-grid {
   margin-top: 10px;
 }
+
+/* ===== PayPal-only payment request polish ===== */
+.payment-preview-box,
+.paypal-preview {
+  border: 1px solid rgba(255,142,209,.18);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(0,0,0,.18);
+  overflow-wrap: anywhere;
+}
+.payment-preview-box code,
+.paypal-preview a {
+  color: #ffc7e8;
+  font-weight: 800;
+}
+.payment-buttons .btn {
+  min-width: 150px;
+  text-align: center;
+}

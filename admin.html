@@ -111,6 +111,7 @@
                 <button type="button" class="settings-tab" data-settings-tab="pricing" onclick="showSettingsTab('pricing')">Pricing Page</button>
                 <button type="button" class="settings-tab" data-settings-tab="news" onclick="showSettingsTab('news')">Latest News</button>
                 <button type="button" class="settings-tab" data-settings-tab="tos" onclick="showSettingsTab('tos')">TOS Editor</button>
+                <button type="button" class="settings-tab" data-settings-tab="payments" onclick="showSettingsTab('payments')">Payments</button>
               </aside>
               <div class="settings-content">
                 <section id="settings-general" class="settings-panel">
@@ -206,6 +207,23 @@
                     <input id="newsText" placeholder="News text, e.g. 3D commissions opening soon!">
                   </div>
                   <button class="btn primary" onclick="addNewsItem()">Add News</button>
+                </section>
+
+                <section id="settings-payments" class="settings-panel hidden">
+                  <h3>Payments</h3>
+                  <p class="small">PayPal is used for payment requests. Enter only your PayPal.me username, not the whole link.</p>
+                  <label class="small">PayPal username</label>
+                  <input id="paymentPaypalUsername" placeholder="yourpaypalname">
+                  <label class="small">Currency</label>
+                  <select id="paymentCurrency">
+                    <option value="USD">USD ($)</option>
+                  </select>
+                  <div class="payment-preview-box">
+                    <p class="eyebrow">Preview</p>
+                    <p class="small">If a commission price is <strong>$85</strong>, clients will be sent to:</p>
+                    <code>https://paypal.me/yourpaypalname/85</code>
+                  </div>
+                  <button type="button" class="btn primary" onclick="savePaymentSettings()">Save Payment Settings</button>
                 </section>
                 <section id="settings-tos" class="settings-panel hidden">
                   <h3>TOS Editor</h3>

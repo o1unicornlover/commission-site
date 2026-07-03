@@ -181,7 +181,8 @@ async function uploadImage(file, bucket) {
     .replace(/[^a-z0-9._-]/g, "-")
     .replace(/-+/g, "-");
 
-  const fileName = `${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+  const randomPart = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(16).slice(2);
+  const fileName = `${Date.now()}-${randomPart}-${safeName}`;
 
   const { error } = await supabaseClient.storage
     .from(bucket)
@@ -299,4 +300,20 @@ async function removePricingItem(id) {
   }
 
   return true;
+}
+
+async function updatePricingItem(id, values) {
+  const { data, error } = await supabaseClient
+    .from("pricing_items")
+    .update(values)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating pricing item:", error);
+    return null;
+  }
+
+  return data;
 }

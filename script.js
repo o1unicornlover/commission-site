@@ -1113,15 +1113,18 @@ async function renderPricingPage() {
         <span class="icon-badge">♡</span>
         <div><h3>${escapeHTML(group.name)}</h3></div>
       </div>
-      <div class="price-list">
+      <div class="pricing-card-grid">
         ${(group.items || []).map(item => `
-          <div class="price-row">
-            <span>
-              <strong>${escapeHTML(item.name)}</strong>
-              ${item.description ? `<small>${escapeHTML(item.description)}</small>` : ""}
-            </span>
-            <strong>${escapeHTML(item.price || "Price TBA")}</strong>
-          </div>
+          <article class="price-example-card">
+            ${item.image_url
+              ? `<img class="price-example-image" src="${escapeHTML(item.image_url)}" alt="${escapeHTML(item.name)} example">`
+              : `<div class="price-example-placeholder">Example image</div>`}
+            <div class="price-example-body">
+              <h4>${escapeHTML(item.name)}</h4>
+              <strong>${escapeHTML(item.price || "Price TBA")}</strong>
+              ${item.description ? `<p>${escapeHTML(item.description)}</p>` : ""}
+            </div>
+          </article>
         `).join("") || `<p class="small">No prices added yet.</p>`}
       </div>
     </article>
@@ -1144,10 +1147,22 @@ async function renderPricingAdmin() {
         </div>
         <div class="price-list admin-price-list">
           ${(group.items || []).map(item => `
-            <div class="price-row">
-              <span>${escapeHTML(item.name)}</span>
-              <strong>${escapeHTML(item.price || "Price TBA")}</strong>
-              <button type="button" class="btn danger mini-btn" onclick="deletePricingItem('${group.id}','${item.id}')">Delete</button>
+            <div class="price-admin-item">
+              <div class="price-admin-preview">
+                ${item.image_url
+                  ? `<img class="price-example-image" src="${escapeHTML(item.image_url)}" alt="${escapeHTML(item.name)} example">`
+                  : `<div class="price-example-placeholder small">No image</div>`}
+              </div>
+              <div class="price-admin-info">
+                <strong>${escapeHTML(item.name)}</strong>
+                <small>${escapeHTML(item.price || "Price TBA")}</small>
+                ${item.description ? `<small>${escapeHTML(item.description)}</small>` : ""}
+                <div class="button-row">
+                  <input id="priceImage-${item.id}" type="file" accept="image/*">
+                  <button type="button" class="btn" onclick="updatePricingItemImage('${item.id}')">Upload / Replace Image</button>
+                  <button type="button" class="btn danger mini-btn" onclick="deletePricingItem('${group.id}','${item.id}')">Delete</button>
+                </div>
+              </div>
             </div>
           `).join("") || `<p class="small">No items yet.</p>`}
         </div>
@@ -1202,6 +1217,7 @@ async function addPricingItem() {
     name,
     price,
     description: "",
+    image_url: "",
     sort_order: 0
   });
 
@@ -1211,6 +1227,20 @@ async function addPricingItem() {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
+
+  renderPricingAdmin();
+  renderPricingPage();
+}
+
+async function updatePricingItemImage(itemId) {
+  const file = document.getElementById(`priceImage-${itemId}`)?.files?.[0];
+  if (!file) return alert("Choose an image first.");
+
+  const imageUrl = await uploadImage(file, "gallery");
+  if (!imageUrl) return alert("Image upload failed.");
+
+  const updated = await updatePricingItem(itemId, { image_url: imageUrl });
+  if (!updated) return alert("Could not save pricing image.");
 
   renderPricingAdmin();
   renderPricingPage();

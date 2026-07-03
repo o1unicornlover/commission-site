@@ -687,3 +687,18 @@ button:disabled, .btn:disabled { transform: none !important; opacity: .6; cursor
     grid-template-columns: 1fr !important;
   }
 }
+
+/* FINAL home dashboard 3-card layout */
+body .home-dashboard {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  max-width: 1120px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+@media (max-width: 1000px) {
+  body .home-dashboard {
+    grid-template-columns: 1fr !important;
+  }
+}

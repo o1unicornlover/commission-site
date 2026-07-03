@@ -25,7 +25,7 @@ async function getSlots() {
     return [];
   }
 
-  return data;
+  return data || [];
 }
 
 async function updateSlot(id, values) {
@@ -57,7 +57,7 @@ async function getSocials() {
     return [];
   }
 
-  return data;
+  return data || [];
 }
 
 async function addSocial(values) {
@@ -159,7 +159,10 @@ async function updateTos(content) {
 
   const { data, error } = await supabaseClient
     .from("tos")
-    .update({ content, updated_at: new Date().toISOString() })
+    .update({
+      content,
+      updated_at: new Date().toISOString()
+    })
     .eq("id", existing.id)
     .select()
     .single();
@@ -170,4 +173,33 @@ async function updateTos(content) {
   }
 
   return data;
+}
+
+async function uploadImage(file, bucket) {
+  if (!file) return null;
+
+  const safeName = file.name
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, "-")
+    .replace(/-+/g, "-");
+
+  const fileName = `${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+
+  const { error } = await supabaseClient.storage
+    .from(bucket)
+    .upload(fileName, file, {
+      cacheControl: "3600",
+      upsert: false
+    });
+
+  if (error) {
+    console.error("Upload error:", error);
+    return null;
+  }
+
+  const { data } = supabaseClient.storage
+    .from(bucket)
+    .getPublicUrl(fileName);
+
+  return data.publicUrl;
 }

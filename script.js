@@ -1,4 +1,4 @@
-const ADMIN_PASSWORD = "admin123"; // Change this for testing. Real admin security needs a backend.
+const ADMIN_PASSWORD = "admin123"; // Concept only. Real security needs a backend.
 let selectedCommissionId = null;
 let isAdmin = false;
 
@@ -65,9 +65,11 @@ function imageHTML(c) {
 }
 
 function renderQueue() {
-  const commissions = loadCommissions().filter(c => !c.archived);
   const grid = document.getElementById("queueGrid");
-  document.getElementById("queueCount").textContent = `${commissions.length} active`;
+  if (!grid) return;
+  const commissions = loadCommissions().filter(c => !c.archived);
+  const counter = document.getElementById("queueCount");
+  if (counter) counter.textContent = `${commissions.length} active`;
   grid.innerHTML = commissions.map(c => `
     <article class="commission-card">
       ${imageHTML(c)}
@@ -80,8 +82,9 @@ function renderQueue() {
 }
 
 function renderGallery() {
-  const archived = loadCommissions().filter(c => c.archived);
   const grid = document.getElementById("galleryGrid");
+  if (!grid) return;
+  const archived = loadCommissions().filter(c => c.archived);
   grid.innerHTML = archived.map(c => `
     <article class="gallery-card">
       ${imageHTML(c)}
@@ -103,40 +106,56 @@ function closeModal() {
 }
 
 function checkPassword() {
-  const commissions = loadCommissions();
-  const commission = commissions.find(c => c.id === selectedCommissionId && !c.archived);
+  const commission = loadCommissions().find(c => c.id === selectedCommissionId && !c.archived);
   const pass = document.getElementById("clientPassword").value.trim();
   if (!commission || pass !== commission.password) {
     document.getElementById("passwordError").textContent = "Wrong password or commission was archived.";
     return;
   }
-  closeModal();
-  showProgress(commission);
+  sessionStorage.setItem("progressAccess", JSON.stringify({ id: commission.id, password: pass }));
+  window.location.href = `progress.html?id=${encodeURIComponent(commission.id)}`;
 }
 
-function showProgress(c) {
+function renderProgressPage() {
+  const area = document.getElementById("progressArea");
+  if (!area) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+  const access = JSON.parse(sessionStorage.getItem("progressAccess") || "{}");
+  const c = loadCommissions().find(item => item.id === id && !item.archived);
+
+  if (!c || access.id !== c.id || access.password !== c.password) {
+    area.innerHTML = `
+      <div class="progress-card">
+        <h1 class="page-title">Progress Locked</h1>
+        <p class="small">Please go back to the queue and enter the correct password.</p>
+        <a class="btn primary" href="queue.html">Back to Queue</a>
+      </div>
+    `;
+    return;
+  }
+
   const doneCount = c.stages.filter(s => s.done).length;
   const progress = Math.round((doneCount / c.stages.length) * 100);
-  document.getElementById("progress").classList.remove("hidden");
-  document.getElementById("progressArea").innerHTML = `
-    <h2>${c.clientName} — ${c.type}</h2>
-    <p class="small">Commission ID: ${c.id} • Status: ${c.status}</p>
-    <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
-    <p class="small">${progress}% complete</p>
-    ${c.stages.map(stage => `
-      <article class="stage-card">
-        <h3>${stage.done ? "✓" : "○"} ${stage.title}</h3>
-        <p>${stage.desc}</p>
-        ${stage.image ? `<img src="${stage.image}" alt="${stage.title} WIP">` : ""}
-      </article>
-    `).join("")}
+  area.innerHTML = `
+    <div class="progress-card">
+      <p class="eyebrow">Private progress page</p>
+      <h1 class="page-title">${c.clientName} — ${c.type}</h1>
+      <p class="small">Commission ID: ${c.id} • Status: ${c.status}</p>
+      <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+      <p class="small">${progress}% complete</p>
+      <div class="stage-list">
+        ${c.stages.map(stage => `
+          <article class="stage-card">
+            <h3>${stage.done ? "✓" : "○"} ${stage.title}</h3>
+            <p>${stage.desc}</p>
+            ${stage.image ? `<img src="${stage.image}" alt="${stage.title} WIP">` : ""}
+          </article>
+        `).join("")}
+      </div>
+    </div>
   `;
-  location.hash = "progress";
-}
-
-function hideProgress() {
-  document.getElementById("progress").classList.add("hidden");
-  location.hash = "queue";
 }
 
 function adminLogin() {
@@ -150,24 +169,26 @@ function adminLogin() {
 
 function addCommission() {
   const commissions = loadCommissions();
+  const statusValue = document.getElementById("status").value || "Waiting";
   const newCommission = {
     id: `CM-${String(Date.now()).slice(-5)}`,
     clientName: document.getElementById("clientName").value || "Anonymous",
     type: document.getElementById("commissionType").value || "Commission",
-    status: document.getElementById("status").value || "Waiting",
+    status: statusValue,
     privacy: document.getElementById("privacy").value,
     previewImage: document.getElementById("previewImage").value,
     password: randomPassword(),
     archived: false,
     stages: [
       { title: "Payment Received", desc: "Commission accepted and added to the queue.", image: "", done: true },
-      { title: document.getElementById("status").value || "Waiting", desc: "Progress update will be added here.", image: "", done: false }
+      { title: statusValue, desc: "Progress update will be added here.", image: "", done: false }
     ]
   };
   commissions.push(newCommission);
   saveCommissions(commissions);
   alert(`Created! Send this to the client:\nID: ${newCommission.id}\nPassword: ${newCommission.password}`);
-  renderAll();
+  renderQueue();
+  renderGallery();
   renderAdmin();
 }
 
@@ -181,26 +202,28 @@ function archiveCommission(id) {
     c.password = "ARCHIVED";
   }
   saveCommissions(commissions);
-  renderAll();
+  renderQueue();
+  renderGallery();
   renderAdmin();
 }
 
 function renderAdmin() {
   if (!isAdmin) return;
+  const list = document.getElementById("adminList");
+  if (!list) return;
   const commissions = loadCommissions().filter(c => !c.archived);
-  document.getElementById("adminList").innerHTML = commissions.map(c => `
+  list.innerHTML = commissions.map(c => `
     <article class="admin-card">
-      <h4>${c.id} — ${c.clientName}</h4>
-      <p>${c.type} • ${c.status}</p>
-      <p class="small">Password: <code>${c.password}</code></p>
+      <div>
+        <h4>${c.id} — ${c.clientName}</h4>
+        <p>${c.type} • ${c.status}</p>
+        <p class="small">Password: <code>${c.password}</code></p>
+      </div>
       <button class="btn danger" onclick="archiveCommission('${c.id}')">Finish / Archive</button>
     </article>
   `).join("") || `<p class="small">No active commissions.</p>`;
 }
 
-function renderAll() {
-  renderQueue();
-  renderGallery();
-}
-
-renderAll();
+renderQueue();
+renderGallery();
+renderProgressPage();

@@ -2160,8 +2160,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 1200);
 });
 
-setInterval(async () => {
-  // Public page auto-sync. Keep this gentle so forms/chat do not flicker.
+setInterval(() => {
+  const path = window.location.pathname;
+
   renderQueue?.();
   renderHomeQueuePreview?.();
   renderCommissionInfo?.();
@@ -2174,15 +2175,7 @@ setInterval(async () => {
   renderSocialLinks?.();
   applySupabaseHomepageSettings?.();
 
-  // Progress pages are special because rebuilding the whole page also rebuilds chat.
-  // This only refreshes chat while typing and avoids the long close/reappear glitch.
-  await refreshProgressSafely?.();
-
-  // Admin chat boxes only update their message lists, not the full commission cards.
-  if (isAdmin) {
-    expandedAdminIds.forEach(id => renderAdminChat?.(id));
-  }
-
-  // Do NOT auto-render admin forms here.
-  // Do NOT rebuild chat containers while typing.
+  // IMPORTANT:
+  // Do NOT call renderProgressPage() here.
+  // It rebuilds chat and causes flicker.
 }, 3000);

@@ -2077,16 +2077,36 @@ async function updateAdminOverview() {
 let realtimeChannel = null;
 let realtimeRefreshTimer = null;
 
+function chatInputIsActive() {
+  const active = document.activeElement;
+  return Boolean(active && (active.id === "clientChatInput" || String(active.id || "").startsWith("adminChatInput-")));
+}
+
+async function refreshProgressSafely() {
+  const progressArea = document.getElementById("progressArea");
+  if (!progressArea) return;
+
+  const id = new URLSearchParams(window.location.search).get("id");
+
+  // Do not rebuild the whole progress page while the client is typing in chat.
+  // This prevents the message panel from disappearing/closing.
+  if (chatInputIsActive()) {
+    if (id) await renderClientChat?.(id);
+    return;
+  }
+
+  await renderProgressPage?.();
+}
+
 function queueRealtimeRefresh(reason = "change") {
   console.log("Realtime refresh queued:", reason);
   clearTimeout(realtimeRefreshTimer);
   realtimeRefreshTimer = setTimeout(async () => {
     try {
       if (document.getElementById("queueGrid")) await renderQueue?.();
-      if (document.getElementById("progressArea")) await renderProgressPage?.();
+      await refreshProgressSafely();
       if (document.getElementById("homeQueuePreview")) await renderHomeQueuePreview?.();
       if (document.getElementById("adminDashboard")) {
-        await renderAdmin?.();
         await updateAdminOverview?.();
       }
     } catch (error) {
@@ -2140,9 +2160,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 1200);
 });
 
-setInterval(() => {
+setInterval(async () => {
+  // Public page auto-sync. Keep this gentle so forms/chat do not flicker.
   renderQueue?.();
-  renderProgressPage?.();
   renderHomeQueuePreview?.();
   renderCommissionInfo?.();
 
@@ -2154,6 +2174,15 @@ setInterval(() => {
   renderSocialLinks?.();
   applySupabaseHomepageSettings?.();
 
-  // No admin form refresh.
-  // No chat refresh.
+  // Progress pages are special because rebuilding the whole page also rebuilds chat.
+  // This only refreshes chat while typing and avoids the long close/reappear glitch.
+  await refreshProgressSafely?.();
+
+  // Admin chat boxes only update their message lists, not the full commission cards.
+  if (isAdmin) {
+    expandedAdminIds.forEach(id => renderAdminChat?.(id));
+  }
+
+  // Do NOT auto-render admin forms here.
+  // Do NOT rebuild chat containers while typing.
 }, 3000);

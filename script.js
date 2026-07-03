@@ -1880,9 +1880,23 @@ setInterval(() => {
   renderQueue?.();
   renderProgressPage?.();
   renderHomeQueuePreview?.();
+  renderCommissionInfo?.();
+
+  renderGallery?.();
+  renderFeaturedGallery?.();
+
+  renderPricingPage?.();
+  renderTosPage?.();
+  renderSocialLinks?.();
+  applySupabaseHomepageSettings?.();
 
   if (isAdmin) {
     renderAdmin?.();
+    renderAdminGallery?.();
+    renderSlotAdmin?.();
+    renderPricingAdmin?.();
+    renderSocialAdmin?.();
+    renderTosAdmin?.();
     updateAdminOverview?.();
   }
 }, 3000);

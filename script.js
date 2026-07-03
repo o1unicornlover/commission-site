@@ -946,29 +946,56 @@ async function saveHolidaySettings() {
   settings.themes[theme].particles = Boolean(document.getElementById("holidayParticles")?.checked);
   saveSiteSettings(settings); applySiteSettings(); alert(`${themeLabel(theme)} theme saved.`);
 }
-function renderSocialAdmin() {
+async function renderSocialAdmin() {
   const box = document.getElementById("socialAdminList");
   if (!box) return;
-  const settings = loadSiteSettings();
-  box.innerHTML = settings.socials.map(link => `<div class="social-admin-row"><span>${link.icon || '♡'} <strong>${link.label}</strong><small>${link.url}</small></span><button class="btn danger" onclick="deleteSocialLink('${link.id}')">Delete</button></div>`).join("") || `<p class="small">No links yet.</p>`;
-}
-function addSocialLink() {
-  const settings = loadSiteSettings();
-  const label = document.getElementById("socialLabel")?.value.trim();
-  const icon = document.getElementById("socialIcon")?.value.trim() || "♡";
-  const url = document.getElementById("socialUrl")?.value.trim();
-  if (!label || !url) return alert("Add a label and link/username first.");
-  settings.socials.push({ id: `S-${Date.now()}`, label, icon, url });
-  saveSiteSettings(settings);
-  ["socialLabel","socialIcon","socialUrl"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
-  renderSocialAdmin(); applySiteSettings();
-}
-function deleteSocialLink(id) {
-  const settings = loadSiteSettings();
-  settings.socials = settings.socials.filter(link => link.id !== id);
-  saveSiteSettings(settings); renderSocialAdmin(); applySiteSettings();
+
+  const socials = await getSocials();
+
+  box.innerHTML = socials.map(link => `
+    <div class="social-admin-row">
+      <span>
+        ${link.icon || "♡"} 
+        <strong>${escapeHTML(link.name)}</strong>
+        <small>${escapeHTML(link.url || "No URL added")}</small>
+      </span>
+      <button class="btn danger" onclick="deleteSocialLink('${link.id}')">Delete</button>
+    </div>
+  `).join("") || `<p class="small">No links yet.</p>`;
 }
 
+async function addSocialLink() {
+  const name = document.getElementById("socialLabel")?.value.trim();
+  const icon = document.getElementById("socialIcon")?.value.trim() || "♡";
+  const url = document.getElementById("socialUrl")?.value.trim();
+
+  if (!name || !url) return alert("Add a label and URL first.");
+
+  await addSocial({
+    name,
+    icon,
+    url,
+    enabled: true,
+    sort_order: 0
+  });
+
+  ["socialLabel", "socialIcon", "socialUrl"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  renderSocialAdmin();
+  renderSocialLinks();
+}
+
+async function deleteSocialLink(id) {
+  if (!confirm("Delete this social link?")) return;
+
+  await deleteSocial(id);
+
+  renderSocialAdmin();
+  renderSocialLinks();
+}
 function renderNewsAdmin() {
   const box = document.getElementById("newsAdminList");
   if (!box) return;

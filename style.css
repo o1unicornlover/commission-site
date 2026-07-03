@@ -672,33 +672,42 @@ button:disabled, .btn:disabled { transform: none !important; opacity: .6; cursor
 .commission-card .progress-bar {
   margin: 8px 0 2px;
 }
-/* Remove page doll placeholder forever */
-.page-doll-fallback {
-  display: none !important;
+/* ===== Payment request UI ===== */
+.payment-card {
+  border: 1px solid rgba(255,142,209,.22);
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(0,0,0,.16));
 }
-
-/* Home page now has 3 cards instead of 4 */
-.home-dashboard {
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+.payment-card h2 {
+  margin: 6px 0 10px;
+  color: #ffc7e8;
 }
-
-@media (max-width: 1000px) {
-  .home-dashboard {
-    grid-template-columns: 1fr !important;
-  }
+.payment-status-pill {
+  display: inline-block;
+  border: 1px solid rgba(255,142,209,.28);
+  border-radius: 999px;
+  padding: 7px 11px;
+  margin: 0 0 10px;
+  background: rgba(255,100,190,.08);
+  font-weight: 800;
 }
-
-/* FINAL home dashboard 3-card layout */
-body .home-dashboard {
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  max-width: 1120px !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
+.payment-buttons {
+  margin-top: 10px;
 }
-
-@media (max-width: 1000px) {
-  body .home-dashboard {
-    grid-template-columns: 1fr !important;
-  }
+.muted-payment-card {
+  opacity: .88;
+}
+.payment-paid {
+  border-color: rgba(113, 255, 174, .35) !important;
+}
+.payment-awaiting-payment {
+  border-color: rgba(255, 224, 130, .38) !important;
+}
+.payment-refunded {
+  border-color: rgba(122, 177, 255, .38) !important;
+}
+.payment-admin-box .form-grid {
+  margin-top: 10px;
 }

@@ -1519,6 +1519,66 @@ async function checkPassword() {
   window.location.href = `progress.html?id=${encodeURIComponent(commission.id)}`;
 }
 
+
+function paymentStatusLabel(status) {
+  const value = String(status || "Not requested").trim();
+  const map = {
+    "not requested": "⚪ Not requested",
+    "awaiting payment": "🟡 Awaiting payment",
+    "paid": "🟢 Paid",
+    "refunded": "🔵 Refunded"
+  };
+  return map[value.toLowerCase()] || value;
+}
+
+function paymentStatusClass(status) {
+  const key = String(status || "Not requested").toLowerCase().replace(/\s+/g, "-");
+  return `payment-${key}`;
+}
+
+function hasPaymentRequest(c) {
+  return Boolean(
+    String(c?.price || "").trim() ||
+    String(c?.paypal_link || "").trim() ||
+    String(c?.cashapp_link || "").trim() ||
+    String(c?.payment_status || "").toLowerCase() !== "not requested"
+  );
+}
+
+function paymentCardHTML(c) {
+  if (!hasPaymentRequest(c)) {
+    return `
+      <div class="payment-card muted-payment-card">
+        <h2>Payment</h2>
+        <p class="small">Payment has not been requested yet.</p>
+      </div>
+    `;
+  }
+
+  const status = c.payment_status || "Not requested";
+  const isPaid = String(status).toLowerCase() === "paid";
+  const isRefunded = String(status).toLowerCase() === "refunded";
+  const paypal = safeLink(c.paypal_link || "");
+  const cashapp = safeLink(c.cashapp_link || "");
+
+  return `
+    <div class="payment-card ${paymentStatusClass(status)}">
+      <p class="eyebrow">Commission payment</p>
+      <h2>${c.price ? escapeHTML(c.price) : "Price TBA"}</h2>
+      <p class="payment-status-pill">${escapeHTML(paymentStatusLabel(status))}</p>
+      ${isPaid ? `<p class="small">Payment received. Thank you!</p>` : ""}
+      ${isRefunded ? `<p class="small">This payment is marked as refunded.</p>` : ""}
+      ${!isPaid && !isRefunded ? `
+        <div class="button-row payment-buttons">
+          ${paypal !== "#" ? `<a class="btn primary" href="${escapeHTML(paypal)}" target="_blank" rel="noopener">PayPal</a>` : ""}
+          ${cashapp !== "#" ? `<a class="btn primary" href="${escapeHTML(cashapp)}" target="_blank" rel="noopener">Cash App</a>` : ""}
+        </div>
+        ${paypal === "#" && cashapp === "#" ? `<p class="small">Payment link will appear here when it is ready.</p>` : ""}
+      ` : ""}
+    </div>
+  `;
+}
+
 async function renderProgressPage() {
   const area = document.getElementById("progressArea");
   if (!area) return;
@@ -1557,8 +1617,11 @@ async function renderProgressPage() {
         </div>
       </div>
       <aside class="client-chat">
-        <h2>Notes</h2>
-        <p class="small">Revision chat is still planned. For now, use your normal contact method for replies.</p>
+        ${paymentCardHTML(c)}
+        <div class="payment-card muted-payment-card">
+          <h2>Notes</h2>
+          <p class="small">Revision chat is still planned. For now, use your normal contact method for replies.</p>
+        </div>
       </aside>
     </div>`;
 }
@@ -1600,7 +1663,11 @@ async function addCommission() {
     commission_type: type,
     preview_image_url: previewImageUrl,
     password,
-    status: startingStatus
+    status: startingStatus,
+    price: "",
+    payment_status: "Not requested",
+    paypal_link: "",
+    cashapp_link: ""
   });
 
   if (!created) return alert("Could not create commission. Check the console for details.");
@@ -1725,6 +1792,30 @@ async function deleteProgressUpdateAdmin(updateId, commissionId) {
   renderHomeQueuePreview();
 }
 
+
+async function saveCommissionPayment(id) {
+  const price = document.getElementById(`paymentPrice-${id}`)?.value.trim() || "";
+  const payment_status = document.getElementById(`paymentStatus-${id}`)?.value || "Not requested";
+  const paypal_link = document.getElementById(`paypalLink-${id}`)?.value.trim() || "";
+  const cashapp_link = document.getElementById(`cashappLink-${id}`)?.value.trim() || "";
+
+  const updated = await updateCommission(id, {
+    price,
+    payment_status,
+    paypal_link,
+    cashapp_link
+  });
+
+  if (!updated) return alert("Payment settings could not be saved.");
+
+  expandedAdminIds.add(String(id));
+  await renderAdmin();
+  await renderQueue?.();
+  await renderProgressPage?.();
+  await updateAdminOverview?.();
+  alert("Payment request saved.");
+}
+
 async function renderAdmin() {
   if (!isAdmin) return;
   const list = document.getElementById("adminList");
@@ -1747,6 +1838,22 @@ async function renderAdmin() {
         </button>
         <div id="adminDetails-${c.id}" class="admin-details ${expandedAdminIds.has(String(c.id)) ? "" : "hidden"}">
           <p class="small">Password: <code>${escapeHTML(c.password || "")}</code></p>
+          <div class="update-box payment-admin-box">
+            <h4>Payment Request</h4>
+            <div class="form-grid">
+              <input id="paymentPrice-${c.id}" placeholder="Price, e.g. $85" value="${escapeHTML(c.price || "")}">
+              <select id="paymentStatus-${c.id}">
+                <option value="Not requested" ${String(c.payment_status || "Not requested") === "Not requested" ? "selected" : ""}>Not requested</option>
+                <option value="Awaiting payment" ${String(c.payment_status || "") === "Awaiting payment" ? "selected" : ""}>Awaiting payment</option>
+                <option value="Paid" ${String(c.payment_status || "") === "Paid" ? "selected" : ""}>Paid</option>
+                <option value="Refunded" ${String(c.payment_status || "") === "Refunded" ? "selected" : ""}>Refunded</option>
+              </select>
+              <input id="paypalLink-${c.id}" placeholder="PayPal link" value="${escapeHTML(c.paypal_link || "")}">
+              <input id="cashappLink-${c.id}" placeholder="Cash App link" value="${escapeHTML(c.cashapp_link || "")}">
+            </div>
+            <button type="button" class="btn primary" onclick="saveCommissionPayment('${c.id}')">Save Payment Request</button>
+            <p class="small">Client sees this on their progress page. Mark it Paid after you confirm the payment.</p>
+          </div>
           <div class="button-row">
             <input id="previewReplace-${c.id}" type="file" accept="image/*">
             <button type="button" class="btn" onclick="replacePreview('${c.id}')">Replace board image</button>

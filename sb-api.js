@@ -380,7 +380,11 @@ async function createCommission(values) {
     commission_type: values.commission_type || "Commission",
     preview_image_url: values.preview_image_url || "",
     password: values.password || "",
-    status: values.status || "Waiting / Not started"
+    status: values.status || "Waiting / Not started",
+    price: values.price || "",
+    payment_status: values.payment_status || "Not requested",
+    paypal_link: values.paypal_link || "",
+    cashapp_link: values.cashapp_link || ""
   };
 
   const { data, error } = await supabaseClient

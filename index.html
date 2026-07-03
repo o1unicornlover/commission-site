@@ -8,9 +8,10 @@
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="index.html">YourName Commissions</a>
+    <a class="brand" href="index.html">✧ YourName</a>
     <nav>
       <a href="index.html">Home</a>
+      <a href="#pricing">Commissions</a>
       <a href="queue.html">Queue</a>
       <a href="gallery.html">Gallery</a>
       <a href="tos.html">TOS</a>
@@ -18,12 +19,17 @@
   </header>
 
   <main>
-    <section class="hero">
-      <div>
+    <section class="hero visual-hero" id="homeHero">
+      <div id="themeParticles" class="theme-particles hidden"></div>
+      <div class="social-card" id="socialCard">
+        <h3>Let's connect!</h3>
+        <div id="socialLinks"></div>
+      </div>
+      <div class="hero-copy">
         <p class="eyebrow">2D Art • 3D Sculpting • Animation</p>
-        <h1>Commission hub and progress tracker</h1>
-        <p>Order through VGen or Discord, then check your queue slot and private progress page here.</p>
-        <div class="button-row">
+        <h1 id="homeTitle">Welcome!</h1>
+        <p id="homeSubtitle">Commission hub and progress tracker.</p>
+        <div class="button-row centered-buttons">
           <a class="btn primary" href="queue.html">View Queue</a>
           <a class="btn" href="#pricing">Commission Info</a>
           <a class="btn" href="tos.html">Read TOS</a>
@@ -31,12 +37,31 @@
       </div>
     </section>
 
-    <section id="pricing" class="panel compact-panel">
-      <h2>Commission Info</h2>
+    <section id="pricing" class="panel compact-panel fancy-panel">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Status & info</p>
+          <h2>Commission Slots</h2>
+        </div>
+        <a class="btn" href="queue.html">Go to Queue</a>
+      </div>
       <div id="commissionInfoGrid" class="grid three"></div>
-      <p class="small">Replace these prices and descriptions with your real commission sheet later.</p>
+      <p class="small" id="commissionInfoNote">Replace these prices and descriptions with your real commission sheet later.</p>
+    </section>
+
+    <section class="panel compact-panel fancy-panel">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Portfolio</p>
+          <h2>Featured Work</h2>
+        </div>
+        <a class="btn" href="gallery.html">View Gallery →</a>
+      </div>
+      <div id="featuredGallery" class="featured-gallery"></div>
     </section>
   </main>
+
+  <img id="pageDoll" class="page-doll hidden" alt="Page doll character">
 
   <script src="script.js"></script>
 </body>

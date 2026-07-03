@@ -58,6 +58,71 @@
         </details>
 
         <hr class="soft-line">
+        <details class="admin-section site-settings-section" open>
+          <summary>Site Settings</summary>
+          <p class="small">Customize the public homepage, banner, page doll, social links, and holiday mode.</p>
+          <div class="settings-layout">
+            <aside class="settings-menu">
+              <button class="settings-tab active" onclick="showSettingsTab('general')">General</button>
+              <button class="settings-tab" onclick="showSettingsTab('appearance')">Appearance</button>
+              <button class="settings-tab" onclick="showSettingsTab('holiday')">Theme / Holiday</button>
+              <button class="settings-tab" onclick="showSettingsTab('social')">Social Links</button>
+            </aside>
+            <div class="settings-content">
+              <section id="settings-general" class="settings-panel">
+                <h3>Homepage Text</h3>
+                <input id="settingTitle" placeholder="Homepage title">
+                <textarea id="settingSubtitle" placeholder="Homepage subtitle"></textarea>
+                <input id="settingNote" placeholder="Commission info note">
+                <button class="btn primary" onclick="saveTextSettings()">Save Text</button>
+              </section>
+              <section id="settings-appearance" class="settings-panel hidden">
+                <h3>Default Appearance</h3>
+                <label class="small">Default banner image</label>
+                <input id="defaultBannerFile" type="file" accept="image/*">
+                <label class="small">Default page doll image</label>
+                <input id="defaultDollFile" type="file" accept="image/*">
+                <button class="btn primary" onclick="saveDefaultAppearance()">Save Default Images</button>
+                <button class="btn" onclick="clearDefaultImages()">Clear Default Images</button>
+              </section>
+              <section id="settings-holiday" class="settings-panel hidden">
+                <h3>Theme / Holiday Mode</h3>
+                <label class="small"><input id="holidayEnabled" type="checkbox"> Enable automatic holiday themes</label>
+                <select id="manualTheme">
+                  <option value="default">Default</option>
+                  <option value="february">February / Valentine</option>
+                  <option value="october">October / Halloween</option>
+                  <option value="december">December / Christmas</option>
+                </select>
+                <p class="small">Manual theme is used when holiday mode is off. Holiday mode chooses based on the month.</p>
+                <label class="small">Theme to edit</label>
+                <select id="themeEditSelect" onchange="loadThemeEditor()">
+                  <option value="february">February / Valentine</option>
+                  <option value="october">October / Halloween</option>
+                  <option value="december">December / Christmas</option>
+                </select>
+                <label class="small">Holiday banner image</label>
+                <input id="holidayBannerFile" type="file" accept="image/*">
+                <label class="small">Holiday page doll image</label>
+                <input id="holidayDollFile" type="file" accept="image/*">
+                <label class="small"><input id="holidayParticles" type="checkbox"> Enable foreground particles for this theme</label>
+                <button class="btn primary" onclick="saveHolidaySettings()">Save Holiday Settings</button>
+              </section>
+              <section id="settings-social" class="settings-panel hidden">
+                <h3>Social / Contact Links</h3>
+                <div id="socialAdminList" class="social-admin-list"></div>
+                <div class="form-grid">
+                  <input id="socialLabel" placeholder="Label, e.g. Discord">
+                  <input id="socialIcon" placeholder="Icon, e.g. 💬 or ♡">
+                  <input id="socialUrl" placeholder="Link or username">
+                </div>
+                <button class="btn primary" onclick="addSocialLink()">Add Link</button>
+              </section>
+            </div>
+          </div>
+        </details>
+
+        <hr class="soft-line">
         <h2>Gallery Uploads</h2>
         <p class="small">Archives do not go here automatically. Add only art you want displayed publicly.</p>
         <input id="galleryFile" type="file" accept="image/*" />

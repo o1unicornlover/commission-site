@@ -534,3 +534,190 @@ if (sessionStorage.getItem("adminOpen") === "true" && document.getElementById("a
   renderAdmin(); renderAdminGallery(); renderSlotAdmin(); renderCommissionInfo();
 }
 renderQueue(); renderGallery(); renderProgressPage(); renderCommissionInfo();
+
+// ---------- Site customization / UI theme settings ----------
+const defaultSiteSettings = {
+  title: "Welcome!",
+  subtitle: "Digital artist & 3D modeler bringing your ideas to life.",
+  commissionNote: "Contact me first through social media. Once accepted, your private progress page will be created.",
+  holidayEnabled: false,
+  manualTheme: "default",
+  defaultBanner: "",
+  defaultDoll: "",
+  socials: [
+    { id: "S-1", icon: "💬", label: "Discord", url: "discord.gg/yourlink" },
+    { id: "S-2", icon: "📷", label: "Instagram", url: "@yourname" },
+    { id: "S-3", icon: "✉", label: "Email", url: "your@email.com" }
+  ],
+  themes: {
+    february: { banner: "", doll: "", particles: true },
+    october: { banner: "", doll: "", particles: false },
+    december: { banner: "", doll: "", particles: true }
+  }
+};
+function deepMergeSettings(saved) {
+  const base = JSON.parse(JSON.stringify(defaultSiteSettings));
+  if (!saved || typeof saved !== "object") return base;
+  return {
+    ...base,
+    ...saved,
+    themes: { ...base.themes, ...(saved.themes || {}) },
+    socials: Array.isArray(saved.socials) ? saved.socials : base.socials
+  };
+}
+function loadSiteSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("siteSettings") || "null");
+    const settings = deepMergeSettings(saved);
+    localStorage.setItem("siteSettings", JSON.stringify(settings));
+    return settings;
+  } catch {
+    localStorage.setItem("siteSettings", JSON.stringify(defaultSiteSettings));
+    return deepMergeSettings(defaultSiteSettings);
+  }
+}
+function saveSiteSettings(settings) {
+  localStorage.setItem("siteSettings", JSON.stringify(deepMergeSettings(settings)));
+}
+function getActiveTheme(settings = loadSiteSettings()) {
+  if (!settings.holidayEnabled) return settings.manualTheme || "default";
+  const month = new Date().getMonth() + 1;
+  if (month === 2) return "february";
+  if (month === 10) return "october";
+  if (month === 12) return "december";
+  return "default";
+}
+function themeLabel(theme) {
+  return ({ default: "Default", february: "February", october: "Halloween", december: "Christmas" })[theme] || "Default";
+}
+function applySiteSettings() {
+  const settings = loadSiteSettings();
+  const active = getActiveTheme(settings);
+  document.body.dataset.theme = active;
+
+  const title = document.getElementById("homeTitle");
+  const sub = document.getElementById("homeSubtitle");
+  const note = document.getElementById("commissionInfoNote");
+  if (title) title.textContent = settings.title;
+  if (sub) sub.textContent = settings.subtitle;
+  if (note) note.textContent = settings.commissionNote;
+
+  const theme = active === "default" ? {} : (settings.themes[active] || {});
+  const banner = theme.banner || settings.defaultBanner;
+  const doll = theme.doll || settings.defaultDoll;
+  const hero = document.getElementById("homeHero");
+  if (hero) {
+    if (banner) hero.style.backgroundImage = `linear-gradient(90deg, rgba(7,6,10,.62), rgba(7,6,10,.25)), url('${banner}')`;
+    else hero.style.backgroundImage = "";
+  }
+  const dollEl = document.getElementById("pageDoll");
+  if (dollEl) {
+    if (doll) { dollEl.src = doll; dollEl.classList.remove("hidden"); }
+    else dollEl.classList.add("hidden");
+  }
+  const particles = document.getElementById("themeParticles");
+  if (particles) {
+    const show = active !== "default" && settings.themes[active]?.particles;
+    particles.classList.toggle("hidden", !show);
+    particles.innerHTML = show ? Array.from({ length: 22 }, (_, i) => `<span style="--i:${i};--delay:${(i%8)*.45}s;--left:${(i*37)%100}%"></span>`).join("") : "";
+  }
+  renderSocialLinks();
+  renderFeaturedGallery();
+}
+function renderSocialLinks() {
+  const box = document.getElementById("socialLinks");
+  if (!box) return;
+  const settings = loadSiteSettings();
+  box.innerHTML = settings.socials.map(link => `<a class="social-link" href="${link.url.startsWith('http') ? link.url : '#'}" title="${link.url}"><span>${link.icon || '♡'}</span><em>${link.label}</em><small>${link.url}</small></a>`).join("") || `<p class="small">No social links yet.</p>`;
+}
+function renderFeaturedGallery() {
+  const box = document.getElementById("featuredGallery");
+  if (!box) return;
+  const items = loadGallery().slice(0, 6);
+  box.innerHTML = items.map(item => `<img src="${item.image}" alt="Featured art">`).join("") || Array.from({length:6},()=>`<div class="featured-placeholder">Art</div>`).join("");
+}
+function showSettingsTab(name) {
+  document.querySelectorAll(".settings-tab").forEach(btn => btn.classList.remove("active"));
+  const buttons = Array.from(document.querySelectorAll(".settings-tab"));
+  const clicked = buttons.find(btn => btn.textContent.toLowerCase().includes(name === "holiday" ? "theme" : name));
+  if (clicked) clicked.classList.add("active");
+  document.querySelectorAll(".settings-panel").forEach(panel => panel.classList.add("hidden"));
+  const panel = document.getElementById(`settings-${name}`);
+  if (panel) panel.classList.remove("hidden");
+}
+function loadSettingsAdmin() {
+  const settings = loadSiteSettings();
+  const setVal = (id, value) => { const el = document.getElementById(id); if (el) el.value = value; };
+  const setCheck = (id, value) => { const el = document.getElementById(id); if (el) el.checked = Boolean(value); };
+  setVal("settingTitle", settings.title);
+  setVal("settingSubtitle", settings.subtitle);
+  setVal("settingNote", settings.commissionNote);
+  setCheck("holidayEnabled", settings.holidayEnabled);
+  setVal("manualTheme", settings.manualTheme || "default");
+  renderSocialAdmin();
+  loadThemeEditor();
+}
+function saveTextSettings() {
+  const settings = loadSiteSettings();
+  settings.title = document.getElementById("settingTitle")?.value || settings.title;
+  settings.subtitle = document.getElementById("settingSubtitle")?.value || settings.subtitle;
+  settings.commissionNote = document.getElementById("settingNote")?.value || settings.commissionNote;
+  saveSiteSettings(settings); applySiteSettings(); alert("Homepage text saved.");
+}
+async function saveDefaultAppearance() {
+  const settings = loadSiteSettings();
+  const banner = await fileToDataURL(document.getElementById("defaultBannerFile")?.files?.[0]);
+  const doll = await fileToDataURL(document.getElementById("defaultDollFile")?.files?.[0]);
+  if (banner) settings.defaultBanner = banner;
+  if (doll) settings.defaultDoll = doll;
+  saveSiteSettings(settings); applySiteSettings(); alert("Default appearance saved.");
+}
+function clearDefaultImages() {
+  const settings = loadSiteSettings();
+  settings.defaultBanner = ""; settings.defaultDoll = "";
+  saveSiteSettings(settings); applySiteSettings(); alert("Default images cleared.");
+}
+function loadThemeEditor() {
+  const settings = loadSiteSettings();
+  const theme = document.getElementById("themeEditSelect")?.value || "february";
+  const part = document.getElementById("holidayParticles");
+  if (part) part.checked = Boolean(settings.themes[theme]?.particles);
+}
+async function saveHolidaySettings() {
+  const settings = loadSiteSettings();
+  settings.holidayEnabled = Boolean(document.getElementById("holidayEnabled")?.checked);
+  settings.manualTheme = document.getElementById("manualTheme")?.value || "default";
+  const theme = document.getElementById("themeEditSelect")?.value || "february";
+  settings.themes[theme] = settings.themes[theme] || { banner: "", doll: "", particles: false };
+  const banner = await fileToDataURL(document.getElementById("holidayBannerFile")?.files?.[0]);
+  const doll = await fileToDataURL(document.getElementById("holidayDollFile")?.files?.[0]);
+  if (banner) settings.themes[theme].banner = banner;
+  if (doll) settings.themes[theme].doll = doll;
+  settings.themes[theme].particles = Boolean(document.getElementById("holidayParticles")?.checked);
+  saveSiteSettings(settings); applySiteSettings(); alert(`${themeLabel(theme)} theme saved.`);
+}
+function renderSocialAdmin() {
+  const box = document.getElementById("socialAdminList");
+  if (!box) return;
+  const settings = loadSiteSettings();
+  box.innerHTML = settings.socials.map(link => `<div class="social-admin-row"><span>${link.icon || '♡'} <strong>${link.label}</strong><small>${link.url}</small></span><button class="btn danger" onclick="deleteSocialLink('${link.id}')">Delete</button></div>`).join("") || `<p class="small">No links yet.</p>`;
+}
+function addSocialLink() {
+  const settings = loadSiteSettings();
+  const label = document.getElementById("socialLabel")?.value.trim();
+  const icon = document.getElementById("socialIcon")?.value.trim() || "♡";
+  const url = document.getElementById("socialUrl")?.value.trim();
+  if (!label || !url) return alert("Add a label and link/username first.");
+  settings.socials.push({ id: `S-${Date.now()}`, label, icon, url });
+  saveSiteSettings(settings);
+  ["socialLabel","socialIcon","socialUrl"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  renderSocialAdmin(); applySiteSettings();
+}
+function deleteSocialLink(id) {
+  const settings = loadSiteSettings();
+  settings.socials = settings.socials.filter(link => link.id !== id);
+  saveSiteSettings(settings); renderSocialAdmin(); applySiteSettings();
+}
+
+if (document.getElementById("adminDashboard")) loadSettingsAdmin();
+applySiteSettings();

@@ -30,12 +30,12 @@
 
       <div id="adminDashboard" class="hidden">
         <aside class="admin-sidebar">
-          <button class="admin-nav-btn active" data-admin-page="dash">Dashboard</button>
-          <button class="admin-nav-btn" data-admin-page="commissions">Commissions</button>
-          <button class="admin-nav-btn" data-admin-page="slots">Slots</button>
-          <button class="admin-nav-btn" data-admin-page="gallery">Gallery</button>
-          <button class="admin-nav-btn" data-admin-page="archives">Archives</button>
-          <button class="admin-nav-btn" data-admin-page="settings">Site Settings</button>
+          <button class="admin-nav-btn active" data-admin-page="dash" onclick="showAdminPage('dash')">Dashboard</button>
+          <button class="admin-nav-btn" data-admin-page="commissions" onclick="showAdminPage('commissions')">Commissions</button>
+          <button class="admin-nav-btn" data-admin-page="slots" onclick="showAdminPage('slots')">Slots</button>
+          <button class="admin-nav-btn" data-admin-page="gallery" onclick="showAdminPage('gallery')">Gallery</button>
+          <button class="admin-nav-btn" data-admin-page="archives" onclick="showAdminPage('archives')">Archives</button>
+          <button class="admin-nav-btn" data-admin-page="settings" onclick="showAdminPage('settings')">Site Settings</button>
         </aside>
 
         <div class="admin-content">
@@ -50,9 +50,9 @@
             <div class="panel compact-panel">
               <h3>Quick Actions</h3>
               <div class="button-row">
-                <button class="btn primary" data-admin-jump="commissions">New Commission</button>
-                <button class="btn" data-admin-jump="gallery">Add Gallery Art</button>
-                <button class="btn" data-admin-jump="settings">Customize Site</button>
+                <button class="btn primary" data-admin-jump="commissions" onclick="showAdminPage('commissions')">New Commission</button>
+                <button class="btn" data-admin-jump="gallery" onclick="showAdminPage('gallery')">Add Gallery Art</button>
+                <button class="btn" data-admin-jump="settings" onclick="showAdminPage('settings')">Customize Site</button>
               </div>
             </div>
           </section>
@@ -104,13 +104,13 @@
             <p class="small">Customize the public homepage, banner, page doll, social links, news, and holiday mode.</p>
             <div class="settings-layout">
               <aside class="settings-menu">
-                <button type="button" class="settings-tab active" data-settings-tab="general">General</button>
-                <button type="button" class="settings-tab" data-settings-tab="appearance">Appearance</button>
-                <button type="button" class="settings-tab" data-settings-tab="holiday">Theme / Holiday</button>
-                <button type="button" class="settings-tab" data-settings-tab="social">Social Links</button>
-                <button type="button" class="settings-tab" data-settings-tab="pricing">Pricing Page</button>
-                <button type="button" class="settings-tab" data-settings-tab="news">Latest News</button>
-                <button type="button" class="settings-tab" data-settings-tab="tos">TOS Editor</button>
+                <button type="button" class="settings-tab active" data-settings-tab="general" onclick="showSettingsTab('general')">General</button>
+                <button type="button" class="settings-tab" data-settings-tab="appearance" onclick="showSettingsTab('appearance')">Appearance</button>
+                <button type="button" class="settings-tab" data-settings-tab="holiday" onclick="showSettingsTab('holiday')">Theme / Holiday</button>
+                <button type="button" class="settings-tab" data-settings-tab="social" onclick="showSettingsTab('social')">Social Links</button>
+                <button type="button" class="settings-tab" data-settings-tab="pricing" onclick="showSettingsTab('pricing')">Pricing Page</button>
+                <button type="button" class="settings-tab" data-settings-tab="news" onclick="showSettingsTab('news')">Latest News</button>
+                <button type="button" class="settings-tab" data-settings-tab="tos" onclick="showSettingsTab('tos')">TOS Editor</button>
               </aside>
               <div class="settings-content">
                 <section id="settings-general" class="settings-panel">
@@ -173,14 +173,24 @@
 
                 <section id="settings-pricing" class="settings-panel hidden">
                   <h3>Pricing Page</h3>
-                  <p class="small">Customize the public Pricing page. This is separate from the homepage slot counters.</p>
-                  <div id="pricingAdminList" class="social-admin-list"></div>
+                  <p class="small">Create categories like <strong>2D Art</strong>, then add options like <strong>Headshot — $</strong> or <strong>Fullbody — $$</strong>.</p>
+                  <div id="pricingAdminList" class="pricing-admin-list"></div>
+
+                  <h4>Add pricing category</h4>
                   <div class="form-grid">
-                    <input id="priceTitle" placeholder="Commission type, e.g. 2D Art">
-                    <input id="priceAmount" placeholder="Price text, e.g. Starting at $25">
-                    <textarea id="priceText" placeholder="Description / what is included"></textarea>
+                    <input id="priceCategoryTitle" placeholder="Category, e.g. 2D Art">
+                    <textarea id="priceCategoryNote" placeholder="Optional note, e.g. Character art options"></textarea>
                   </div>
-                  <button class="btn primary" onclick="addPricingSection()">Add Pricing Section</button>
+                  <button type="button" class="btn primary" onclick="addPricingCategory()">Add Category</button>
+
+                  <hr class="soft-line">
+                  <h4>Add item to category</h4>
+                  <div class="form-grid">
+                    <select id="priceCategorySelect"></select>
+                    <input id="priceItemName" placeholder="Item, e.g. Headshot, Bust, Fullbody">
+                    <input id="priceItemAmount" placeholder="Price, e.g. $25 or $25+">
+                  </div>
+                  <button type="button" class="btn primary" onclick="addPricingItem()">Add Price Item</button>
                 </section>
                 <section id="settings-news" class="settings-panel hidden">
                   <h3>Latest News</h3>

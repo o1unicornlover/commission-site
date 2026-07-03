@@ -573,3 +573,17 @@ button:disabled, .btn:disabled { transform: none !important; opacity: .6; cursor
 .tos-grid .info-card{border-radius:18px!important;}
 .settings-menu .settings-tab{border-radius:12px!important;}
 .social-admin-row small{display:block;color:var(--muted);margin-top:4px;white-space:pre-wrap;}
+
+/* Patch: pricing + clickable admin polish */
+.pricing-admin-list{display:grid;gap:14px;margin:16px 0}
+.pricing-admin-card{border:1px solid rgba(255,255,255,.16);border-radius:22px;background:rgba(255,255,255,.055);padding:16px;box-shadow:0 14px 35px rgba(0,0,0,.2)}
+.pricing-admin-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:12px}
+.pricing-admin-head small{display:block;margin-top:4px;color:var(--muted)}
+.price-list{display:grid;gap:9px;margin-top:12px}
+.price-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 12px;border-radius:16px;background:rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.09)}
+.price-row strong{color:var(--hot-pink)}
+.mini-btn{padding:6px 9px;font-size:.78rem}
+.grouped-pricing-card{border-radius:28px}
+.slot-home-row,.info-card{border-radius:28px!important}
+.admin-nav-btn,.settings-tab,.btn{cursor:pointer;position:relative;z-index:5}
+@media (max-width:700px){.price-row{grid-template-columns:1fr}.pricing-admin-head{display:grid}}

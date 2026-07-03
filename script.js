@@ -177,32 +177,51 @@ async function renderCommissionInfo() {
     </article>
   `).join("") || `<p class="small">No commission slot info yet.</p>`;
 }
-function changeSlotCurrent(id, delta) {
-  const slots = loadSlots();
-  const slot = slots.find(s => s.id === id);
+async function changeSlotCurrent(id, delta) {
+  const slots = await getSlots();
+  const slot = slots.find(s => String(s.id) === String(id));
   if (!slot) return;
-  slot.current = Math.max(0, Math.min(slot.max, Number(slot.current || 0) + delta));
-  slot.closed = false;
-  saveSlots(slots);
-  renderSlotAdmin(); renderCommissionInfo();
+
+  const newUsed = Math.max(0, Math.min(slot.max_slots, Number(slot.used_slots || 0) + delta));
+
+  await updateSlot(id, {
+    used_slots: newUsed,
+    is_open: true
+  });
+
+  renderSlotAdmin();
+  renderCommissionInfo();
 }
-function changeSlotMax(id, delta) {
-  const slots = loadSlots();
-  const slot = slots.find(s => s.id === id);
+
+async function changeSlotMax(id, delta) {
+  const slots = await getSlots();
+  const slot = slots.find(s => String(s.id) === String(id));
   if (!slot) return;
-  slot.max = Math.max(1, Number(slot.max || 1) + delta);
-  slot.current = Math.min(Number(slot.current || 0), slot.max);
-  saveSlots(slots);
-  renderSlotAdmin(); renderCommissionInfo();
+
+  const newMax = Math.max(1, Number(slot.max_slots || 1) + delta);
+  const newUsed = Math.min(Number(slot.used_slots || 0), newMax);
+
+  await updateSlot(id, {
+    max_slots: newMax,
+    used_slots: newUsed
+  });
+
+  renderSlotAdmin();
+  renderCommissionInfo();
 }
-function toggleSlotClosed(id) {
-  const slots = loadSlots();
-  const slot = slots.find(s => s.id === id);
+
+async function toggleSlotClosed(id) {
+  const slots = await getSlots();
+  const slot = slots.find(s => String(s.id) === String(id));
   if (!slot) return;
-  slot.closed = !slot.closed;
-  if (!slot.closed) slot.current = 0;
-  saveSlots(slots);
-  renderSlotAdmin(); renderCommissionInfo();
+
+  await updateSlot(id, {
+    is_open: !slot.is_open,
+    used_slots: !slot.is_open ? 0 : slot.used_slots
+  });
+
+  renderSlotAdmin();
+  renderCommissionInfo();
 }
 function renderSlotAdmin() {
   const box = document.getElementById("slotAdminList");

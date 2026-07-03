@@ -317,25 +317,28 @@ function renderQueue() {
   `).join("") || `<p class="small">No active commissions yet.</p>`;
 }
 
-function renderGallery() {
+async function renderGallery() {
   const grid = document.getElementById("galleryGrid");
   if (!grid) return;
-  const items = loadGallery();
+
+  const items = await getGalleryItems();
   const settings = loadSiteSettings();
   const borderClass = settings.galleryBorderEnabled && settings.galleryBorderImage ? " has-custom-border" : "";
+
   grid.innerHTML = items.map(item => `
     <button class="gallery-image-btn${borderClass}" onclick="openGalleryPreview('${item.id}')">
-      <img src="${item.image}" alt="Gallery artwork">
+      <img src="${item.image_url}" alt="Gallery artwork">
     </button>
   `).join("") || `<p class="small">No gallery art uploaded yet.</p>`;
 }
-function openGalleryPreview(id) {
-  const item = loadGallery().find(x => x.id === id);
+async function openGalleryPreview(id) {
+  const items = await getGalleryItems();
+  const item = items.find(x => String(x.id) === String(id));
   if (!item) return;
   const modal = document.getElementById("galleryModal");
   const img = document.getElementById("galleryModalImage");
   if (!modal || !img) return;
-  img.src = item.image;
+  img.src = item.image_url;
   modal.classList.remove("hidden");
 }
 function closeGalleryPreview() {
@@ -529,23 +532,48 @@ function unarchiveCommission(id) {
 }
 async function addGalleryItem() {
   const file = document.getElementById("galleryFile")?.files?.[0];
-  if (!file) return alert("Choose an image first.");
-  const image = await fileToDataURL(file);
-  const items = loadGallery();
-  items.unshift({ id: `G-${Date.now()}`, image });
-  saveGallery(items);
-  document.getElementById("galleryFile").value = "";
-  renderAdminGallery(); renderGallery();
+  const urlInput = document.getElementById("galleryUrl");
+  const typedUrl = urlInput?.value.trim();
+
+  let imageUrl = typedUrl || "";
+  if (!imageUrl && file) imageUrl = await fileToDataURL(file);
+  if (!imageUrl) return alert("Choose an image file or paste an image URL first.");
+
+  await addGalleryImage({ image_url: imageUrl, featured: true, sort_order: 0 });
+
+  const fileInput = document.getElementById("galleryFile");
+  if (fileInput) fileInput.value = "";
+  if (urlInput) urlInput.value = "";
+  renderAdminGallery();
+  renderGallery();
+  renderFeaturedGallery();
 }
-function deleteGalleryItem(id) {
-  saveGallery(loadGallery().filter(item => item.id !== id));
-  renderAdminGallery(); renderGallery();
+async function deleteGalleryItem(id) {
+  if (!confirm("Delete this gallery image?")) return;
+  await deleteGalleryImage(id);
+  renderAdminGallery();
+  renderGallery();
+  renderFeaturedGallery();
 }
-function renderAdminGallery() {
+async function renderAdminGallery() {
   const grid = document.getElementById("adminGalleryGrid");
   if (!grid) return;
-  grid.innerHTML = loadGallery().map(item => `
-    <div class="admin-gallery-item"><img src="${item.image}" alt="Gallery art"><button class="btn danger" onclick="deleteGalleryItem('${item.id}')">Delete</button></div>
+
+  const addArea = document.getElementById("galleryFile")?.parentElement;
+  if (addArea && !document.getElementById("galleryUrl")) {
+    const input = document.createElement("input");
+    input.id = "galleryUrl";
+    input.placeholder = "Or paste image URL";
+    input.style.marginTop = "10px";
+    addArea.insertBefore(input, grid);
+  }
+
+  const items = await getGalleryItems();
+  grid.innerHTML = items.map(item => `
+    <div class="admin-gallery-item">
+      <img src="${item.image_url}" alt="Gallery art">
+      <button class="btn danger" onclick="deleteGalleryItem('${item.id}')">Delete</button>
+    </div>
   `).join("") || `<p class="small">No gallery uploads yet.</p>`;
 }
 function renderAdmin() {
@@ -753,11 +781,12 @@ async function renderSocialLinks() {
     </a>
   `).join("") || `<p class="small">No social links yet.</p>`;
 }
-function renderFeaturedGallery() {
+async function renderFeaturedGallery() {
   const box = document.getElementById("featuredGallery");
   if (!box) return;
-  const items = loadGallery().slice(0, 6);
-  box.innerHTML = items.map(item => `<img src="${item.image}" alt="Featured art">`).join("") || Array.from({length:6},()=>`<div class="featured-placeholder">Art</div>`).join("");
+
+  const items = await getGalleryItems({ featuredOnly: true, limit: 6 });
+  box.innerHTML = items.map(item => `<img src="${item.image_url}" alt="Featured art">`).join("") || Array.from({length:6},()=>`<div class="featured-placeholder">Art</div>`).join("");
 }
 
 function renderHomeQueuePreview() {
@@ -795,14 +824,37 @@ function renderPricingPage() {
     </article>
   `).join("") || `<p class="small">No pricing info yet.</p>`;
 }
-function renderTosPage() {
+
+function parseTosContent(content) {
+  const text = String(content || "").trim();
+  if (!text) return [];
+
+  const chunks = text.split(/\n(?=##\s+)/g);
+  return chunks.map((chunk, index) => {
+    const cleaned = chunk.trim();
+    const lines = cleaned.split("\n");
+    const first = lines[0] || "";
+    const title = first.startsWith("## ") ? first.replace(/^##\s+/, "").trim() : `Section ${index + 1}`;
+    const body = first.startsWith("## ") ? lines.slice(1).join("\n").trim() : cleaned;
+    return { id: `tos-${index}`, title, text: body };
+  }).filter(section => section.title || section.text);
+}
+
+function serializeTosSections(sections) {
+  return (sections || []).map(section => `## ${section.title}\n${section.text}`.trim()).join("\n\n");
+}
+
+async function renderTosPage() {
   const grid = document.getElementById("tosGrid");
   if (!grid) return;
-  const settings = loadSiteSettings();
-  grid.innerHTML = (settings.tosSections || []).map(section => `
+
+  const tos = await getTos();
+  const sections = parseTosContent(tos?.content || "");
+
+  grid.innerHTML = sections.map(section => `
     <article class="info-card">
-      <h3>${section.title}</h3>
-      <p>${section.text}</p>
+      <h3>${escapeHTML(section.title)}</h3>
+      <p>${escapeHTML(section.text).replace(/\n/g, "<br>")}</p>
     </article>
   `).join("") || `<p class="small">No TOS sections yet.</p>`;
 }
@@ -835,32 +887,42 @@ function deletePricingSection(id) {
   saveSiteSettings(settings); renderPricingAdmin(); renderPricingPage();
 }
 
-function renderTosAdmin() {
+async function renderTosAdmin() {
   const box = document.getElementById("tosAdminList");
   if (!box) return;
-  const settings = loadSiteSettings();
-  box.innerHTML = (settings.tosSections || []).map(section => `
+
+  const tos = await getTos();
+  const sections = parseTosContent(tos?.content || "");
+
+  box.innerHTML = sections.map((section, index) => `
     <div class="social-admin-row">
-      <div><strong>${section.title}</strong><small>${section.text}</small></div>
-      <button class="btn danger" onclick="deleteTosSection('${section.id}')">Delete</button>
+      <div><strong>${escapeHTML(section.title)}</strong><small>${escapeHTML(section.text)}</small></div>
+      <button class="btn danger" onclick="deleteTosSection('${index}')">Delete</button>
     </div>
   `).join("") || `<p class="small">No TOS sections yet.</p>`;
 }
-function addTosSection() {
+async function addTosSection() {
   const title = document.getElementById("tosTitle")?.value.trim();
   const text = document.getElementById("tosText")?.value.trim();
   if (!title || !text) return alert("Add a title and text first.");
-  const settings = loadSiteSettings();
-  settings.tosSections = settings.tosSections || [];
-  settings.tosSections.push({ id: `T-${Date.now()}`, title, text });
-  saveSiteSettings(settings);
+
+  const tos = await getTos();
+  const sections = parseTosContent(tos?.content || "");
+  sections.push({ title, text });
+  await updateTos(serializeTosSections(sections));
+
   ["tosTitle","tosText"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
-  renderTosAdmin(); renderTosPage();
+  renderTosAdmin();
+  renderTosPage();
 }
-function deleteTosSection(id) {
-  const settings = loadSiteSettings();
-  settings.tosSections = (settings.tosSections || []).filter(section => section.id !== id);
-  saveSiteSettings(settings); renderTosAdmin(); renderTosPage();
+async function deleteTosSection(index) {
+  if (!confirm("Delete this TOS section?")) return;
+  const tos = await getTos();
+  const sections = parseTosContent(tos?.content || "");
+  sections.splice(Number(index), 1);
+  await updateTos(serializeTosSections(sections));
+  renderTosAdmin();
+  renderTosPage();
 }
 
 function showSettingsTab(name) {

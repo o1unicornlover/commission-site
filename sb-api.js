@@ -57,3 +57,32 @@ async function getSocials() {
 
   return data;
 }
+
+async function addSocial(values) {
+  const { data, error } = await supabaseClient
+    .from("socials")
+    .insert([values])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error adding social:", error);
+    return null;
+  }
+
+  return data;
+}
+
+async function deleteSocial(id) {
+  const { error } = await supabaseClient
+    .from("socials")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error deleting social:", error);
+    return false;
+  }
+
+  return true;
+}

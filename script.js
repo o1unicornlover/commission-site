@@ -97,8 +97,8 @@ function loadGallery() { return JSON.parse(localStorage.getItem("galleryItems") 
 function saveGallery(items) { localStorage.setItem("galleryItems", JSON.stringify(items)); }
 
 const defaultSlotSettings = [
-  { id: "2d", title: "2D Fullbody", desc: "Character art, outfit design, rendered illustrations.", price: "Starting: $--", current: 0, max: 4, closed: false },
-  { id: "3d", title: "3D Sculpt", desc: "Character busts, fullbody sculpts, figure-style models.", price: "Starting: $--", current: 0, max: 2, closed: false },
+  { id: "2d", title: "2D Art", desc: "Character art, outfit design, rendered illustrations.", price: "", current: 0, max: 4, closed: false },
+  { id: "3d", title: "3D Model", desc: "Character models, sculpts, figure-style models, and 3D previews.", price: "", current: 0, max: 2, closed: false },
   { id: "anim", title: "Animation", desc: "Short loops, character animation, simple motion tests.", price: "Starting: $--", current: 0, max: 2, closed: true }
 ];
 function normalizeSlots(slots) {
@@ -108,9 +108,9 @@ function normalizeSlots(slots) {
     const max = Math.max(1, Number(slot.max ?? fallback.max ?? 1));
     return {
       id: slot.id || fallback.id || `slot-${index}`,
-      title: slot.title || fallback.title || "Commission Type",
+      title: slot.title === "2D Fullbody" ? "2D Art" : (slot.title === "3D Sculpt" ? "3D Model" : (slot.title || fallback.title || "Commission Type")),
       desc: slot.desc || fallback.desc || "Description goes here.",
-      price: slot.price || fallback.price || "Starting: $--",
+      price: slot.price || fallback.price || "",
       current: Math.max(0, Math.min(max, Number(slot.current ?? 0))),
       max,
       closed: Boolean(slot.closed)
@@ -144,7 +144,7 @@ function renderCommissionInfo() {
     <article class="info-card slot-home-row">
       <div>
         <h3>${slot.title}</h3>
-        <p>${slot.price}</p>
+        <p>${slot.desc}</p>
       </div>
       <span class="pill ${slot.closed ? "closed-pill" : ""}">${slotLabel(slot)}</span>
     </article>
@@ -543,6 +543,9 @@ const defaultSiteSettings = {
   manualTheme: "default",
   defaultBanner: "",
   defaultDoll: "",
+  backgroundImage: "",
+  navIcon: "✧",
+  favicon: "",
   socials: [
     { id: "S-1", icon: "💬", label: "Discord", url: "discord.gg/yourlink" },
     { id: "S-2", icon: "📷", label: "Instagram", url: "@yourname" },
@@ -595,10 +598,23 @@ function getActiveTheme(settings = loadSiteSettings()) {
 function themeLabel(theme) {
   return ({ default: "Default", february: "February", october: "Halloween", december: "Christmas" })[theme] || "Default";
 }
+function setFavicon(dataUrl) {
+  let link = document.querySelector("link[rel='icon']");
+  if (!link) { link = document.createElement("link"); link.rel = "icon"; document.head.appendChild(link); }
+  link.href = dataUrl;
+}
 function applySiteSettings() {
   const settings = loadSiteSettings();
   const active = getActiveTheme(settings);
   document.body.dataset.theme = active;
+  if (settings.backgroundImage) document.body.style.setProperty("--custom-bg-image", `url('${settings.backgroundImage}')`);
+  else document.body.style.removeProperty("--custom-bg-image");
+  const brand = document.querySelector(".brand");
+  if (brand) {
+    const label = brand.textContent.replace(/^.*?\s/, "") || "YourName";
+    brand.innerHTML = `<span class="brand-icon">${settings.navIcon || "✧"}</span> ${label}`;
+  }
+  if (settings.favicon) setFavicon(settings.favicon);
 
   const title = document.getElementById("homeTitle");
   const sub = document.getElementById("homeSubtitle");
@@ -685,6 +701,7 @@ function loadSettingsAdmin() {
   setVal("settingNote", settings.commissionNote);
   setCheck("holidayEnabled", settings.holidayEnabled);
   setVal("manualTheme", settings.manualTheme || "default");
+  setVal("navIconInput", settings.navIcon || "✧");
   renderSocialAdmin();
   renderNewsAdmin();
   loadThemeEditor();
@@ -700,13 +717,19 @@ async function saveDefaultAppearance() {
   const settings = loadSiteSettings();
   const banner = await fileToDataURL(document.getElementById("defaultBannerFile")?.files?.[0]);
   const doll = await fileToDataURL(document.getElementById("defaultDollFile")?.files?.[0]);
+  const bg = await fileToDataURL(document.getElementById("backgroundFile")?.files?.[0]);
+  const fav = await fileToDataURL(document.getElementById("faviconFile")?.files?.[0]);
+  const navIcon = document.getElementById("navIconInput")?.value.trim();
   if (banner) settings.defaultBanner = banner;
   if (doll) settings.defaultDoll = doll;
+  if (bg) settings.backgroundImage = bg;
+  if (fav) settings.favicon = fav;
+  if (navIcon) settings.navIcon = navIcon;
   saveSiteSettings(settings); applySiteSettings(); alert("Default appearance saved.");
 }
 function clearDefaultImages() {
   const settings = loadSiteSettings();
-  settings.defaultBanner = ""; settings.defaultDoll = "";
+  settings.defaultBanner = ""; settings.defaultDoll = ""; settings.backgroundImage = ""; settings.favicon = "";
   saveSiteSettings(settings); applySiteSettings(); alert("Default images cleared.");
 }
 function loadThemeEditor() {

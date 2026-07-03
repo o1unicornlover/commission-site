@@ -122,7 +122,14 @@
                   <input id="defaultBannerFile" type="file" accept="image/*">
                   <label class="small">Default page doll image</label>
                   <input id="defaultDollFile" type="file" accept="image/*">
-                  <div class="button-row"><button class="btn primary" onclick="saveDefaultAppearance()">Save Default Images</button><button class="btn" onclick="clearDefaultImages()">Clear Default Images</button></div>
+                  <label class="small">Website background image / pattern</label>
+                  <input id="backgroundFile" type="file" accept="image/*">
+                  <label class="small">Header icon / logo symbol</label>
+                  <input id="navIconInput" placeholder="✧, ♡, ☆, or paste an icon">
+                  <label class="small">Favicon image</label>
+                  <input id="faviconFile" type="file" accept="image/*">
+                  <p class="small">Favicons work best as square images, like 64×64 or 128×128.</p>
+                  <div class="button-row"><button class="btn primary" onclick="saveDefaultAppearance()">Save Appearance</button><button class="btn" onclick="clearDefaultImages()">Clear Images</button></div>
                 </section>
                 <section id="settings-holiday" class="settings-panel hidden">
                   <h3>Theme / Holiday Mode</h3>

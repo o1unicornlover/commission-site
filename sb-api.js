@@ -17,7 +17,8 @@ async function getSlots() {
   const { data, error } = await supabaseClient
     .from("slots")
     .select("*")
-    .order("sort_order");
+    .order("sort_order")
+    .order("id");
 
   if (error) {
     console.error("Error loading slots:", error);
@@ -48,7 +49,8 @@ async function getSocials() {
     .from("socials")
     .select("*")
     .eq("enabled", true)
-    .order("sort_order");
+    .order("sort_order")
+    .order("id");
 
   if (error) {
     console.error("Error loading socials:", error);

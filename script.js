@@ -589,24 +589,6 @@ function renderAdmin() {
   `).join("") || `<p class="small">No archived commissions.</p>`;
 }
 
-if (document.getElementById("startingStage")) document.getElementById("startingStage").innerHTML = stageOptions("custom", true);
-if (sessionStorage.getItem("adminOpen") === "true" && document.getElementById("adminDashboard")) {
-  isAdmin = true;
-  document.getElementById("adminLogin").classList.add("hidden");
-  document.getElementById("adminDashboard").classList.remove("hidden");
-  renderAdmin();
-  renderAdminGallery();
-  renderSlotAdmin();
-  renderCommissionInfo();
-}
-renderQueue();
-renderGallery();
-renderProgressPage();
-renderCommissionInfo();
-loadSettingsAdmin();
-}
-
-
 // ---------- Site customization / UI theme settings ----------
 const defaultSiteSettings = {
   title: "Welcome!",
@@ -1028,8 +1010,6 @@ function deleteNewsItem(id) {
   saveSiteSettings(settings); renderNewsAdmin(); applySiteSettings();
 }
 
-if (document.getElementById("adminDashboard")) loadSettingsAdmin();
-applySiteSettings();
 
 // ---------- Final admin UI navigation helpers ----------
 function showAdminPage(name) {
@@ -1056,7 +1036,6 @@ document.addEventListener('click', (event) => {
   const tabBtn = event.target.closest('[data-settings-tab]');
   if (tabBtn) showSettingsTab(tabBtn.dataset.settingsTab);
 });
-updateAdminOverview();
 
 // ---------- Patch: safer admin clicks + grouped pricing editor ----------
 function normalizePricingGroups(settings) {
@@ -1230,10 +1209,38 @@ async function applySupabaseHomepageSettings() {
   }
 }
 
-applySupabaseHomepageSettings();
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
+}
+
+// ---------- Single safe initialization ----------
+function initializeApp() {
+  const startingStage = document.getElementById("startingStage");
+  if (startingStage) startingStage.innerHTML = stageOptions("custom", true);
+
+  if (sessionStorage.getItem("adminOpen") === "true" && document.getElementById("adminDashboard")) {
+    isAdmin = true;
+    document.getElementById("adminLogin")?.classList.add("hidden");
+    document.getElementById("adminDashboard")?.classList.remove("hidden");
+  }
+
+  renderQueue();
+  renderGallery();
+  renderProgressPage();
+  renderCommissionInfo();
+  applySiteSettings();
+  applySupabaseHomepageSettings();
+
+  if (document.getElementById("adminDashboard")) {
+    loadSettingsAdmin();
+    renderAdmin();
+    renderAdminGallery();
+    renderSlotAdmin();
+    renderPricingAdmin();
+    renderPricingPage();
+    updateAdminOverview();
+  }
 }
 
 // Make admin controls work even if delegated click handling glitches.
@@ -1247,6 +1254,5 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-settings-tab]").forEach(btn => {
     btn.addEventListener("click", () => showSettingsTab(btn.dataset.settingsTab));
   });
-  renderPricingAdmin();
-  renderPricingPage();
+  initializeApp();
 });

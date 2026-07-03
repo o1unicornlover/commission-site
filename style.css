@@ -754,3 +754,13 @@ button:disabled, .btn:disabled { transform: none !important; opacity: .6; cursor
 .chat-message.client {
   background: rgba(183, 156, 255, .08) !important;
 }
+
+/* ===== Chat polish v1.1 ===== */
+.chat-message-fade {
+  animation: chatMessageFadeIn .18s ease-out;
+}
+
+@keyframes chatMessageFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -487,15 +487,22 @@ async function sendChatMessage(id, sender) {
   await renderAdminChat(id);
 }
 
+const CHAT_ARTIST_NAME = "unicorn";
+const chatRenderCache = new Map();
+
+function chatMessageSignature(messages) {
+  return (messages || [])
+    .map(m => `${m.id || ""}:${m.created_at || ""}:${m.sender || ""}:${m.message || ""}`)
+    .join("|");
+}
+
 function chatMessageHTML(m, viewer = "client") {
   const sender = String(m.sender || "client").toLowerCase();
-  const label = sender === "admin"
-    ? (viewer === "admin" ? "You" : "Artist")
-    : "Client";
+  const label = sender === "admin" ? CHAT_ARTIST_NAME : "Client";
   const time = m.created_at ? new Date(m.created_at).toLocaleString() : "";
 
   return `
-    <div class="chat-message ${sender === "admin" ? "admin" : "client"}">
+    <div class="chat-message ${sender === "admin" ? "admin" : "client"} chat-message-fade">
       <strong>${escapeHTML(label)}</strong>
       <p>${escapeHTML(m.message || "").replace(/\n/g, "<br>")}</p>
       <span>${escapeHTML(time)}</span>
@@ -503,24 +510,34 @@ function chatMessageHTML(m, viewer = "client") {
   `;
 }
 
-async function renderClientChat(id) {
-  const box = document.getElementById("clientChatMessages");
-  if (!box) return;
+async function renderChatBox(box, id, viewer = "client") {
+  if (!box || !id) return;
+
+  const messages = await getChatMessages(id);
+  const signature = chatMessageSignature(messages);
+  const cacheKey = `${viewer}-${id}`;
+
+  // No DOM rewrite if nothing changed. This removes the cheap-looking flicker.
+  if (chatRenderCache.get(cacheKey) === signature) return;
 
   const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 24;
-  const messages = await getChatMessages(id);
-  box.innerHTML = messages.map(m => chatMessageHTML(m, "client")).join("") || `<p class="small">No messages yet.</p>`;
+  const previousScrollTop = box.scrollTop;
+
+  box.innerHTML = messages.map(m => chatMessageHTML(m, viewer)).join("") || `<p class="small">No messages yet.</p>`;
+  chatRenderCache.set(cacheKey, signature);
+
   if (atBottom) box.scrollTop = box.scrollHeight;
+  else box.scrollTop = previousScrollTop;
+}
+
+async function renderClientChat(id) {
+  const box = document.getElementById("clientChatMessages");
+  await renderChatBox(box, id, "client");
 }
 
 async function renderAdminChat(id) {
   const box = document.getElementById(`adminChatMessages-${id}`);
-  if (!box) return;
-
-  const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 24;
-  const messages = await getChatMessages(id);
-  box.innerHTML = messages.map(m => chatMessageHTML(m, "admin")).join("") || `<p class="small">No messages yet.</p>`;
-  if (atBottom) box.scrollTop = box.scrollHeight;
+  await renderChatBox(box, id, "admin");
 }
 
 

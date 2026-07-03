@@ -1,3 +1,5 @@
+console.log("supabase-api.js loaded");
+
 async function testSupabaseConnection() {
   const { data, error } = await supabaseClient
     .from("site_settings")

@@ -516,3 +516,41 @@ input[type="file"] { padding: 10px !important; }
   #adminDashboard { min-height: auto; }
   .admin-sidebar { min-height: auto; border-radius: 0 !important; }
 }
+
+/* --- Fix pass: whole-screen particles + safer clicks --- */
+.theme-particles {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: none !important;
+  z-index: 3 !important;
+  overflow: hidden !important;
+}
+.theme-particles.hidden { display: none !important; }
+.theme-particles span {
+  position: absolute !important;
+  left: var(--left) !important;
+  top: -30px !important;
+  width: var(--size, 7px) !important;
+  height: var(--size, 7px) !important;
+  animation: fallScreen var(--dur, 9s) linear infinite !important;
+  animation-delay: var(--delay, 0s) !important;
+}
+@keyframes fallScreen {
+  0% { transform: translateY(-8vh) translateX(0) rotate(0deg); opacity: 0; }
+  10% { opacity: .85; }
+  100% { transform: translateY(112vh) translateX(42px) rotate(260deg); opacity: 0; }
+}
+main, .site-header, .modal-card, .page-doll, .page-doll-fallback { position: relative; z-index: 5; }
+.site-header { z-index: 30 !important; }
+.page-doll, .page-doll-fallback { z-index: 25 !important; pointer-events: none !important; }
+
+/* Make button movement smoother without breaking forms */
+.btn, .quick-link, .settings-tab, .admin-nav-btn, button {
+  will-change: transform;
+}
+button:disabled, .btn:disabled { transform: none !important; opacity: .6; cursor: not-allowed; }
+
+/* Force corrected slot names on the public UI */
+.slot-home-row .pill { white-space: nowrap; }

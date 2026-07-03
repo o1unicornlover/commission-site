@@ -99,8 +99,16 @@ function saveGallery(items) { localStorage.setItem("galleryItems", JSON.stringif
 const defaultSlotSettings = [
   { id: "2d", title: "2D Art", desc: "Character art, outfit design, rendered illustrations.", price: "", current: 0, max: 4, closed: false },
   { id: "3d", title: "3D Model", desc: "Character models, sculpts, figure-style models, and 3D previews.", price: "", current: 0, max: 2, closed: false },
-  { id: "anim", title: "Animation", desc: "Short loops, character animation, simple motion tests.", price: "Starting: $--", current: 0, max: 2, closed: true }
+  { id: "anim", title: "Animation", desc: "Short loops, character animation, simple motion tests.", price: "", current: 0, max: 2, closed: true }
 ];
+
+function normalizeSlotTitle(title) {
+  const clean = String(title || "").trim();
+  const lower = clean.toLowerCase();
+  if (["2d fullbody", "fullbody art", "fullbody", "2d illustration"].includes(lower)) return "2D Art";
+  if (["3d sculpt", "3d sculpting", "sculpt"].includes(lower)) return "3D Model";
+  return clean || "Commission Type";
+}
 function normalizeSlots(slots) {
   if (!Array.isArray(slots) || slots.length === 0) return JSON.parse(JSON.stringify(defaultSlotSettings));
   return slots.map((slot, index) => {
@@ -108,9 +116,9 @@ function normalizeSlots(slots) {
     const max = Math.max(1, Number(slot.max ?? fallback.max ?? 1));
     return {
       id: slot.id || fallback.id || `slot-${index}`,
-      title: slot.title === "2D Fullbody" ? "2D Art" : (slot.title === "3D Sculpt" ? "3D Model" : (slot.title || fallback.title || "Commission Type")),
+      title: normalizeSlotTitle(slot.title || fallback.title || "Commission Type"),
       desc: slot.desc || fallback.desc || "Description goes here.",
-      price: slot.price || fallback.price || "",
+      price: "",
       current: Math.max(0, Math.min(max, Number(slot.current ?? 0))),
       max,
       closed: Boolean(slot.closed)
@@ -180,7 +188,7 @@ function toggleSlotClosed(id) {
 function renderSlotAdmin() {
   const box = document.getElementById("slotAdminList");
   if (!box) return;
-  box.innerHTML = `<button class="btn" onclick="resetSlotsToDefault()">Reset default slots</button>` + loadSlots().map(slot => `
+  box.innerHTML = `<button type="button" class="btn" onclick="resetSlotsToDefault()">Reset default slots</button>` + loadSlots().map(slot => `
     <article class="slot-admin-row">
       <div>
         <strong>${slot.title}</strong>
@@ -188,14 +196,14 @@ function renderSlotAdmin() {
       </div>
       <div class="slot-controls">
         <span class="small">Used</span>
-        <button class="btn" onclick="changeSlotCurrent('${slot.id}', -1)">−</button>
+        <button type="button" class="btn" onclick="changeSlotCurrent('${slot.id}', -1)">−</button>
         <span class="pill">${slot.current}</span>
-        <button class="btn" onclick="changeSlotCurrent('${slot.id}', 1)">+</button>
+        <button type="button" class="btn" onclick="changeSlotCurrent('${slot.id}', 1)">+</button>
         <span class="small">Max</span>
-        <button class="btn" onclick="changeSlotMax('${slot.id}', -1)">−</button>
+        <button type="button" class="btn" onclick="changeSlotMax('${slot.id}', -1)">−</button>
         <span class="pill">${slot.max}</span>
-        <button class="btn" onclick="changeSlotMax('${slot.id}', 1)">+</button>
-        <button class="btn ${slot.closed ? "primary" : "danger"}" onclick="toggleSlotClosed('${slot.id}')">${slot.closed ? "Open" : "Close"}</button>
+        <button type="button" class="btn" onclick="changeSlotMax('${slot.id}', 1)">+</button>
+        <button type="button" class="btn ${slot.closed ? "primary" : "danger"}" onclick="toggleSlotClosed('${slot.id}')">${slot.closed ? "Open" : "Close"}</button>
       </div>
     </article>
   `).join("");
@@ -500,7 +508,7 @@ function renderAdmin() {
       </button>
       <div id="adminDetails-${c.id}" class="admin-details ${expandedAdminIds.has(c.id) ? "" : "hidden"}">
         <p class="small">Password: <code>${c.password}</code></p>
-        <div class="button-row"><input id="previewReplace-${c.id}" type="file" accept="image/*"><button class="btn" onclick="replacePreview('${c.id}')">Replace board image</button></div>
+        <div class="button-row"><input id="previewReplace-${c.id}" type="file" accept="image/*"><button type="button" class="btn" onclick="replacePreview('${c.id}')">Replace board image</button></div>
         <div class="update-box">
           <h4>Add progress update</h4>
           <div class="update-form">
@@ -521,7 +529,7 @@ function renderAdmin() {
   `).join("") || `<p class="small">No active commissions.</p>`;
   active.forEach(c => renderAdminChat(c.id));
   if (archiveList) archiveList.innerHTML = archived.map(c => `
-    <article class="archive-row"><span>${c.id} — ${c.clientName} • ${c.type}</span><button class="btn" onclick="unarchiveCommission('${c.id}')">Restore</button></article>
+    <article class="archive-row"><span>${c.id} — ${c.clientName} • ${c.type}</span><button type="button" class="btn" onclick="unarchiveCommission('${c.id}')">Restore</button></article>
   `).join("") || `<p class="small">No archived commissions.</p>`;
 }
 
@@ -637,12 +645,16 @@ function applySiteSettings() {
     if (doll) { dollEl.src = doll; dollEl.classList.remove("hidden"); if (dollFallback) dollFallback.classList.add("hidden"); }
     else { dollEl.classList.add("hidden"); if (dollFallback) dollFallback.classList.remove("hidden"); }
   }
-  const particles = document.getElementById("themeParticles");
-  if (particles) {
-    const show = active !== "default" && settings.themes[active]?.particles;
-    particles.classList.toggle("hidden", !show);
-    particles.innerHTML = show ? Array.from({ length: 22 }, (_, i) => `<span style="--i:${i};--delay:${(i%8)*.45}s;--left:${(i*37)%100}%"></span>`).join("") : "";
+  let particles = document.getElementById("themeParticles");
+  if (!particles) {
+    particles = document.createElement("div");
+    particles.id = "themeParticles";
+    particles.className = "theme-particles hidden";
+    document.body.appendChild(particles);
   }
+  const show = active !== "default" && settings.themes[active]?.particles;
+  particles.classList.toggle("hidden", !show);
+  particles.innerHTML = show ? Array.from({ length: 60 }, (_, i) => `<span style="--i:${i};--delay:${(i%12)*.34}s;--left:${(i*23)%100}%;--size:${5 + (i%5)}px;--dur:${7 + (i%6)}s;"></span>`).join("") : "";
   renderSocialLinks();
   renderFeaturedGallery();
   renderHomeQueuePreview();

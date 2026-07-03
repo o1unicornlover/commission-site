@@ -587,3 +587,36 @@ button:disabled, .btn:disabled { transform: none !important; opacity: .6; cursor
 .slot-home-row,.info-card{border-radius:28px!important}
 .admin-nav-btn,.settings-tab,.btn{cursor:pointer;position:relative;z-index:5}
 @media (max-width:700px){.price-row{grid-template-columns:1fr}.pricing-admin-head{display:grid}}
+
+
+/* Gallery hover + optional uploaded frame */
+.gallery-image-btn {
+  position: relative;
+  transition: transform .42s cubic-bezier(.37,0,.63,1), box-shadow .28s ease, border-color .28s ease !important;
+  will-change: transform;
+}
+.gallery-image-btn:hover {
+  transform: translateY(-8px) !important;
+}
+.gallery-image-btn.has-custom-border {
+  padding: 16px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.gallery-image-btn.has-custom-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--gallery-border-image);
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 2;
+}
+.gallery-image-btn.has-custom-border img {
+  border-radius: 10px !important;
+  position: relative;
+  z-index: 1;
+}

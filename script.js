@@ -267,8 +267,10 @@ function renderGallery() {
   const grid = document.getElementById("galleryGrid");
   if (!grid) return;
   const items = loadGallery();
+  const settings = loadSiteSettings();
+  const borderClass = settings.galleryBorderEnabled && settings.galleryBorderImage ? " has-custom-border" : "";
   grid.innerHTML = items.map(item => `
-    <button class="gallery-image-btn" onclick="openGalleryPreview('${item.id}')">
+    <button class="gallery-image-btn${borderClass}" onclick="openGalleryPreview('${item.id}')">
       <img src="${item.image}" alt="Gallery artwork">
     </button>
   `).join("") || `<p class="small">No gallery art uploaded yet.</p>`;
@@ -552,6 +554,8 @@ const defaultSiteSettings = {
   defaultBanner: "",
   defaultDoll: "",
   backgroundImage: "",
+  galleryBorderImage: "",
+  galleryBorderEnabled: false,
   navIcon: "✧",
   favicon: "",
   socials: [
@@ -632,6 +636,9 @@ function applySiteSettings() {
   document.body.dataset.theme = active;
   if (settings.backgroundImage) document.body.style.setProperty("--custom-bg-image", `url('${settings.backgroundImage}')`);
   else document.body.style.removeProperty("--custom-bg-image");
+  if (settings.galleryBorderImage) document.body.style.setProperty("--gallery-border-image", `url('${settings.galleryBorderImage}')`);
+  else document.body.style.removeProperty("--gallery-border-image");
+  document.body.classList.toggle("gallery-border-enabled", Boolean(settings.galleryBorderEnabled && settings.galleryBorderImage));
   const brand = document.querySelector(".brand");
   if (brand) {
     const label = brand.textContent.replace(/^.*?\s/, "") || "YourName";
@@ -822,6 +829,7 @@ function loadSettingsAdmin() {
   setCheck("holidayEnabled", settings.holidayEnabled);
   setVal("manualTheme", settings.manualTheme || "default");
   setVal("navIconInput", settings.navIcon || "✧");
+  setCheck("galleryBorderEnabled", settings.galleryBorderEnabled);
   renderSocialAdmin();
   renderPricingAdmin();
   renderNewsAdmin();
@@ -841,17 +849,20 @@ async function saveDefaultAppearance() {
   const doll = await fileToDataURL(document.getElementById("defaultDollFile")?.files?.[0]);
   const bg = await fileToDataURL(document.getElementById("backgroundFile")?.files?.[0]);
   const fav = await fileToDataURL(document.getElementById("faviconFile")?.files?.[0]);
+  const galleryBorder = await fileToDataURL(document.getElementById("galleryBorderFile")?.files?.[0]);
   const navIcon = document.getElementById("navIconInput")?.value.trim();
   if (banner) settings.defaultBanner = banner;
   if (doll) settings.defaultDoll = doll;
   if (bg) settings.backgroundImage = bg;
   if (fav) settings.favicon = fav;
+  if (galleryBorder) settings.galleryBorderImage = galleryBorder;
+  settings.galleryBorderEnabled = Boolean(document.getElementById("galleryBorderEnabled")?.checked);
   if (navIcon) settings.navIcon = navIcon;
   saveSiteSettings(settings); applySiteSettings(); alert("Default appearance saved.");
 }
 function clearDefaultImages() {
   const settings = loadSiteSettings();
-  settings.defaultBanner = ""; settings.defaultDoll = ""; settings.backgroundImage = ""; settings.favicon = "";
+  settings.defaultBanner = ""; settings.defaultDoll = ""; settings.backgroundImage = ""; settings.favicon = ""; settings.galleryBorderImage = ""; settings.galleryBorderEnabled = false;
   saveSiteSettings(settings); applySiteSettings(); alert("Default images cleared.");
 }
 function loadThemeEditor() {

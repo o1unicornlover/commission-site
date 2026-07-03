@@ -1876,3 +1876,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 1200);
 });
 
+setInterval(() => {
+  renderQueue?.();
+  renderProgressPage?.();
+  renderHomeQueuePreview?.();
+
+  if (isAdmin) {
+    renderAdmin?.();
+    updateAdminOverview?.();
+  }
+}, 3000);

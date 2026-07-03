@@ -31,7 +31,7 @@
         <div class="form-grid">
           <input id="clientName" placeholder="Buyer display name" />
           <input id="commissionType" placeholder="Type, e.g. 3D Sculpt" />
-          <input id="status" placeholder="Status, e.g. Blocking" />
+          <select id="startingStage"></select>
           <select id="privacy">
             <option value="public">Show character image</option>
             <option value="private">Private/scribble placeholder</option>
@@ -42,8 +42,22 @@
         <p class="file-note">For this concept, images are saved locally in your browser.</p>
         <button class="btn primary" onclick="addCommission()">Create Commission</button>
 
+        <hr class="soft-line">
         <h2>Active Commissions</h2>
+        <p class="small">Click a commission to expand it and add updates.</p>
         <div id="adminList" class="admin-list"></div>
+
+        <details class="admin-section">
+          <summary>Archived Commissions</summary>
+          <div id="archiveList" class="archive-list"></div>
+        </details>
+
+        <hr class="soft-line">
+        <h2>Gallery Uploads</h2>
+        <p class="small">Archives do not go here automatically. Add only art you want displayed publicly.</p>
+        <input id="galleryFile" type="file" accept="image/*" />
+        <button class="btn primary" onclick="addGalleryItem()">Add Art to Gallery</button>
+        <div id="adminGalleryGrid" class="admin-gallery-grid"></div>
       </div>
     </section>
   </main>

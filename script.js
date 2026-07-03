@@ -2,6 +2,21 @@ const ADMIN_PASSWORD = "admin123"; // Concept only. Real security needs a backen
 let selectedCommissionId = null;
 let isAdmin = false;
 
+const PROGRESS_STAGES = [
+  { key: "accepted", label: "Payment Received / Accepted", percent: 5 },
+  { key: "references", label: "References Checked", percent: 10 },
+  { key: "blocking", label: "Blocking", percent: 20 },
+  { key: "sketch", label: "Sketch / Layout", percent: 25 },
+  { key: "base", label: "Base Model / Base Art", percent: 35 },
+  { key: "refinement", label: "Refinement", percent: 50 },
+  { key: "details", label: "Details", percent: 65 },
+  { key: "color-texture", label: "Color / Texture", percent: 75 },
+  { key: "animation", label: "Animation / Motion", percent: 80 },
+  { key: "rendering", label: "Rendering / Final Polish", percent: 90 },
+  { key: "review", label: "Client Review", percent: 95 },
+  { key: "complete", label: "Complete / Delivered", percent: 100 }
+];
+
 const defaultCommissions = [
   {
     id: "CM-001",
@@ -13,9 +28,9 @@ const defaultCommissions = [
     password: "mango-42-fox",
     archived: false,
     stages: [
-      { title: "Payment Received", desc: "Commission accepted and added to the queue.", image: "", done: true },
-      { title: "Blocking", desc: "Base proportions and pose are being sculpted.", image: "", done: true },
-      { title: "Refinement", desc: "Anatomy, clothes, and hair details come next.", image: "", done: false }
+      { stageKey: "accepted", title: "Payment Received / Accepted", desc: "Commission accepted and added to the queue.", image: "", done: true, percent: 5 },
+      { stageKey: "blocking", title: "Blocking", desc: "Base proportions and pose are being sculpted.", image: "", done: true, percent: 20 },
+      { stageKey: "refinement", title: "Refinement", desc: "Anatomy, clothes, and hair details come next.", image: "", done: false, percent: 50 }
     ]
   },
   {
@@ -28,8 +43,7 @@ const defaultCommissions = [
     password: "star-18-milk",
     archived: false,
     stages: [
-      { title: "Payment Received", desc: "Commission accepted and waiting to start.", image: "", done: true },
-      { title: "Sketch", desc: "Sketching has not started yet.", image: "", done: false }
+      { stageKey: "accepted", title: "Payment Received / Accepted", desc: "Commission accepted and waiting to start.", image: "", done: true, percent: 5 }
     ]
   }
 ];
@@ -42,10 +56,9 @@ function loadCommissions() {
   }
   return JSON.parse(saved);
 }
-
-function saveCommissions(commissions) {
-  localStorage.setItem("commissions", JSON.stringify(commissions));
-}
+function saveCommissions(commissions) { localStorage.setItem("commissions", JSON.stringify(commissions)); }
+function loadGallery() { return JSON.parse(localStorage.getItem("galleryItems") || "[]"); }
+function saveGallery(items) { localStorage.setItem("galleryItems", JSON.stringify(items)); }
 
 function fileToDataURL(file) {
   return new Promise((resolve) => {
@@ -58,16 +71,17 @@ function fileToDataURL(file) {
 
 function randomPassword() {
   const words = ["mango", "fox", "star", "pearl", "moon", "lace", "berry", "pixel", "cloud", "milk", "rose", "sketch"];
-  const a = words[Math.floor(Math.random() * words.length)];
-  const b = Math.floor(10 + Math.random() * 90);
-  const c = words[Math.floor(Math.random() * words.length)];
-  return `${a}-${b}-${c}`;
+  return `${words[Math.floor(Math.random()*words.length)]}-${Math.floor(10+Math.random()*90)}-${words[Math.floor(Math.random()*words.length)]}`;
 }
-
-function placeholderHTML(text = "Private Commission") {
-  return `<div class="preview placeholder">${text}</div>`;
+function getStage(key) { return PROGRESS_STAGES.find(s => s.key === key) || PROGRESS_STAGES[0]; }
+function stageOptions(selected="accepted") {
+  return PROGRESS_STAGES.map(s => `<option value="${s.key}" ${s.key === selected ? "selected" : ""}>${s.label} — ${s.percent}%</option>`).join("");
 }
-
+function getCommissionProgress(c) {
+  if (!c.stages?.length) return 0;
+  return Math.max(...c.stages.map(s => Number(s.percent || getStage(s.stageKey).percent || 0)));
+}
+function placeholderHTML(text = "Private Commission") { return `<div class="preview placeholder">${text}</div>`; }
 function imageHTML(c) {
   if (c.privacy === "private" || !c.previewImage) return placeholderHTML(c.privacy === "private" ? "Private Preview" : "No Image Yet");
   return `<img class="preview" src="${c.previewImage}" alt="${c.clientName} character preview" onerror="this.outerHTML='<div class=&quot;preview placeholder&quot;>Image Error</div>'">`;
@@ -85,6 +99,7 @@ function renderQueue() {
       <h3>${c.clientName}</h3>
       <p><strong>${c.type}</strong></p>
       <p class="small">Status: ${c.status}</p>
+      <p class="small">Progress: ${getCommissionProgress(c)}%</p>
       <button class="btn primary" onclick="openPasswordModal('${c.id}')">Access Progress</button>
     </article>
   `).join("") || `<p class="small">No active commissions yet.</p>`;
@@ -93,14 +108,25 @@ function renderQueue() {
 function renderGallery() {
   const grid = document.getElementById("galleryGrid");
   if (!grid) return;
-  const archived = loadCommissions().filter(c => c.archived);
-  grid.innerHTML = archived.map(c => `
-    <article class="gallery-card">
-      ${imageHTML(c)}
-      <h3>${c.type}</h3>
-      <p class="small">Archived commission by ${c.clientName}</p>
-    </article>
-  `).join("") || `<p class="small">Finished work can appear here later.</p>`;
+  const items = loadGallery();
+  grid.innerHTML = items.map(item => `
+    <button class="gallery-image-btn" onclick="openGalleryPreview('${item.id}')">
+      <img src="${item.image}" alt="Gallery artwork">
+    </button>
+  `).join("") || `<p class="small">No gallery art uploaded yet.</p>`;
+}
+function openGalleryPreview(id) {
+  const item = loadGallery().find(x => x.id === id);
+  if (!item) return;
+  const modal = document.getElementById("galleryModal");
+  const img = document.getElementById("galleryModalImage");
+  if (!modal || !img) return;
+  img.src = item.image;
+  modal.classList.remove("hidden");
+}
+function closeGalleryPreview() {
+  const modal = document.getElementById("galleryModal");
+  if (modal) modal.classList.add("hidden");
 }
 
 function openPasswordModal(id) {
@@ -109,11 +135,7 @@ function openPasswordModal(id) {
   document.getElementById("passwordError").textContent = "";
   document.getElementById("passwordModal").classList.remove("hidden");
 }
-
-function closeModal() {
-  document.getElementById("passwordModal").classList.add("hidden");
-}
-
+function closeModal() { document.getElementById("passwordModal").classList.add("hidden"); }
 function checkPassword() {
   const commission = loadCommissions().find(c => c.id === selectedCommissionId && !c.archived);
   const pass = document.getElementById("clientPassword").value.trim();
@@ -128,25 +150,14 @@ function checkPassword() {
 function renderProgressPage() {
   const area = document.getElementById("progressArea");
   if (!area) return;
-
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get("id");
+  const id = new URLSearchParams(window.location.search).get("id");
   const access = JSON.parse(sessionStorage.getItem("progressAccess") || "{}");
   const c = loadCommissions().find(item => item.id === id && !item.archived);
-
   if (!c || access.id !== c.id || access.password !== c.password) {
-    area.innerHTML = `
-      <div class="progress-card">
-        <h1 class="page-title">Progress Locked</h1>
-        <p class="small">Please go back to the queue and enter the correct password.</p>
-        <a class="btn primary" href="queue.html">Back to Queue</a>
-      </div>
-    `;
+    area.innerHTML = `<div class="progress-card"><h1 class="page-title">Progress Locked</h1><p class="small">Please go back to the queue and enter the correct password.</p><a class="btn primary" href="queue.html">Back to Queue</a></div>`;
     return;
   }
-
-  const doneCount = c.stages.filter(s => s.done).length;
-  const progress = c.stages.length ? Math.round((doneCount / c.stages.length) * 100) : 0;
+  const progress = getCommissionProgress(c);
   area.innerHTML = `
     <div class="progress-card">
       <p class="eyebrow">Private progress page</p>
@@ -157,74 +168,60 @@ function renderProgressPage() {
       <div class="stage-list">
         ${c.stages.map(stage => `
           <article class="stage-card">
-            <h3>${stage.done ? "✓" : "○"} ${stage.title}</h3>
+            <h3>${stage.done ? "✓" : "○"} ${stage.title} <span class="pill">${stage.percent || getStage(stage.stageKey).percent}%</span></h3>
             <p>${stage.desc}</p>
             ${stage.image ? `<img src="${stage.image}" alt="${stage.title} WIP">` : ""}
           </article>
         `).join("")}
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
 function adminLogin() {
-  const pass = document.getElementById("adminPassword").value;
-  if (pass !== ADMIN_PASSWORD) return alert("Wrong admin password.");
+  if (document.getElementById("adminPassword").value !== ADMIN_PASSWORD) return alert("Wrong admin password.");
   isAdmin = true;
   sessionStorage.setItem("adminOpen", "true");
   document.getElementById("adminLogin").classList.add("hidden");
   document.getElementById("adminDashboard").classList.remove("hidden");
-  renderAdmin();
+  renderAdmin(); renderAdminGallery();
 }
 
 async function addCommission() {
   const commissions = loadCommissions();
-  const statusValue = document.getElementById("status").value || "Waiting";
+  const firstStage = getStage(document.getElementById("startingStage").value);
   const file = document.getElementById("previewFile")?.files?.[0];
   const previewImage = await fileToDataURL(file);
   const newCommission = {
     id: `CM-${String(Date.now()).slice(-5)}`,
     clientName: document.getElementById("clientName").value || "Anonymous",
     type: document.getElementById("commissionType").value || "Commission",
-    status: statusValue,
+    status: firstStage.label,
     privacy: document.getElementById("privacy").value,
     previewImage,
     password: randomPassword(),
     archived: false,
-    stages: [
-      { title: "Payment Received", desc: "Commission accepted and added to the queue.", image: "", done: true },
-      { title: statusValue, desc: "Progress update will be added here.", image: "", done: false }
-    ]
+    stages: [{ stageKey: firstStage.key, title: firstStage.label, desc: "Commission added to the tracker.", image: "", done: firstStage.percent <= 10, percent: firstStage.percent }]
   };
-  commissions.push(newCommission);
-  saveCommissions(commissions);
+  commissions.push(newCommission); saveCommissions(commissions);
   alert(`Created! Send this to the client:\nID: ${newCommission.id}\nPassword: ${newCommission.password}`);
-  document.getElementById("clientName").value = "";
-  document.getElementById("commissionType").value = "";
-  document.getElementById("status").value = "";
-  document.getElementById("previewFile").value = "";
-  renderQueue();
-  renderGallery();
-  renderAdmin();
+  ["clientName","commissionType","previewFile"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  renderAdmin(); renderQueue();
 }
 
 async function addUpdate(id) {
   const commissions = loadCommissions();
   const c = commissions.find(item => item.id === id && !item.archived);
   if (!c) return;
-
-  const title = document.getElementById(`updateTitle-${id}`).value || "Progress Update";
-  const desc = document.getElementById(`updateDesc-${id}`).value || "New progress added.";
+  const stage = getStage(document.getElementById(`updateStage-${id}`).value);
+  const desc = document.getElementById(`updateDesc-${id}`).value || "New progress update added.";
   const done = document.getElementById(`updateDone-${id}`).checked;
-  const status = document.getElementById(`newStatus-${id}`).value.trim();
   const file = document.getElementById(`updateImage-${id}`)?.files?.[0];
   const image = await fileToDataURL(file);
-
-  c.stages.push({ title, desc, image, done });
-  if (status) c.status = status;
+  c.stages.push({ stageKey: stage.key, title: stage.label, desc, image, done, percent: stage.percent });
+  c.status = stage.label;
   saveCommissions(commissions);
   renderAdmin();
-  alert("Update added to the client's progress page.");
+  alert(`Update added. Client progress is now ${getCommissionProgress(c)}%.`);
 }
 
 function markStageDone(id, index) {
@@ -232,79 +229,96 @@ function markStageDone(id, index) {
   const c = commissions.find(item => item.id === id && !item.archived);
   if (!c || !c.stages[index]) return;
   c.stages[index].done = !c.stages[index].done;
-  saveCommissions(commissions);
-  renderAdmin();
+  saveCommissions(commissions); renderAdmin();
 }
-
 async function replacePreview(id) {
   const commissions = loadCommissions();
   const c = commissions.find(item => item.id === id && !item.archived);
   const file = document.getElementById(`previewReplace-${id}`)?.files?.[0];
   if (!c || !file) return alert("Choose an image first.");
-  c.previewImage = await fileToDataURL(file);
-  c.privacy = "public";
-  saveCommissions(commissions);
-  renderAdmin();
+  c.previewImage = await fileToDataURL(file); c.privacy = "public";
+  saveCommissions(commissions); renderAdmin();
 }
-
+function toggleAdminCommission(id) {
+  const el = document.getElementById(`adminDetails-${id}`);
+  if (el) el.classList.toggle("hidden");
+}
 function archiveCommission(id) {
-  const okay = confirm("Are you sure you want to archive this commission? It will disappear from the queue and the password will stop working.");
-  if (!okay) return;
+  if (!confirm("Are you sure you want to archive this commission? It will disappear from the queue and the password will stop working.")) return;
   const commissions = loadCommissions();
   const c = commissions.find(item => item.id === id);
-  if (c) {
-    c.archived = true;
-    c.password = "ARCHIVED";
-  }
-  saveCommissions(commissions);
-  renderQueue();
-  renderGallery();
-  renderAdmin();
+  if (c) { c.archived = true; c.password = "ARCHIVED"; }
+  saveCommissions(commissions); renderAdmin(); renderQueue();
 }
-
+function unarchiveCommission(id) {
+  const commissions = loadCommissions();
+  const c = commissions.find(item => item.id === id);
+  if (c) { c.archived = false; c.password = randomPassword(); }
+  saveCommissions(commissions); renderAdmin();
+}
+async function addGalleryItem() {
+  const file = document.getElementById("galleryFile")?.files?.[0];
+  if (!file) return alert("Choose an image first.");
+  const image = await fileToDataURL(file);
+  const items = loadGallery();
+  items.unshift({ id: `G-${Date.now()}`, image });
+  saveGallery(items);
+  document.getElementById("galleryFile").value = "";
+  renderAdminGallery(); renderGallery();
+}
+function deleteGalleryItem(id) {
+  saveGallery(loadGallery().filter(item => item.id !== id));
+  renderAdminGallery(); renderGallery();
+}
+function renderAdminGallery() {
+  const grid = document.getElementById("adminGalleryGrid");
+  if (!grid) return;
+  grid.innerHTML = loadGallery().map(item => `
+    <div class="admin-gallery-item"><img src="${item.image}" alt="Gallery art"><button class="btn danger" onclick="deleteGalleryItem('${item.id}')">Delete</button></div>
+  `).join("") || `<p class="small">No gallery uploads yet.</p>`;
+}
 function renderAdmin() {
   if (!isAdmin) return;
   const list = document.getElementById("adminList");
+  const archiveList = document.getElementById("archiveList");
   if (!list) return;
-  const commissions = loadCommissions().filter(c => !c.archived);
-  list.innerHTML = commissions.map(c => `
-    <article class="admin-card">
-      <div>
-        <h4>${c.id} — ${c.clientName}</h4>
-        <p>${c.type} • ${c.status}</p>
+  const all = loadCommissions();
+  const active = all.filter(c => !c.archived);
+  const archived = all.filter(c => c.archived);
+  list.innerHTML = active.map(c => `
+    <article class="admin-accordion">
+      <button class="admin-summary" onclick="toggleAdminCommission('${c.id}')">
+        <span><strong>${c.id} — ${c.clientName}</strong><br><small>${c.type} • ${c.status} • ${getCommissionProgress(c)}%</small></span>
+        <span class="pill">Open</span>
+      </button>
+      <div id="adminDetails-${c.id}" class="admin-details hidden">
         <p class="small">Password: <code>${c.password}</code></p>
-        <div class="button-row">
-          <input id="previewReplace-${c.id}" type="file" accept="image/*">
-          <button class="btn" onclick="replacePreview('${c.id}')">Replace board image</button>
-        </div>
+        <div class="button-row"><input id="previewReplace-${c.id}" type="file" accept="image/*"><button class="btn" onclick="replacePreview('${c.id}')">Replace board image</button></div>
         <div class="update-box">
           <h4>Add progress update</h4>
           <div class="update-form">
-            <input id="updateTitle-${c.id}" placeholder="Update title, e.g. Blocking">
+            <select id="updateStage-${c.id}">${stageOptions()}</select>
             <textarea id="updateDesc-${c.id}" placeholder="Description for the client"></textarea>
-            <input id="newStatus-${c.id}" placeholder="Optional new public status">
             <input id="updateImage-${c.id}" type="file" accept="image/*">
-            <label class="small"><input id="updateDone-${c.id}" type="checkbox"> Mark this update as finished</label>
+            <label class="small"><input id="updateDone-${c.id}" type="checkbox" checked> Mark this stage as finished</label>
             <button class="btn primary" onclick="addUpdate('${c.id}')">Add Update</button>
           </div>
         </div>
-        <div class="update-box">
-          <h4>Current stages</h4>
-          ${c.stages.map((s, i) => `<p class="small">${s.done ? "✓" : "○"} ${s.title} <button class="text-btn" onclick="markStageDone('${c.id}', ${i})">toggle</button></p>`).join("")}
-        </div>
+        <div class="update-box"><h4>Current updates</h4>${c.stages.map((s,i)=>`<p class="small">${s.done?"✓":"○"} ${s.title} — ${s.percent || getStage(s.stageKey).percent}% <button class="text-btn" onclick="markStageDone('${c.id}', ${i})">toggle</button></p>`).join("")}</div>
+        <button class="btn danger" onclick="archiveCommission('${c.id}')">Finish / Archive</button>
       </div>
-      <button class="btn danger" onclick="archiveCommission('${c.id}')">Finish / Archive</button>
     </article>
   `).join("") || `<p class="small">No active commissions.</p>`;
+  if (archiveList) archiveList.innerHTML = archived.map(c => `
+    <article class="archive-row"><span>${c.id} — ${c.clientName} • ${c.type}</span><button class="btn" onclick="unarchiveCommission('${c.id}')">Restore</button></article>
+  `).join("") || `<p class="small">No archived commissions.</p>`;
 }
 
+if (document.getElementById("startingStage")) document.getElementById("startingStage").innerHTML = stageOptions("accepted");
 if (sessionStorage.getItem("adminOpen") === "true" && document.getElementById("adminDashboard")) {
   isAdmin = true;
   document.getElementById("adminLogin").classList.add("hidden");
   document.getElementById("adminDashboard").classList.remove("hidden");
-  renderAdmin();
+  renderAdmin(); renderAdminGallery();
 }
-
-renderQueue();
-renderGallery();
-renderProgressPage();
+renderQueue(); renderGallery(); renderProgressPage();

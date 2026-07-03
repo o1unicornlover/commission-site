@@ -74,3 +74,21 @@ textarea { min-height: 95px; resize: vertical; }
   .commission-card, .gallery-card { width: 100%; max-height: none; min-height: 0; }
   .admin-card { grid-template-columns: 1fr; }
 }
+.soft-line { border: 0; border-top: 1px solid var(--line); margin: 28px 0; }
+.admin-accordion { border: 1px solid var(--line); border-radius: 16px; background: var(--panel2); overflow: hidden; }
+.admin-summary { width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; background: transparent; color: var(--text); border: 0; cursor: pointer; font: inherit; }
+.admin-summary:hover { background: rgba(255,255,255,.04); }
+.admin-details { padding: 0 14px 14px; }
+.admin-section { margin-top: 20px; border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: rgba(255,255,255,.03); }
+.admin-section summary { cursor: pointer; font-weight: 800; }
+.archive-list { display: grid; gap: 10px; margin-top: 12px; }
+.archive-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 14px; padding: 10px; color: var(--muted); }
+.gallery-image-btn { width: 280px; height: 280px; padding: 0; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--panel2); cursor: pointer; }
+.gallery-image-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-image-btn:hover { transform: translateY(-2px); }
+.image-modal-card { width: min(900px, 94vw); max-height: 88vh; position: relative; }
+.image-modal-card img { width: 100%; max-height: 88vh; object-fit: contain; border-radius: 18px; background: #100f17; border: 1px solid var(--line); }
+.admin-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, 140px); gap: 12px; margin-top: 14px; }
+.admin-gallery-item { border: 1px solid var(--line); border-radius: 14px; padding: 8px; background: rgba(255,255,255,.03); }
+.admin-gallery-item img { width: 100%; height: 110px; object-fit: cover; border-radius: 10px; display: block; margin-bottom: 8px; }
+@media (max-width: 650px) { .gallery-image-btn { width: 100%; height: 260px; } .archive-row { flex-direction: column; align-items: flex-start; } }

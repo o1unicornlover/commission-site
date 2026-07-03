@@ -564,6 +564,14 @@ const defaultSiteSettings = {
     { id: "N-2", date: "05/18", text: "New art added to gallery ♡" },
     { id: "N-3", date: "05/15", text: "Working on exciting projects!" }
   ],
+  tosSections: [
+    { id: "T-1", title: "Payment", text: "Add your payment rules, payment timing, and accepted platforms here." },
+    { id: "T-2", title: "Cancellations & Refunds", text: "Add your cancellation and refund policy here." },
+    { id: "T-3", title: "Revisions", text: "Add how many revision rounds are included and what counts as a major change." },
+    { id: "T-4", title: "Usage Rights", text: "Add rules for personal use, commercial use, reposting, credit, and edits." },
+    { id: "T-5", title: "Timeline", text: "Add your estimated turnaround time and what can delay a commission." },
+    { id: "T-6", title: "Contact", text: "Add where clients should message you if they need changes or have questions." }
+  ],
   themes: {
     february: { banner: "", doll: "", particles: true },
     october: { banner: "", doll: "", particles: false },
@@ -578,7 +586,8 @@ function deepMergeSettings(saved) {
     ...saved,
     themes: { ...base.themes, ...(saved.themes || {}) },
     socials: Array.isArray(saved.socials) ? saved.socials : base.socials,
-    news: Array.isArray(saved.news) ? saved.news : base.news
+    news: Array.isArray(saved.news) ? saved.news : base.news,
+    tosSections: Array.isArray(saved.tosSections) ? saved.tosSections : base.tosSections
   };
 }
 function loadSiteSettings() {
@@ -659,12 +668,24 @@ function applySiteSettings() {
   renderFeaturedGallery();
   renderHomeQueuePreview();
   renderLatestNews();
+  renderPricingPage();
+  renderTosPage();
+}
+function renderSocialIcon(icon) {
+  const value = String(icon || "♡").trim();
+  if (value.startsWith("fa-") || value.includes(" fa-")) return `<i class="${value}" aria-hidden="true"></i>`;
+  return `<span>${value}</span>`;
+}
+function safeLink(url) {
+  const value = String(url || "").trim();
+  if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("mailto:")) return value;
+  return "#";
 }
 function renderSocialLinks() {
   const box = document.getElementById("socialLinks");
   if (!box) return;
   const settings = loadSiteSettings();
-  box.innerHTML = settings.socials.map(link => `<a class="social-link" href="${link.url.startsWith('http') ? link.url : '#'}" title="${link.url}"><span>${link.icon || '♡'}</span><em>${link.label}</em><small>${link.url}</small></a>`).join("") || `<p class="small">No social links yet.</p>`;
+  box.innerHTML = settings.socials.map(link => `<a class="social-link" href="${safeLink(link.url)}" title="${link.url}"><span class="social-icon">${renderSocialIcon(link.icon)}</span><em>${link.label}</em><small>${link.url}</small></a>`).join("") || `<p class="small">No social links yet.</p>`;
 }
 function renderFeaturedGallery() {
   const box = document.getElementById("featuredGallery");
@@ -695,6 +716,58 @@ function renderLatestNews() {
   `).join("") || `<p class="small">No news yet.</p>`;
 }
 
+
+function renderPricingPage() {
+  const grid = document.getElementById("pricingGrid");
+  if (!grid) return;
+  const slots = loadSlots();
+  grid.innerHTML = slots.map(slot => `
+    <article class="info-card pricing-card">
+      <div class="mini-title"><span class="icon-badge">♡</span><div><h3>${slot.title}</h3><p>${slotLabel(slot)}</p></div></div>
+      <p>${slot.desc}</p>
+      <p class="small">Add pricing details, examples, options, and rules for this commission type later.</p>
+    </article>
+  `).join("");
+}
+function renderTosPage() {
+  const grid = document.getElementById("tosGrid");
+  if (!grid) return;
+  const settings = loadSiteSettings();
+  grid.innerHTML = (settings.tosSections || []).map(section => `
+    <article class="info-card">
+      <h3>${section.title}</h3>
+      <p>${section.text}</p>
+    </article>
+  `).join("") || `<p class="small">No TOS sections yet.</p>`;
+}
+function renderTosAdmin() {
+  const box = document.getElementById("tosAdminList");
+  if (!box) return;
+  const settings = loadSiteSettings();
+  box.innerHTML = (settings.tosSections || []).map(section => `
+    <div class="social-admin-row">
+      <div><strong>${section.title}</strong><small>${section.text}</small></div>
+      <button class="btn danger" onclick="deleteTosSection('${section.id}')">Delete</button>
+    </div>
+  `).join("") || `<p class="small">No TOS sections yet.</p>`;
+}
+function addTosSection() {
+  const title = document.getElementById("tosTitle")?.value.trim();
+  const text = document.getElementById("tosText")?.value.trim();
+  if (!title || !text) return alert("Add a title and text first.");
+  const settings = loadSiteSettings();
+  settings.tosSections = settings.tosSections || [];
+  settings.tosSections.push({ id: `T-${Date.now()}`, title, text });
+  saveSiteSettings(settings);
+  ["tosTitle","tosText"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  renderTosAdmin(); renderTosPage();
+}
+function deleteTosSection(id) {
+  const settings = loadSiteSettings();
+  settings.tosSections = (settings.tosSections || []).filter(section => section.id !== id);
+  saveSiteSettings(settings); renderTosAdmin(); renderTosPage();
+}
+
 function showSettingsTab(name) {
   document.querySelectorAll(".settings-tab").forEach(btn => btn.classList.remove("active"));
   const buttons = Array.from(document.querySelectorAll(".settings-tab"));
@@ -716,6 +789,7 @@ function loadSettingsAdmin() {
   setVal("navIconInput", settings.navIcon || "✧");
   renderSocialAdmin();
   renderNewsAdmin();
+  renderTosAdmin();
   loadThemeEditor();
 }
 function saveTextSettings() {

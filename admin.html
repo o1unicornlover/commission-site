@@ -4,13 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="style.css?v=ui8" />
+  <link rel="stylesheet" href="style.css?v=ui9" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body>
   <header class="site-header admin-header">
     <a class="brand" href="admin.html">Admin Dashboard</a>
     <nav>
       <a href="index.html">Public Site</a>
+      <a href="pricing.html">Pricing</a>
       <a href="queue.html">Queue</a>
       <a href="gallery.html">Gallery</a>
     </nav>
@@ -107,6 +109,7 @@
                 <button type="button" class="settings-tab" data-settings-tab="holiday">Theme / Holiday</button>
                 <button type="button" class="settings-tab" data-settings-tab="social">Social Links</button>
                 <button type="button" class="settings-tab" data-settings-tab="news">Latest News</button>
+                <button type="button" class="settings-tab" data-settings-tab="tos">TOS Editor</button>
               </aside>
               <div class="settings-content">
                 <section id="settings-general" class="settings-panel">
@@ -161,7 +164,7 @@
                   <div id="socialAdminList" class="social-admin-list"></div>
                   <div class="form-grid">
                     <input id="socialLabel" placeholder="Label, e.g. Discord">
-                    <input id="socialIcon" placeholder="Icon, e.g. 💬 or ♡">
+                    <input id="socialIcon" placeholder="Icon text or Font Awesome class, e.g. fa-brands fa-discord">
                     <input id="socialUrl" placeholder="Link or username">
                   </div>
                   <button class="btn primary" onclick="addSocialLink()">Add Link</button>
@@ -176,6 +179,16 @@
                   </div>
                   <button class="btn primary" onclick="addNewsItem()">Add News</button>
                 </section>
+                <section id="settings-tos" class="settings-panel hidden">
+                  <h3>TOS Editor</h3>
+                  <p class="small">Customize the public Terms of Service page. Keep it simple now and edit the real wording before opening commissions.</p>
+                  <div id="tosAdminList" class="social-admin-list"></div>
+                  <div class="form-grid">
+                    <input id="tosTitle" placeholder="Section title, e.g. Payment">
+                    <textarea id="tosText" placeholder="Section text"></textarea>
+                  </div>
+                  <button class="btn primary" onclick="addTosSection()">Add TOS Section</button>
+                </section>
               </div>
             </div>
           </section>
@@ -184,6 +197,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=ui8"></script>
+  <script src="script.js?v=ui9"></script>
 </body>
 </html>

@@ -1095,6 +1095,41 @@ function deletePricingItem(groupId, itemId) {
   group.items = (group.items || []).filter(item => item.id !== itemId);
   saveSiteSettingsSafe(settings);
   renderPricingAdmin(); renderPricingPage(); applySiteSettings();
+
+  async function applySupabaseHomepageSettings() {
+  const settings = await getSiteSettings();
+  if (!settings) return;
+
+  const title = document.getElementById("homeTitle");
+  if (title) title.textContent = settings.homepage_title || "Welcome!";
+
+  const subtitle = document.getElementById("homeSubtitle");
+  if (subtitle) subtitle.textContent = settings.homepage_subtitle || "";
+
+  const note = document.getElementById("commissionInfoNote");
+  if (note) note.textContent = settings.homepage_news || "";
+
+  const hero = document.getElementById("homeHero");
+  if (hero && settings.banner_url) {
+    hero.style.backgroundImage =
+      `linear-gradient(90deg, rgba(7,6,10,.62), rgba(7,6,10,.25)), url('${settings.banner_url}')`;
+  }
+
+  if (settings.background_url) {
+    document.body.style.setProperty("--custom-bg-image", `url('${settings.background_url}')`);
+  }
+
+  const doll = document.getElementById("pageDoll");
+  const fallback = document.getElementById("pageDollFallback");
+
+  if (doll && settings.pagedoll_url) {
+    doll.src = settings.pagedoll_url;
+    doll.classList.remove("hidden");
+    if (fallback) fallback.classList.add("hidden");
+  }
+}
+
+applySupabaseHomepageSettings();
 }
 
 function escapeHTML(value) {

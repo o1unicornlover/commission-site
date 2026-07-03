@@ -2024,6 +2024,59 @@ async function requestCommissionPayment(id) {
   await saveCommissionPayment(id);
 }
 
+
+
+function showCopiedFeedback(event, fallbackText = "Copied!") {
+  const btn = event?.currentTarget || event?.target;
+  if (!btn) return;
+  const original = btn.dataset.originalText || btn.textContent;
+  btn.dataset.originalText = original;
+  btn.textContent = fallbackText;
+  btn.classList.add("copied");
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.classList.remove("copied");
+  }, 1200);
+}
+
+async function copyTextToClipboard(text, event, successText = "Copied!") {
+  const value = String(text || "").trim();
+  if (!value) return alert("Nothing to copy yet.");
+
+  try {
+    await navigator.clipboard.writeText(value);
+    showCopiedFeedback(event, successText);
+  } catch (error) {
+    console.error("Clipboard copy failed:", error);
+    const manual = prompt("Copy this:", value);
+    if (manual !== null) showCopiedFeedback(event, successText);
+  }
+}
+
+function buildClientProgressLink(id) {
+  const url = new URL("progress.html", window.location.href);
+  url.searchParams.set("id", id);
+  return url.toString();
+}
+
+async function copyClientProgressLink(id, event) {
+  await copyTextToClipboard(buildClientProgressLink(id), event, "Link copied!");
+}
+
+async function copyCommissionPassword(id, event) {
+  const c = await getCommissionById(id);
+  await copyTextToClipboard(c?.password || "", event, "Password copied!");
+}
+
+async function copyCommissionPayPalLink(id, event) {
+  const c = await getCommissionById(id);
+  const link = c ? await getCommissionPayPalLink(c) : "";
+  if (!link || link === "#") {
+    return alert("No PayPal link yet. Add your PayPal username in Site Settings → Payments, add a price, then save the payment info.");
+  }
+  await copyTextToClipboard(link, event, "PayPal copied!");
+}
+
 async function renderAdmin() {
   if (!isAdmin) return;
   const list = document.getElementById("adminList");
@@ -2046,6 +2099,11 @@ async function renderAdmin() {
         </button>
         <div id="adminDetails-${c.id}" class="admin-details ${expandedAdminIds.has(String(c.id)) ? "" : "hidden"}">
           <p class="small">Password: <code>${escapeHTML(c.password || "")}</code></p>
+          <div class="copy-actions">
+            <button type="button" class="btn copy-btn" onclick="copyClientProgressLink('${c.id}', event)">📋 Copy Client Link</button>
+            <button type="button" class="btn copy-btn" onclick="copyCommissionPassword('${c.id}', event)">🔑 Copy Password</button>
+            <button type="button" class="btn copy-btn" onclick="copyCommissionPayPalLink('${c.id}', event)">💳 Copy PayPal Link</button>
+          </div>
           <div class="update-box payment-admin-box">
             <h4>Payment Request</h4>
             <div class="form-grid">

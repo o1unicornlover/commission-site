@@ -764,3 +764,39 @@ button:disabled, .btn:disabled { transform: none !important; opacity: .6; cursor
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+
+/* ---------- Home layout + copy button fix ---------- */
+body .home-dashboard {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  max-width: 1120px !important;
+  margin: 18px auto !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+}
+
+@media (max-width: 1000px) {
+  body .home-dashboard {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.copy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+
+.copy-btn {
+  border-color: rgba(244, 166, 215, .35);
+  background: rgba(244, 166, 215, .08);
+}
+
+.copy-btn.copied {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #171421;
+  border-color: transparent;
+  font-weight: 800;
+}

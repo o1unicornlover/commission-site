@@ -344,7 +344,7 @@ function adminLogin() {
   sessionStorage.setItem("adminOpen", "true");
   document.getElementById("adminLogin").classList.add("hidden");
   document.getElementById("adminDashboard").classList.remove("hidden");
-  renderAdmin(); renderAdminGallery(); renderSlotAdmin(); renderCommissionInfo();
+  renderAdmin(); renderAdminGallery(); renderSlotAdmin(); renderCommissionInfo(); updateAdminOverview();
 }
 
 async function addCommission() {
@@ -616,9 +616,10 @@ function applySiteSettings() {
     else hero.style.backgroundImage = "";
   }
   const dollEl = document.getElementById("pageDoll");
+  const dollFallback = document.getElementById("pageDollFallback");
   if (dollEl) {
-    if (doll) { dollEl.src = doll; dollEl.classList.remove("hidden"); }
-    else dollEl.classList.add("hidden");
+    if (doll) { dollEl.src = doll; dollEl.classList.remove("hidden"); if (dollFallback) dollFallback.classList.add("hidden"); }
+    else { dollEl.classList.add("hidden"); if (dollFallback) dollFallback.classList.remove("hidden"); }
   }
   const particles = document.getElementById("themeParticles");
   if (particles) {
@@ -775,3 +776,30 @@ function deleteNewsItem(id) {
 
 if (document.getElementById("adminDashboard")) loadSettingsAdmin();
 applySiteSettings();
+
+// ---------- Final admin UI navigation helpers ----------
+function showAdminPage(name) {
+  document.querySelectorAll('.admin-page').forEach(page => page.classList.remove('active'));
+  const target = document.getElementById(`adminPage-${name}`);
+  if (target) target.classList.add('active');
+  document.querySelectorAll('.admin-nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.adminPage === name));
+  updateAdminOverview();
+}
+function updateAdminOverview() {
+  const commissions = loadCommissions();
+  const active = commissions.filter(c => !c.archived);
+  const gallery = loadGallery();
+  const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+  set('adminTotalCommissions', commissions.length);
+  set('adminActiveCommissions', active.length);
+  set('adminGalleryCount', gallery.length);
+}
+document.addEventListener('click', (event) => {
+  const adminBtn = event.target.closest('[data-admin-page]');
+  if (adminBtn) showAdminPage(adminBtn.dataset.adminPage);
+  const jumpBtn = event.target.closest('[data-admin-jump]');
+  if (jumpBtn) showAdminPage(jumpBtn.dataset.adminJump);
+  const tabBtn = event.target.closest('[data-settings-tab]');
+  if (tabBtn) showSettingsTab(tabBtn.dataset.settingsTab);
+});
+updateAdminOverview();

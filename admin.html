@@ -27,119 +27,152 @@
       </div>
 
       <div id="adminDashboard" class="hidden">
-        <h2>Commission Slots</h2>
-        <p class="small">Control what the public commission info section shows. Close resets used slots back to 0 when reopened.</p>
-        <div id="slotAdminList" class="slot-admin-list"></div>
+        <aside class="admin-sidebar">
+          <button class="admin-nav-btn active" data-admin-page="dash">Dashboard</button>
+          <button class="admin-nav-btn" data-admin-page="commissions">Commissions</button>
+          <button class="admin-nav-btn" data-admin-page="slots">Slots</button>
+          <button class="admin-nav-btn" data-admin-page="gallery">Gallery</button>
+          <button class="admin-nav-btn" data-admin-page="archives">Archives</button>
+          <button class="admin-nav-btn" data-admin-page="settings">Site Settings</button>
+        </aside>
 
-        <hr class="soft-line">
-        <h2>Add Commission</h2>
-        <div class="form-grid">
-          <input id="clientName" placeholder="Buyer display name" />
-          <input id="commissionType" placeholder="Type, e.g. 3D Sculpt" />
-          <select id="startingStage"></select>
-          <select id="privacy">
-            <option value="public">Show character image</option>
-            <option value="private">Private/scribble placeholder</option>
-          </select>
-        </div>
-        <label class="small">Main board image</label>
-        <input id="previewFile" type="file" accept="image/*" />
-        <p class="file-note">For this concept, images are saved locally in your browser.</p>
-        <button class="btn primary" onclick="addCommission()">Create Commission</button>
-
-        <hr class="soft-line">
-        <h2>Active Commissions</h2>
-        <p class="small">Click a commission to expand it and add updates.</p>
-        <div id="adminList" class="admin-list"></div>
-
-        <details class="admin-section">
-          <summary>Archived Commissions</summary>
-          <div id="archiveList" class="archive-list"></div>
-        </details>
-
-        <hr class="soft-line">
-        <details class="admin-section site-settings-section" open>
-          <summary>Site Settings</summary>
-          <p class="small">Customize the public homepage, banner, page doll, social links, and holiday mode.</p>
-          <div class="settings-layout">
-            <aside class="settings-menu">
-              <button class="settings-tab active" onclick="showSettingsTab('general')">General</button>
-              <button class="settings-tab" onclick="showSettingsTab('appearance')">Appearance</button>
-              <button class="settings-tab" onclick="showSettingsTab('holiday')">Theme / Holiday</button>
-              <button class="settings-tab" onclick="showSettingsTab('social')">Social Links</button>
-              <button class="settings-tab" onclick="showSettingsTab('news')">Latest News</button>
-            </aside>
-            <div class="settings-content">
-              <section id="settings-general" class="settings-panel">
-                <h3>Homepage Text</h3>
-                <input id="settingTitle" placeholder="Homepage title">
-                <textarea id="settingSubtitle" placeholder="Homepage subtitle"></textarea>
-                <input id="settingNote" placeholder="Commission info note">
-                <button class="btn primary" onclick="saveTextSettings()">Save Text</button>
-              </section>
-              <section id="settings-appearance" class="settings-panel hidden">
-                <h3>Default Appearance</h3>
-                <label class="small">Default banner image</label>
-                <input id="defaultBannerFile" type="file" accept="image/*">
-                <label class="small">Default page doll image</label>
-                <input id="defaultDollFile" type="file" accept="image/*">
-                <button class="btn primary" onclick="saveDefaultAppearance()">Save Default Images</button>
-                <button class="btn" onclick="clearDefaultImages()">Clear Default Images</button>
-              </section>
-              <section id="settings-holiday" class="settings-panel hidden">
-                <h3>Theme / Holiday Mode</h3>
-                <label class="small"><input id="holidayEnabled" type="checkbox"> Enable automatic holiday themes</label>
-                <select id="manualTheme">
-                  <option value="default">Default</option>
-                  <option value="february">February / Valentine</option>
-                  <option value="october">October / Halloween</option>
-                  <option value="december">December / Christmas</option>
-                </select>
-                <p class="small">Manual theme is used when holiday mode is off. Holiday mode chooses based on the month.</p>
-                <label class="small">Theme to edit</label>
-                <select id="themeEditSelect" onchange="loadThemeEditor()">
-                  <option value="february">February / Valentine</option>
-                  <option value="october">October / Halloween</option>
-                  <option value="december">December / Christmas</option>
-                </select>
-                <label class="small">Holiday banner image</label>
-                <input id="holidayBannerFile" type="file" accept="image/*">
-                <label class="small">Holiday page doll image</label>
-                <input id="holidayDollFile" type="file" accept="image/*">
-                <label class="small"><input id="holidayParticles" type="checkbox"> Enable foreground particles for this theme</label>
-                <button class="btn primary" onclick="saveHolidaySettings()">Save Holiday Settings</button>
-              </section>
-              <section id="settings-social" class="settings-panel hidden">
-                <h3>Social / Contact Links</h3>
-                <p class="small">These show on the homepage banner contact card.</p>
-                <div id="socialAdminList" class="social-admin-list"></div>
-                <div class="form-grid">
-                  <input id="socialLabel" placeholder="Label, e.g. Discord">
-                  <input id="socialIcon" placeholder="Icon, e.g. 💬 or ♡">
-                  <input id="socialUrl" placeholder="Link or username">
-                </div>
-                <button class="btn primary" onclick="addSocialLink()">Add Link</button>
-              </section>
-              <section id="settings-news" class="settings-panel hidden">
-                <h3>Latest News</h3>
-                <p class="small">These appear on the homepage latest news card.</p>
-                <div id="newsAdminList" class="social-admin-list"></div>
-                <div class="form-grid">
-                  <input id="newsDate" placeholder="Date, e.g. 05/20">
-                  <input id="newsText" placeholder="News text, e.g. 3D commissions opening soon!">
-                </div>
-                <button class="btn primary" onclick="addNewsItem()">Add News</button>
-              </section>
+        <div class="admin-content">
+          <section id="adminPage-dash" class="admin-page active">
+            <h2>Dashboard Overview</h2>
+            <p class="small">Quick view of your commission system. Use the sidebar to manage everything.</p>
+            <div class="grid three">
+              <article class="info-card"><h3>Total Commissions</h3><p id="adminTotalCommissions" class="page-title">0</p></article>
+              <article class="info-card"><h3>Active</h3><p id="adminActiveCommissions" class="page-title">0</p></article>
+              <article class="info-card"><h3>Gallery Pieces</h3><p id="adminGalleryCount" class="page-title">0</p></article>
             </div>
-          </div>
-        </details>
+            <div class="panel compact-panel">
+              <h3>Quick Actions</h3>
+              <div class="button-row">
+                <button class="btn primary" data-admin-jump="commissions">New Commission</button>
+                <button class="btn" data-admin-jump="gallery">Add Gallery Art</button>
+                <button class="btn" data-admin-jump="settings">Customize Site</button>
+              </div>
+            </div>
+          </section>
 
-        <hr class="soft-line">
-        <h2>Gallery Uploads</h2>
-        <p class="small">Archives do not go here automatically. Add only art you want displayed publicly.</p>
-        <input id="galleryFile" type="file" accept="image/*" />
-        <button class="btn primary" onclick="addGalleryItem()">Add Art to Gallery</button>
-        <div id="adminGalleryGrid" class="admin-gallery-grid"></div>
+          <section id="adminPage-commissions" class="admin-page">
+            <h2>Add Commission</h2>
+            <div class="form-grid">
+              <input id="clientName" placeholder="Buyer display name" />
+              <input id="commissionType" placeholder="Type, e.g. 3D Sculpt" />
+              <select id="startingStage"></select>
+              <select id="privacy">
+                <option value="public">Show character image</option>
+                <option value="private">Private/scribble placeholder</option>
+              </select>
+            </div>
+            <label class="small">Main board image</label>
+            <input id="previewFile" type="file" accept="image/*" />
+            <p class="file-note">For this concept, images are saved locally in your browser.</p>
+            <button class="btn primary" onclick="addCommission()">Create Commission</button>
+
+            <hr class="soft-line">
+            <h2>Active Commissions</h2>
+            <p class="small">Click a commission to expand it and add updates.</p>
+            <div id="adminList" class="admin-list"></div>
+          </section>
+
+          <section id="adminPage-slots" class="admin-page">
+            <h2>Commission Slots</h2>
+            <p class="small">Control what the public commission info section shows. Reopening resets used slots to 0.</p>
+            <div id="slotAdminList" class="slot-admin-list"></div>
+          </section>
+
+          <section id="adminPage-gallery" class="admin-page">
+            <h2>Gallery Uploads</h2>
+            <p class="small">Archives do not go here automatically. Add only art you want displayed publicly.</p>
+            <input id="galleryFile" type="file" accept="image/*" />
+            <button class="btn primary" onclick="addGalleryItem()">Add Art to Gallery</button>
+            <div id="adminGalleryGrid" class="admin-gallery-grid"></div>
+          </section>
+
+          <section id="adminPage-archives" class="admin-page">
+            <h2>Archived Commissions</h2>
+            <p class="small">Hidden from the public queue. You can restore one if needed.</p>
+            <div id="archiveList" class="archive-list"></div>
+          </section>
+
+          <section id="adminPage-settings" class="admin-page">
+            <h2>Site Settings</h2>
+            <p class="small">Customize the public homepage, banner, page doll, social links, news, and holiday mode.</p>
+            <div class="settings-layout">
+              <aside class="settings-menu">
+                <button type="button" class="settings-tab active" data-settings-tab="general">General</button>
+                <button type="button" class="settings-tab" data-settings-tab="appearance">Appearance</button>
+                <button type="button" class="settings-tab" data-settings-tab="holiday">Theme / Holiday</button>
+                <button type="button" class="settings-tab" data-settings-tab="social">Social Links</button>
+                <button type="button" class="settings-tab" data-settings-tab="news">Latest News</button>
+              </aside>
+              <div class="settings-content">
+                <section id="settings-general" class="settings-panel">
+                  <h3>Homepage Text</h3>
+                  <input id="settingTitle" placeholder="Homepage title">
+                  <textarea id="settingSubtitle" placeholder="Homepage subtitle"></textarea>
+                  <input id="settingNote" placeholder="Commission info note">
+                  <button class="btn primary" onclick="saveTextSettings()">Save Text</button>
+                </section>
+                <section id="settings-appearance" class="settings-panel hidden">
+                  <h3>Default Appearance</h3>
+                  <label class="small">Default banner image</label>
+                  <input id="defaultBannerFile" type="file" accept="image/*">
+                  <label class="small">Default page doll image</label>
+                  <input id="defaultDollFile" type="file" accept="image/*">
+                  <div class="button-row"><button class="btn primary" onclick="saveDefaultAppearance()">Save Default Images</button><button class="btn" onclick="clearDefaultImages()">Clear Default Images</button></div>
+                </section>
+                <section id="settings-holiday" class="settings-panel hidden">
+                  <h3>Theme / Holiday Mode</h3>
+                  <label class="small"><input id="holidayEnabled" type="checkbox"> Enable automatic holiday themes</label>
+                  <label class="small">Manual theme</label>
+                  <select id="manualTheme">
+                    <option value="default">Default</option>
+                    <option value="february">February / Valentine</option>
+                    <option value="october">October / Halloween</option>
+                    <option value="december">December / Christmas</option>
+                  </select>
+                  <p class="small">Manual theme is used when holiday mode is off. Holiday mode chooses based on the month.</p>
+                  <label class="small">Theme to edit</label>
+                  <select id="themeEditSelect" onchange="loadThemeEditor()">
+                    <option value="february">February / Valentine</option>
+                    <option value="october">October / Halloween</option>
+                    <option value="december">December / Christmas</option>
+                  </select>
+                  <label class="small">Holiday banner image</label>
+                  <input id="holidayBannerFile" type="file" accept="image/*">
+                  <label class="small">Holiday page doll image</label>
+                  <input id="holidayDollFile" type="file" accept="image/*">
+                  <label class="small"><input id="holidayParticles" type="checkbox"> Enable foreground particles for this theme</label>
+                  <button class="btn primary" onclick="saveHolidaySettings()">Save Holiday Settings</button>
+                </section>
+                <section id="settings-social" class="settings-panel hidden">
+                  <h3>Social / Contact Links</h3>
+                  <p class="small">These show on the homepage banner contact card.</p>
+                  <div id="socialAdminList" class="social-admin-list"></div>
+                  <div class="form-grid">
+                    <input id="socialLabel" placeholder="Label, e.g. Discord">
+                    <input id="socialIcon" placeholder="Icon, e.g. 💬 or ♡">
+                    <input id="socialUrl" placeholder="Link or username">
+                  </div>
+                  <button class="btn primary" onclick="addSocialLink()">Add Link</button>
+                </section>
+                <section id="settings-news" class="settings-panel hidden">
+                  <h3>Latest News</h3>
+                  <p class="small">These appear on the homepage latest news card.</p>
+                  <div id="newsAdminList" class="social-admin-list"></div>
+                  <div class="form-grid">
+                    <input id="newsDate" placeholder="Date, e.g. 05/20">
+                    <input id="newsText" placeholder="News text, e.g. 3D commissions opening soon!">
+                  </div>
+                  <button class="btn primary" onclick="addNewsItem()">Add News</button>
+                </section>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </section>
   </main>

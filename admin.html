@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="style.css?v=ui9" />
+  <link rel="stylesheet" href="style.css?v=ui12" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body>
@@ -108,6 +108,7 @@
                 <button type="button" class="settings-tab" data-settings-tab="appearance">Appearance</button>
                 <button type="button" class="settings-tab" data-settings-tab="holiday">Theme / Holiday</button>
                 <button type="button" class="settings-tab" data-settings-tab="social">Social Links</button>
+                <button type="button" class="settings-tab" data-settings-tab="pricing">Pricing Page</button>
                 <button type="button" class="settings-tab" data-settings-tab="news">Latest News</button>
                 <button type="button" class="settings-tab" data-settings-tab="tos">TOS Editor</button>
               </aside>
@@ -169,6 +170,18 @@
                   </div>
                   <button class="btn primary" onclick="addSocialLink()">Add Link</button>
                 </section>
+
+                <section id="settings-pricing" class="settings-panel hidden">
+                  <h3>Pricing Page</h3>
+                  <p class="small">Customize the public Pricing page. This is separate from the homepage slot counters.</p>
+                  <div id="pricingAdminList" class="social-admin-list"></div>
+                  <div class="form-grid">
+                    <input id="priceTitle" placeholder="Commission type, e.g. 2D Art">
+                    <input id="priceAmount" placeholder="Price text, e.g. Starting at $25">
+                    <textarea id="priceText" placeholder="Description / what is included"></textarea>
+                  </div>
+                  <button class="btn primary" onclick="addPricingSection()">Add Pricing Section</button>
+                </section>
                 <section id="settings-news" class="settings-panel hidden">
                   <h3>Latest News</h3>
                   <p class="small">These appear on the homepage latest news card.</p>
@@ -197,6 +210,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=ui9"></script>
+  <script src="script.js?v=ui12"></script>
 </body>
 </html>

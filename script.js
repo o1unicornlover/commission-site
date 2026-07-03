@@ -352,7 +352,7 @@ function adminLogin() {
   sessionStorage.setItem("adminOpen", "true");
   document.getElementById("adminLogin").classList.add("hidden");
   document.getElementById("adminDashboard").classList.remove("hidden");
-  renderAdmin(); renderAdminGallery(); renderSlotAdmin(); renderCommissionInfo(); updateAdminOverview();
+  renderAdmin(); renderAdminGallery(); renderSlotAdmin(); renderCommissionInfo(); loadSettingsAdmin(); updateAdminOverview();
 }
 
 async function addCommission() {
@@ -538,7 +538,7 @@ if (sessionStorage.getItem("adminOpen") === "true" && document.getElementById("a
   isAdmin = true;
   document.getElementById("adminLogin").classList.add("hidden");
   document.getElementById("adminDashboard").classList.remove("hidden");
-  renderAdmin(); renderAdminGallery(); renderSlotAdmin(); renderCommissionInfo();
+  renderAdmin(); renderAdminGallery(); renderSlotAdmin(); renderCommissionInfo(); loadSettingsAdmin();
 }
 renderQueue(); renderGallery(); renderProgressPage(); renderCommissionInfo();
 
@@ -555,14 +555,19 @@ const defaultSiteSettings = {
   navIcon: "✧",
   favicon: "",
   socials: [
-    { id: "S-1", icon: "💬", label: "Discord", url: "discord.gg/yourlink" },
-    { id: "S-2", icon: "📷", label: "Instagram", url: "@yourname" },
-    { id: "S-3", icon: "✉", label: "Email", url: "your@email.com" }
+    { id: "S-1", icon: "fa-brands fa-discord", label: "Discord", url: "https://discord.gg/yourlink" },
+    { id: "S-2", icon: "fa-brands fa-instagram", label: "Instagram", url: "https://instagram.com/yourname" },
+    { id: "S-3", icon: "fa-solid fa-envelope", label: "Email", url: "mailto:your@email.com" }
   ],
   news: [
     { id: "N-1", date: "05/20", text: "3D commissions opening soon!" },
     { id: "N-2", date: "05/18", text: "New art added to gallery ♡" },
     { id: "N-3", date: "05/15", text: "Working on exciting projects!" }
+  ],
+  pricingSections: [
+    { id: "P-1", title: "2D Art", amount: "Add price", text: "Character art, outfit design, rendered illustrations, and other 2D commission options." },
+    { id: "P-2", title: "3D Model", amount: "Add price", text: "Character models, sculpts, figure-style models, and 3D previews." },
+    { id: "P-3", title: "Animation", amount: "Add price", text: "Short loops, character animation, simple motion tests, and animated extras." }
   ],
   tosSections: [
     { id: "T-1", title: "Payment", text: "Add your payment rules, payment timing, and accepted platforms here." },
@@ -587,6 +592,7 @@ function deepMergeSettings(saved) {
     themes: { ...base.themes, ...(saved.themes || {}) },
     socials: Array.isArray(saved.socials) ? saved.socials : base.socials,
     news: Array.isArray(saved.news) ? saved.news : base.news,
+    pricingSections: Array.isArray(saved.pricingSections) ? saved.pricingSections : base.pricingSections,
     tosSections: Array.isArray(saved.tosSections) ? saved.tosSections : base.tosSections
   };
 }
@@ -720,14 +726,14 @@ function renderLatestNews() {
 function renderPricingPage() {
   const grid = document.getElementById("pricingGrid");
   if (!grid) return;
-  const slots = loadSlots();
-  grid.innerHTML = slots.map(slot => `
+  const settings = loadSiteSettings();
+  const items = settings.pricingSections || [];
+  grid.innerHTML = items.map(item => `
     <article class="info-card pricing-card">
-      <div class="mini-title"><span class="icon-badge">♡</span><div><h3>${slot.title}</h3><p>${slotLabel(slot)}</p></div></div>
-      <p>${slot.desc}</p>
-      <p class="small">Add pricing details, examples, options, and rules for this commission type later.</p>
+      <div class="mini-title"><span class="icon-badge">♡</span><div><h3>${item.title}</h3><p>${item.amount || "Price TBA"}</p></div></div>
+      <p>${item.text}</p>
     </article>
-  `).join("");
+  `).join("") || `<p class="small">No pricing info yet.</p>`;
 }
 function renderTosPage() {
   const grid = document.getElementById("tosGrid");
@@ -740,6 +746,35 @@ function renderTosPage() {
     </article>
   `).join("") || `<p class="small">No TOS sections yet.</p>`;
 }
+function renderPricingAdmin() {
+  const box = document.getElementById("pricingAdminList");
+  if (!box) return;
+  const settings = loadSiteSettings();
+  box.innerHTML = (settings.pricingSections || []).map(item => `
+    <div class="social-admin-row">
+      <div><strong>${item.title}</strong><small>${item.amount || "Price TBA"}</small><small>${item.text}</small></div>
+      <button class="btn danger" onclick="deletePricingSection('${item.id}')">Delete</button>
+    </div>
+  `).join("") || `<p class="small">No pricing sections yet.</p>`;
+}
+function addPricingSection() {
+  const title = document.getElementById("priceTitle")?.value.trim();
+  const amount = document.getElementById("priceAmount")?.value.trim();
+  const text = document.getElementById("priceText")?.value.trim();
+  if (!title || !text) return alert("Add a commission type and description first.");
+  const settings = loadSiteSettings();
+  settings.pricingSections = settings.pricingSections || [];
+  settings.pricingSections.push({ id: `P-${Date.now()}`, title, amount: amount || "Price TBA", text });
+  saveSiteSettings(settings);
+  ["priceTitle","priceAmount","priceText"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  renderPricingAdmin(); renderPricingPage();
+}
+function deletePricingSection(id) {
+  const settings = loadSiteSettings();
+  settings.pricingSections = (settings.pricingSections || []).filter(item => item.id !== id);
+  saveSiteSettings(settings); renderPricingAdmin(); renderPricingPage();
+}
+
 function renderTosAdmin() {
   const box = document.getElementById("tosAdminList");
   if (!box) return;
@@ -788,6 +823,7 @@ function loadSettingsAdmin() {
   setVal("manualTheme", settings.manualTheme || "default");
   setVal("navIconInput", settings.navIcon || "✧");
   renderSocialAdmin();
+  renderPricingAdmin();
   renderNewsAdmin();
   renderTosAdmin();
   loadThemeEditor();

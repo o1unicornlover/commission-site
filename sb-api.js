@@ -462,3 +462,18 @@ async function deleteProgressUpdate(id) {
 
   return true;
 }
+
+async function createCommission(values) {
+  const { data, error } = await supabaseClient
+    .from("commissions")
+    .insert([values])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating commission:", error);
+    return null;
+  }
+
+  return data;
+}

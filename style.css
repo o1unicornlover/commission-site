@@ -103,3 +103,13 @@ textarea { min-height: 95px; resize: vertical; }
 .chat-message p { margin: 5px 0; color: var(--text); }
 .chat-message span { display: block; color: var(--muted); font-size: 11px; }
 @media (max-width: 900px) { .progress-layout { grid-template-columns: 1fr; } .client-chat { position: static; } }
+
+.card-topline { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.card-topline h3 { margin-top: 0; }
+.closed-pill { color: var(--danger); border-color: rgba(255,125,147,.35); }
+.slot-admin-list { display: grid; gap: 12px; margin: 14px 0; }
+.slot-admin-row { display: flex; justify-content: space-between; align-items: center; gap: 14px; border: 1px solid var(--line); border-radius: 16px; padding: 12px; background: rgba(255,255,255,.03); }
+.slot-admin-row p { margin: 5px 0 0; }
+.slot-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.slot-controls .btn { padding: 7px 11px; }
+@media (max-width: 800px) { .slot-admin-row { flex-direction: column; align-items: flex-start; } .slot-controls { justify-content: flex-start; } }

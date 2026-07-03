@@ -96,6 +96,80 @@ function saveCommissions(commissions) { localStorage.setItem("commissions", JSON
 function loadGallery() { return JSON.parse(localStorage.getItem("galleryItems") || "[]"); }
 function saveGallery(items) { localStorage.setItem("galleryItems", JSON.stringify(items)); }
 
+const defaultSlotSettings = [
+  { id: "2d", title: "2D Fullbody", desc: "Character art, outfit design, rendered illustrations.", price: "Starting: $--", current: 0, max: 4, closed: false },
+  { id: "3d", title: "3D Sculpt", desc: "Character busts, fullbody sculpts, figure-style models.", price: "Starting: $--", current: 0, max: 2, closed: false },
+  { id: "anim", title: "Animation", desc: "Short loops, character animation, simple motion tests.", price: "Starting: $--", current: 0, max: 2, closed: true }
+];
+function loadSlots() { return JSON.parse(localStorage.getItem("slotSettings") || JSON.stringify(defaultSlotSettings)); }
+function saveSlots(slots) { localStorage.setItem("slotSettings", JSON.stringify(slots)); }
+function slotLabel(slot) { return slot.closed ? "Closed" : `${slot.current}/${slot.max} slots`; }
+function renderCommissionInfo() {
+  const grid = document.getElementById("commissionInfoGrid");
+  if (!grid) return;
+  grid.innerHTML = loadSlots().map(slot => `
+    <article class="info-card">
+      <div class="card-topline">
+        <h3>${slot.title}</h3>
+        <span class="pill ${slot.closed ? "closed-pill" : ""}">${slotLabel(slot)}</span>
+      </div>
+      <p>${slot.desc}</p>
+      <strong>${slot.price}</strong>
+    </article>
+  `).join("");
+}
+function changeSlotCurrent(id, delta) {
+  const slots = loadSlots();
+  const slot = slots.find(s => s.id === id);
+  if (!slot) return;
+  slot.current = Math.max(0, Math.min(slot.max, Number(slot.current || 0) + delta));
+  slot.closed = false;
+  saveSlots(slots);
+  renderSlotAdmin(); renderCommissionInfo();
+}
+function changeSlotMax(id, delta) {
+  const slots = loadSlots();
+  const slot = slots.find(s => s.id === id);
+  if (!slot) return;
+  slot.max = Math.max(1, Number(slot.max || 1) + delta);
+  slot.current = Math.min(Number(slot.current || 0), slot.max);
+  saveSlots(slots);
+  renderSlotAdmin(); renderCommissionInfo();
+}
+function toggleSlotClosed(id) {
+  const slots = loadSlots();
+  const slot = slots.find(s => s.id === id);
+  if (!slot) return;
+  slot.closed = !slot.closed;
+  if (!slot.closed) slot.current = 0;
+  saveSlots(slots);
+  renderSlotAdmin(); renderCommissionInfo();
+}
+function renderSlotAdmin() {
+  const box = document.getElementById("slotAdminList");
+  if (!box) return;
+  box.innerHTML = loadSlots().map(slot => `
+    <article class="slot-admin-row">
+      <div>
+        <strong>${slot.title}</strong>
+        <p class="small">Public display: ${slotLabel(slot)}</p>
+      </div>
+      <div class="slot-controls">
+        <span class="small">Used</span>
+        <button class="btn" onclick="changeSlotCurrent('${slot.id}', -1)">−</button>
+        <span class="pill">${slot.current}</span>
+        <button class="btn" onclick="changeSlotCurrent('${slot.id}', 1)">+</button>
+        <span class="small">Max</span>
+        <button class="btn" onclick="changeSlotMax('${slot.id}', -1)">−</button>
+        <span class="pill">${slot.max}</span>
+        <button class="btn" onclick="changeSlotMax('${slot.id}', 1)">+</button>
+        <button class="btn ${slot.closed ? "primary" : "danger"}" onclick="toggleSlotClosed('${slot.id}')">${slot.closed ? "Open" : "Close"}</button>
+      </div>
+    </article>
+  `).join("");
+}
+
+
 function fileToDataURL(file) {
   return new Promise((resolve) => {
     if (!file) return resolve("");
@@ -238,7 +312,7 @@ function adminLogin() {
   sessionStorage.setItem("adminOpen", "true");
   document.getElementById("adminLogin").classList.add("hidden");
   document.getElementById("adminDashboard").classList.remove("hidden");
-  renderAdmin(); renderAdminGallery();
+  renderAdmin(); renderAdminGallery(); renderSlotAdmin(); renderSlotAdmin();
 }
 
 async function addCommission() {
@@ -426,4 +500,4 @@ if (sessionStorage.getItem("adminOpen") === "true" && document.getElementById("a
   document.getElementById("adminDashboard").classList.remove("hidden");
   renderAdmin(); renderAdminGallery();
 }
-renderQueue(); renderGallery(); renderProgressPage();
+renderQueue(); renderGallery(); renderProgressPage(); renderCommissionInfo();

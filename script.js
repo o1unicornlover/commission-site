@@ -144,7 +144,26 @@ function resetSlotsToDefault() {
   renderCommissionInfo();
 }
 function slotLabel(slot) { return slot.closed ? "Closed" : `${slot.current}/${slot.max} slots`; }
-function renderCommissionInfo() {
+async function renderCommissionInfo() {
+  const grid = document.getElementById("commissionInfoGrid");
+  if (!grid) return;
+
+  const slots = await getSlots();
+
+  grid.innerHTML = slots.map(slot => `
+    <article class="info-card slot-home-row">
+      <div>
+        <h3>${slot.commission_type}</h3>
+      </div>
+
+      <span class="pill ${!slot.is_open ? "closed-pill" : ""}">
+        ${slot.is_open
+          ? `${slot.used_slots}/${slot.max_slots} slots`
+          : "Closed"}
+      </span>
+    </article>
+  `).join("");
+}
   const grid = document.getElementById("commissionInfoGrid");
   if (!grid) return;
   const slots = loadSlots();

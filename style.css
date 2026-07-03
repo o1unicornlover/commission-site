@@ -672,3 +672,18 @@ button:disabled, .btn:disabled { transform: none !important; opacity: .6; cursor
 .commission-card .progress-bar {
   margin: 8px 0 2px;
 }
+/* Remove page doll placeholder forever */
+.page-doll-fallback {
+  display: none !important;
+}
+
+/* Home page now has 3 cards instead of 4 */
+.home-dashboard {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 1000px) {
+  .home-dashboard {
+    grid-template-columns: 1fr !important;
+  }
+}

@@ -101,13 +101,46 @@ const defaultSlotSettings = [
   { id: "3d", title: "3D Sculpt", desc: "Character busts, fullbody sculpts, figure-style models.", price: "Starting: $--", current: 0, max: 2, closed: false },
   { id: "anim", title: "Animation", desc: "Short loops, character animation, simple motion tests.", price: "Starting: $--", current: 0, max: 2, closed: true }
 ];
-function loadSlots() { return JSON.parse(localStorage.getItem("slotSettings") || JSON.stringify(defaultSlotSettings)); }
-function saveSlots(slots) { localStorage.setItem("slotSettings", JSON.stringify(slots)); }
+function normalizeSlots(slots) {
+  if (!Array.isArray(slots) || slots.length === 0) return JSON.parse(JSON.stringify(defaultSlotSettings));
+  return slots.map((slot, index) => {
+    const fallback = defaultSlotSettings[index] || defaultSlotSettings[0];
+    const max = Math.max(1, Number(slot.max ?? fallback.max ?? 1));
+    return {
+      id: slot.id || fallback.id || `slot-${index}`,
+      title: slot.title || fallback.title || "Commission Type",
+      desc: slot.desc || fallback.desc || "Description goes here.",
+      price: slot.price || fallback.price || "Starting: $--",
+      current: Math.max(0, Math.min(max, Number(slot.current ?? 0))),
+      max,
+      closed: Boolean(slot.closed)
+    };
+  });
+}
+function loadSlots() {
+  try {
+    const saved = localStorage.getItem("slotSettings");
+    const slots = saved ? normalizeSlots(JSON.parse(saved)) : normalizeSlots(defaultSlotSettings);
+    localStorage.setItem("slotSettings", JSON.stringify(slots));
+    return slots;
+  } catch (error) {
+    localStorage.setItem("slotSettings", JSON.stringify(defaultSlotSettings));
+    return normalizeSlots(defaultSlotSettings);
+  }
+}
+function saveSlots(slots) { localStorage.setItem("slotSettings", JSON.stringify(normalizeSlots(slots))); }
+function resetSlotsToDefault() {
+  if (!confirm("Reset commission slots to the default 2D / 3D / Animation setup?")) return;
+  saveSlots(defaultSlotSettings);
+  renderSlotAdmin();
+  renderCommissionInfo();
+}
 function slotLabel(slot) { return slot.closed ? "Closed" : `${slot.current}/${slot.max} slots`; }
 function renderCommissionInfo() {
   const grid = document.getElementById("commissionInfoGrid");
   if (!grid) return;
-  grid.innerHTML = loadSlots().map(slot => `
+  const slots = loadSlots();
+  grid.innerHTML = slots.map(slot => `
     <article class="info-card">
       <div class="card-topline">
         <h3>${slot.title}</h3>
@@ -116,7 +149,7 @@ function renderCommissionInfo() {
       <p>${slot.desc}</p>
       <strong>${slot.price}</strong>
     </article>
-  `).join("");
+  `).join("") || `<p class="small">No commission slot info yet.</p>`;
 }
 function changeSlotCurrent(id, delta) {
   const slots = loadSlots();
@@ -148,7 +181,7 @@ function toggleSlotClosed(id) {
 function renderSlotAdmin() {
   const box = document.getElementById("slotAdminList");
   if (!box) return;
-  box.innerHTML = loadSlots().map(slot => `
+  box.innerHTML = `<button class="btn" onclick="resetSlotsToDefault()">Reset default slots</button>` + loadSlots().map(slot => `
     <article class="slot-admin-row">
       <div>
         <strong>${slot.title}</strong>
@@ -312,7 +345,7 @@ function adminLogin() {
   sessionStorage.setItem("adminOpen", "true");
   document.getElementById("adminLogin").classList.add("hidden");
   document.getElementById("adminDashboard").classList.remove("hidden");
-  renderAdmin(); renderAdminGallery(); renderSlotAdmin(); renderSlotAdmin();
+  renderAdmin(); renderAdminGallery(); renderSlotAdmin(); renderCommissionInfo();
 }
 
 async function addCommission() {
@@ -498,6 +531,6 @@ if (sessionStorage.getItem("adminOpen") === "true" && document.getElementById("a
   isAdmin = true;
   document.getElementById("adminLogin").classList.add("hidden");
   document.getElementById("adminDashboard").classList.remove("hidden");
-  renderAdmin(); renderAdminGallery();
+  renderAdmin(); renderAdminGallery(); renderSlotAdmin(); renderCommissionInfo();
 }
 renderQueue(); renderGallery(); renderProgressPage(); renderCommissionInfo();

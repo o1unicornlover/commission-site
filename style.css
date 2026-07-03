@@ -730,3 +730,27 @@ button:disabled, .btn:disabled { transform: none !important; opacity: .6; cursor
   min-width: 150px;
   text-align: center;
 }
+
+/* ===== Client messaging v1 ===== */
+.client-chat-box textarea,
+.admin-chat-box textarea {
+  min-height: 78px;
+  margin-top: 10px;
+}
+
+.client-chat-box .btn,
+.admin-chat-box .btn {
+  margin-top: 8px;
+}
+
+.chat-messages {
+  scroll-behavior: smooth;
+}
+
+.chat-message.admin {
+  background: rgba(255, 105, 190, .08) !important;
+}
+
+.chat-message.client {
+  background: rgba(183, 156, 255, .08) !important;
+}

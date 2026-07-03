@@ -468,29 +468,61 @@ async function addUpdate(id) {
   alert(`Update added. Client progress is now ${getCommissionProgress(c)}%.`);
 }
 
-function sendChatMessage(id, sender) {
+async function sendChatMessage(id, sender) {
   const inputId = sender === "admin" ? `adminChatInput-${id}` : "clientChatInput";
   const input = document.getElementById(inputId);
-  if (!input || !input.value.trim()) return;
-  const messages = loadChat(id);
-  messages.push({ sender, text: input.value.trim(), time: new Date().toLocaleString() });
-  saveChat(id, messages);
+  const text = input?.value.trim() || "";
+  if (!text) return;
+
+  const sent = await createChatMessage({
+    commission_id: String(id),
+    sender,
+    message: text
+  });
+
+  if (!sent) return alert("Message could not be sent.");
+
   input.value = "";
-  renderClientChat(id);
-  renderAdminChat(id);
+  await renderClientChat(id);
+  await renderAdminChat(id);
 }
-function renderClientChat(id) {
+
+function chatMessageHTML(m, viewer = "client") {
+  const sender = String(m.sender || "client").toLowerCase();
+  const label = sender === "admin"
+    ? (viewer === "admin" ? "You" : "Artist")
+    : "Client";
+  const time = m.created_at ? new Date(m.created_at).toLocaleString() : "";
+
+  return `
+    <div class="chat-message ${sender === "admin" ? "admin" : "client"}">
+      <strong>${escapeHTML(label)}</strong>
+      <p>${escapeHTML(m.message || "").replace(/\n/g, "<br>")}</p>
+      <span>${escapeHTML(time)}</span>
+    </div>
+  `;
+}
+
+async function renderClientChat(id) {
   const box = document.getElementById("clientChatMessages");
   if (!box) return;
-  const messages = loadChat(id);
-  box.innerHTML = messages.map(m => `<div class="chat-message ${m.sender}"><strong>${m.sender === "admin" ? "Artist" : "Client"}</strong><p>${m.text}</p><span>${m.time}</span></div>`).join("") || `<p class="small">No messages yet.</p>`;
+
+  const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 24;
+  const messages = await getChatMessages(id);
+  box.innerHTML = messages.map(m => chatMessageHTML(m, "client")).join("") || `<p class="small">No messages yet.</p>`;
+  if (atBottom) box.scrollTop = box.scrollHeight;
 }
-function renderAdminChat(id) {
+
+async function renderAdminChat(id) {
   const box = document.getElementById(`adminChatMessages-${id}`);
   if (!box) return;
-  const messages = loadChat(id);
-  box.innerHTML = messages.map(m => `<div class="chat-message ${m.sender}"><strong>${m.sender === "admin" ? "You" : "Client"}</strong><p>${m.text}</p><span>${m.time}</span></div>`).join("") || `<p class="small">No messages yet.</p>`;
+
+  const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 24;
+  const messages = await getChatMessages(id);
+  box.innerHTML = messages.map(m => chatMessageHTML(m, "admin")).join("") || `<p class="small">No messages yet.</p>`;
+  if (atBottom) box.scrollTop = box.scrollHeight;
 }
+
 
 function markStageDone(id, index) {
   const commissions = loadCommissions();
@@ -1676,12 +1708,16 @@ async function renderProgressPage() {
       </div>
       <aside class="client-chat">
         ${await paymentCardHTML(c)}
-        <div class="payment-card muted-payment-card">
-          <h2>Notes</h2>
-          <p class="small">Revision chat is still planned. For now, use your normal contact method for replies.</p>
+        <div class="payment-card client-chat-box">
+          <h2>Messages</h2>
+          <p class="small">Send questions, revision notes, or replies here.</p>
+          <div id="clientChatMessages" class="chat-messages"></div>
+          <textarea id="clientChatInput" placeholder="Type your message..."></textarea>
+          <button class="btn primary" onclick="sendChatMessage('${c.id}', 'client')">Send Message</button>
         </div>
       </aside>
     </div>`;
+  await renderClientChat(c.id);
 }
 
 function adminLogin() {
@@ -1968,11 +2004,19 @@ async function renderAdmin() {
               </div>
             `).join("") || `<p class="small">No updates yet.</p>`}
           </div>
+          <div class="update-box admin-chat-box">
+            <h4>Messages</h4>
+            <div id="adminChatMessages-${c.id}" class="chat-messages small-chat"></div>
+            <textarea id="adminChatInput-${c.id}" placeholder="Reply to this client..."></textarea>
+            <button class="btn primary" onclick="sendChatMessage('${c.id}', 'admin')">Send Reply</button>
+          </div>
           <button class="btn danger" onclick="archiveCommission('${c.id}')">Finish / Archive</button>
         </div>
       </article>
     `;
   }).join("") || `<p class="small">No active commissions.</p>`;
+
+  active.forEach(({ commission: c }) => renderAdminChat(c.id));
 
   if (archiveList) {
     archiveList.innerHTML = archived.map(({ commission: c }) => `
@@ -2055,6 +2099,14 @@ function setupRealtime() {
       console.log("Realtime progress event:", payload);
       queueRealtimeRefresh("progress_updates");
     })
+    .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, payload => {
+      console.log("Realtime chat event:", payload);
+      const commissionId = payload?.new?.commission_id || payload?.old?.commission_id;
+      if (commissionId) {
+        renderClientChat?.(commissionId);
+        renderAdminChat?.(commissionId);
+      }
+    })
     .subscribe(status => {
       console.log("Realtime status:", status);
     });
@@ -2071,7 +2123,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 1200);
 });
 
-setInterval(() => {
+setInterval(async () => {
   renderQueue?.();
   renderProgressPage?.();
   renderHomeQueuePreview?.();
@@ -2084,6 +2136,15 @@ setInterval(() => {
   renderTosPage?.();
   renderSocialLinks?.();
   applySupabaseHomepageSettings?.();
+
+  const progressId = new URLSearchParams(window.location.search).get("id");
+  if (progressId && document.getElementById("clientChatMessages")) {
+    renderClientChat?.(progressId);
+  }
+
+  if (isAdmin) {
+    expandedAdminIds.forEach(id => renderAdminChat?.(id));
+  }
 
   // Do NOT auto-render admin forms here.
   // It clears text fields while typing.

@@ -137,9 +137,30 @@ function loadSlots() {
   }
 }
 function saveSlots(slots) { localStorage.setItem("slotSettings", JSON.stringify(normalizeSlots(slots))); }
-function resetSlotsToDefault() {
+async function resetSlotsToDefault() {
   if (!confirm("Reset commission slots to the default 2D / 3D / Animation setup?")) return;
-  saveSlots(defaultSlotSettings);
+
+  const slots = await getSlots();
+
+  for (const slot of slots) {
+    const type = String(slot.commission_type || "").toLowerCase();
+    let maxSlots = 1;
+    let isOpen = true;
+
+    if (type.includes("2d")) maxSlots = 4;
+    else if (type.includes("3d")) maxSlots = 2;
+    else if (type.includes("animation")) {
+      maxSlots = 2;
+      isOpen = false;
+    }
+
+    await updateSlot(slot.id, {
+      used_slots: 0,
+      max_slots: maxSlots,
+      is_open: isOpen
+    });
+  }
+
   renderSlotAdmin();
   renderCommissionInfo();
 }
@@ -163,19 +184,6 @@ async function renderCommissionInfo() {
       </span>
     </article>
   `).join("");
-}
-  const grid = document.getElementById("commissionInfoGrid");
-  if (!grid) return;
-  const slots = loadSlots();
-  grid.innerHTML = slots.map(slot => `
-    <article class="info-card slot-home-row">
-      <div>
-        <h3>${slot.title}</h3>
-        <p>${slot.desc}</p>
-      </div>
-      <span class="pill ${slot.closed ? "closed-pill" : ""}">${slotLabel(slot)}</span>
-    </article>
-  `).join("") || `<p class="small">No commission slot info yet.</p>`;
 }
 async function changeSlotCurrent(id, delta) {
   const slots = await getSlots();
@@ -223,28 +231,36 @@ async function toggleSlotClosed(id) {
   renderSlotAdmin();
   renderCommissionInfo();
 }
-function renderSlotAdmin() {
+async function renderSlotAdmin() {
   const box = document.getElementById("slotAdminList");
   if (!box) return;
-  box.innerHTML = `<button type="button" class="btn" onclick="resetSlotsToDefault()">Reset default slots</button>` + loadSlots().map(slot => `
-    <article class="slot-admin-row">
-      <div>
-        <strong>${slot.title}</strong>
-        <p class="small">Public display: ${slotLabel(slot)}</p>
-      </div>
-      <div class="slot-controls">
-        <span class="small">Used</span>
-        <button type="button" class="btn" onclick="changeSlotCurrent('${slot.id}', -1)">−</button>
-        <span class="pill">${slot.current}</span>
-        <button type="button" class="btn" onclick="changeSlotCurrent('${slot.id}', 1)">+</button>
-        <span class="small">Max</span>
-        <button type="button" class="btn" onclick="changeSlotMax('${slot.id}', -1)">−</button>
-        <span class="pill">${slot.max}</span>
-        <button type="button" class="btn" onclick="changeSlotMax('${slot.id}', 1)">+</button>
-        <button type="button" class="btn ${slot.closed ? "primary" : "danger"}" onclick="toggleSlotClosed('${slot.id}')">${slot.closed ? "Open" : "Close"}</button>
-      </div>
-    </article>
-  `).join("");
+
+  const slots = await getSlots();
+
+  box.innerHTML = `<button type="button" class="btn" onclick="resetSlotsToDefault()">Reset default slots</button>` + slots.map(slot => {
+    const isClosed = !slot.is_open;
+    const publicDisplay = isClosed ? "Closed" : `${slot.used_slots}/${slot.max_slots} slots`;
+
+    return `
+      <article class="slot-admin-row">
+        <div>
+          <strong>${slot.commission_type}</strong>
+          <p class="small">Public display: ${publicDisplay}</p>
+        </div>
+        <div class="slot-controls">
+          <span class="small">Used</span>
+          <button type="button" class="btn" onclick="changeSlotCurrent('${slot.id}', -1)">−</button>
+          <span class="pill">${slot.used_slots}</span>
+          <button type="button" class="btn" onclick="changeSlotCurrent('${slot.id}', 1)">+</button>
+          <span class="small">Max</span>
+          <button type="button" class="btn" onclick="changeSlotMax('${slot.id}', -1)">−</button>
+          <span class="pill">${slot.max_slots}</span>
+          <button type="button" class="btn" onclick="changeSlotMax('${slot.id}', 1)">+</button>
+          <button type="button" class="btn ${isClosed ? "primary" : "danger"}" onclick="toggleSlotClosed('${slot.id}')">${isClosed ? "Open" : "Close"}</button>
+        </div>
+      </article>
+    `;
+  }).join("") || `<p class="small">No slots found.</p>`;
 }
 
 
@@ -1132,9 +1148,12 @@ function deletePricingItem(groupId, itemId) {
   if (!group) return;
   group.items = (group.items || []).filter(item => item.id !== itemId);
   saveSiteSettingsSafe(settings);
-  renderPricingAdmin(); renderPricingPage(); applySiteSettings();
+  renderPricingAdmin();
+  renderPricingPage();
+  applySiteSettings();
+}
 
-  async function applySupabaseHomepageSettings() {
+async function applySupabaseHomepageSettings() {
   const settings = await getSiteSettings();
   if (!settings) return;
 
@@ -1168,7 +1187,6 @@ function deletePricingItem(groupId, itemId) {
 }
 
 applySupabaseHomepageSettings();
-}
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));

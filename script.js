@@ -2140,7 +2140,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 1200);
 });
 
-setInterval(async () => {
+setInterval(() => {
   renderQueue?.();
   renderProgressPage?.();
   renderHomeQueuePreview?.();
@@ -2154,15 +2154,6 @@ setInterval(async () => {
   renderSocialLinks?.();
   applySupabaseHomepageSettings?.();
 
-  const progressId = new URLSearchParams(window.location.search).get("id");
-  if (progressId && document.getElementById("clientChatMessages")) {
-    renderClientChat?.(progressId);
-  }
-
-  if (isAdmin) {
-    expandedAdminIds.forEach(id => renderAdminChat?.(id));
-  }
-
-  // Do NOT auto-render admin forms here.
-  // It clears text fields while typing.
+  // No admin form refresh.
+  // No chat refresh.
 }, 3000);

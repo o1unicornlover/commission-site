@@ -42,3 +42,18 @@ async function updateSlot(id, values) {
 
   return data;
 }
+
+async function getSocials() {
+  const { data, error } = await supabaseClient
+    .from("socials")
+    .select("*")
+    .eq("enabled", true)
+    .order("sort_order");
+
+  if (error) {
+    console.error("Error loading socials:", error);
+    return [];
+  }
+
+  return data;
+}

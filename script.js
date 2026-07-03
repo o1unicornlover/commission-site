@@ -748,11 +748,19 @@ function safeLink(url) {
   if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("mailto:")) return value;
   return "#";
 }
-function renderSocialLinks() {
+async function renderSocialLinks() {
   const box = document.getElementById("socialLinks");
   if (!box) return;
-  const settings = loadSiteSettings();
-  box.innerHTML = settings.socials.map(link => `<a class="social-link" href="${safeLink(link.url)}" title="${link.url}"><span class="social-icon">${renderSocialIcon(link.icon)}</span><em>${link.label}</em><small>${link.url}</small></a>`).join("") || `<p class="small">No social links yet.</p>`;
+
+  const socials = await getSocials();
+
+  box.innerHTML = socials.map(link => `
+    <a class="social-link" href="${safeLink(link.url)}" title="${link.url || link.name}">
+      <span class="social-icon">${renderSocialIcon(link.icon)}</span>
+      <em>${escapeHTML(link.name)}</em>
+      <small>${escapeHTML(link.url || "Add URL in admin")}</small>
+    </a>
+  `).join("") || `<p class="small">No social links yet.</p>`;
 }
 function renderFeaturedGallery() {
   const box = document.getElementById("featuredGallery");

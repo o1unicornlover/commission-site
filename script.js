@@ -536,10 +536,11 @@ async function addGalleryItem() {
   const typedUrl = urlInput?.value.trim();
 
   let imageUrl = typedUrl || "";
-  if (!imageUrl && file) imageUrl = await fileToDataURL(file);
+  if (!imageUrl && file) imageUrl = await uploadImage(file, "gallery");
   if (!imageUrl) return alert("Choose an image file or paste an image URL first.");
 
-  await addGalleryImage({ image_url: imageUrl, featured: true, sort_order: 0 });
+  const added = await addGalleryImage({ image_url: imageUrl, featured: true, sort_order: 0 });
+  if (!added) return alert("Could not save gallery image.");
 
   const fileInput = document.getElementById("galleryFile");
   if (fileInput) fileInput.value = "";
@@ -1099,86 +1100,53 @@ document.addEventListener('click', (event) => {
   if (tabBtn) showSettingsTab(tabBtn.dataset.settingsTab);
 });
 
-// ---------- Patch: safer admin clicks + grouped pricing editor ----------
-function normalizePricingGroups(settings) {
-  let groups = Array.isArray(settings.pricingGroups) ? settings.pricingGroups : null;
-  if (!groups) {
-    const old = Array.isArray(settings.pricingSections) ? settings.pricingSections : [];
-    groups = old.length ? old.map(section => ({
-      id: section.id || `PG-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      title: section.title || "Pricing Category",
-      note: section.text || "",
-      items: section.amount ? [{ id: `PI-${Date.now()}-${Math.random().toString(16).slice(2)}`, name: "Starting price", amount: section.amount }] : []
-    })) : [
-      { id: "PG-2D", title: "2D Art", note: "Character art and illustration options.", items: [
-        { id: "PI-2D-1", name: "Headshot", amount: "$ —" },
-        { id: "PI-2D-2", name: "Fullbody", amount: "$ —" }
-      ]},
-      { id: "PG-3D", title: "3D Model", note: "Sculpting and model options.", items: [
-        { id: "PI-3D-1", name: "Bust / Head sculpt", amount: "$ —" },
-        { id: "PI-3D-2", name: "Full model", amount: "$ —" }
-      ]},
-      { id: "PG-AN", title: "Animation", note: "Short animation and loop options.", items: [
-        { id: "PI-AN-1", name: "Short loop", amount: "$ —" }
-      ]}
-    ];
-  }
-  settings.pricingGroups = groups.map(group => ({
-    id: group.id || `PG-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    title: group.title || "Pricing Category",
-    note: group.note || "",
-    items: Array.isArray(group.items) ? group.items.map(item => ({
-      id: item.id || `PI-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      name: item.name || "Price item",
-      amount: item.amount || "$ —"
-    })) : []
-  }));
-  return settings;
-}
-
-function loadSiteSettingsSafe() {
-  const settings = loadSiteSettings();
-  return normalizePricingGroups(settings);
-}
-
-function saveSiteSettingsSafe(settings) {
-  normalizePricingGroups(settings);
-  saveSiteSettings(settings);
-}
-
-function renderPricingPage() {
+// ---------- Supabase pricing editor ----------
+async function renderPricingPage() {
   const grid = document.getElementById("pricingGrid");
   if (!grid) return;
-  const settings = loadSiteSettingsSafe();
-  const groups = settings.pricingGroups || [];
+
+  const groups = await getPricingGroups();
+
   grid.innerHTML = groups.map(group => `
     <article class="info-card pricing-card grouped-pricing-card">
-      <div class="mini-title"><span class="icon-badge">♡</span><div><h3>${escapeHTML(group.title)}</h3>${group.note ? `<p>${escapeHTML(group.note)}</p>` : ""}</div></div>
+      <div class="mini-title">
+        <span class="icon-badge">♡</span>
+        <div><h3>${escapeHTML(group.name)}</h3></div>
+      </div>
       <div class="price-list">
-        ${(group.items || []).map(item => `<div class="price-row"><span>${escapeHTML(item.name)}</span><strong>${escapeHTML(item.amount)}</strong></div>`).join("") || `<p class="small">No prices added yet.</p>`}
+        ${(group.items || []).map(item => `
+          <div class="price-row">
+            <span>
+              <strong>${escapeHTML(item.name)}</strong>
+              ${item.description ? `<small>${escapeHTML(item.description)}</small>` : ""}
+            </span>
+            <strong>${escapeHTML(item.price || "Price TBA")}</strong>
+          </div>
+        `).join("") || `<p class="small">No prices added yet.</p>`}
       </div>
     </article>
   `).join("") || `<p class="small">No pricing info yet.</p>`;
 }
 
-function renderPricingAdmin() {
+async function renderPricingAdmin() {
   const box = document.getElementById("pricingAdminList");
   const select = document.getElementById("priceCategorySelect");
   if (!box && !select) return;
-  const settings = loadSiteSettingsSafe();
-  const groups = settings.pricingGroups || [];
+
+  const groups = await getPricingGroups();
+
   if (box) {
     box.innerHTML = groups.map(group => `
       <article class="pricing-admin-card">
         <div class="pricing-admin-head">
-          <div><strong>${escapeHTML(group.title)}</strong>${group.note ? `<small>${escapeHTML(group.note)}</small>` : ""}</div>
+          <div><strong>${escapeHTML(group.name)}</strong></div>
           <button type="button" class="btn danger" onclick="deletePricingCategory('${group.id}')">Delete Category</button>
         </div>
         <div class="price-list admin-price-list">
           ${(group.items || []).map(item => `
             <div class="price-row">
               <span>${escapeHTML(item.name)}</span>
-              <strong>${escapeHTML(item.amount)}</strong>
+              <strong>${escapeHTML(item.price || "Price TBA")}</strong>
               <button type="button" class="btn danger mini-btn" onclick="deletePricingItem('${group.id}','${item.id}')">Delete</button>
             </div>
           `).join("") || `<p class="small">No items yet.</p>`}
@@ -1186,56 +1154,73 @@ function renderPricingAdmin() {
       </article>
     `).join("") || `<p class="small">No pricing categories yet.</p>`;
   }
+
   if (select) {
-    select.innerHTML = groups.map(group => `<option value="${group.id}">${escapeHTML(group.title)}</option>`).join("") || `<option value="">Add a category first</option>`;
+    select.innerHTML = groups.map(group => `<option value="${group.id}">${escapeHTML(group.name)}</option>`).join("") || `<option value="">Add a category first</option>`;
   }
 }
 
-function addPricingCategory() {
+async function addPricingCategory() {
   const title = document.getElementById("priceCategoryTitle")?.value.trim();
-  const note = document.getElementById("priceCategoryNote")?.value.trim();
   if (!title) return alert("Add a category name first.");
-  const settings = loadSiteSettingsSafe();
-  settings.pricingGroups = settings.pricingGroups || [];
-  settings.pricingGroups.push({ id: `PG-${Date.now()}`, title, note: note || "", items: [] });
-  saveSiteSettingsSafe(settings);
-  ["priceCategoryTitle", "priceCategoryNote"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
-  renderPricingAdmin(); renderPricingPage(); applySiteSettings();
-}
 
-function deletePricingCategory(groupId) {
-  if (!confirm("Delete this entire pricing category?")) return;
-  const settings = loadSiteSettingsSafe();
-  settings.pricingGroups = (settings.pricingGroups || []).filter(group => group.id !== groupId);
-  saveSiteSettingsSafe(settings);
-  renderPricingAdmin(); renderPricingPage(); applySiteSettings();
-}
+  const added = await createPricingCategory({
+    name: title,
+    sort_order: 0
+  });
 
-function addPricingItem() {
-  const groupId = document.getElementById("priceCategorySelect")?.value;
-  const name = document.getElementById("priceItemName")?.value.trim();
-  const amount = document.getElementById("priceItemAmount")?.value.trim();
-  if (!groupId) return alert("Add or choose a pricing category first.");
-  if (!name || !amount) return alert("Add an item name and price first.");
-  const settings = loadSiteSettingsSafe();
-  const group = (settings.pricingGroups || []).find(g => g.id === groupId);
-  if (!group) return alert("Category not found.");
-  group.items = group.items || [];
-  group.items.push({ id: `PI-${Date.now()}`, name, amount });
-  saveSiteSettingsSafe(settings);
-  ["priceItemName", "priceItemAmount"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
-  renderPricingAdmin(); renderPricingPage(); applySiteSettings();
-}
+  if (!added) return alert("Could not add pricing category.");
 
-function deletePricingItem(groupId, itemId) {
-  const settings = loadSiteSettingsSafe();
-  const group = (settings.pricingGroups || []).find(g => g.id === groupId);
-  if (!group) return;
-  group.items = (group.items || []).filter(item => item.id !== itemId);
-  saveSiteSettingsSafe(settings);
+  ["priceCategoryTitle", "priceCategoryNote"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
   renderPricingAdmin();
   renderPricingPage();
-  applySiteSettings();
+}
+
+async function deletePricingCategory(groupId) {
+  if (!confirm("Delete this entire pricing category and its prices?")) return;
+
+  await removePricingCategory(groupId);
+
+  renderPricingAdmin();
+  renderPricingPage();
+}
+
+async function addPricingItem() {
+  const categoryId = document.getElementById("priceCategorySelect")?.value;
+  const name = document.getElementById("priceItemName")?.value.trim();
+  const price = document.getElementById("priceItemAmount")?.value.trim();
+
+  if (!categoryId) return alert("Add or choose a pricing category first.");
+  if (!name || !price) return alert("Add an item name and price first.");
+
+  const added = await createPricingItem({
+    category_id: Number(categoryId),
+    name,
+    price,
+    description: "",
+    sort_order: 0
+  });
+
+  if (!added) return alert("Could not add pricing item.");
+
+  ["priceItemName", "priceItemAmount"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  renderPricingAdmin();
+  renderPricingPage();
+}
+
+async function deletePricingItem(groupId, itemId) {
+  await removePricingItem(itemId);
+
+  renderPricingAdmin();
+  renderPricingPage();
 }
 
 async function applySupabaseHomepageSettings() {

@@ -25,7 +25,7 @@ async function getSlots() {
     return [];
   }
 
-  return data || [];
+  return data;
 }
 
 async function updateSlot(id, values) {
@@ -57,7 +57,7 @@ async function getSocials() {
     return [];
   }
 
-  return data || [];
+  return data;
 }
 
 async function addSocial(values) {
@@ -159,10 +159,7 @@ async function updateTos(content) {
 
   const { data, error } = await supabaseClient
     .from("tos")
-    .update({
-      content,
-      updated_at: new Date().toISOString()
-    })
+    .update({ content, updated_at: new Date().toISOString() })
     .eq("id", existing.id)
     .select()
     .single();
@@ -174,6 +171,7 @@ async function updateTos(content) {
 
   return data;
 }
+
 
 async function uploadImage(file, bucket) {
   if (!file) return null;
@@ -202,4 +200,103 @@ async function uploadImage(file, bucket) {
     .getPublicUrl(fileName);
 
   return data.publicUrl;
+}
+
+
+async function getPricingCategories() {
+  const { data, error } = await supabaseClient
+    .from("pricing_categories")
+    .select("*")
+    .order("sort_order")
+    .order("id");
+
+  if (error) {
+    console.error("Error loading pricing categories:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function getPricingItems() {
+  const { data, error } = await supabaseClient
+    .from("pricing_items")
+    .select("*")
+    .order("sort_order")
+    .order("id");
+
+  if (error) {
+    console.error("Error loading pricing items:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function getPricingGroups() {
+  const categories = await getPricingCategories();
+  const items = await getPricingItems();
+
+  return categories.map(category => ({
+    ...category,
+    items: items.filter(item => String(item.category_id) === String(category.id))
+  }));
+}
+
+async function createPricingCategory(values) {
+  const { data, error } = await supabaseClient
+    .from("pricing_categories")
+    .insert([values])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating pricing category:", error);
+    return null;
+  }
+
+  return data;
+}
+
+async function removePricingCategory(id) {
+  const { error } = await supabaseClient
+    .from("pricing_categories")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error deleting pricing category:", error);
+    return false;
+  }
+
+  return true;
+}
+
+async function createPricingItem(values) {
+  const { data, error } = await supabaseClient
+    .from("pricing_items")
+    .insert([values])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating pricing item:", error);
+    return null;
+  }
+
+  return data;
+}
+
+async function removePricingItem(id) {
+  const { error } = await supabaseClient
+    .from("pricing_items")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error deleting pricing item:", error);
+    return false;
+  }
+
+  return true;
 }

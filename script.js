@@ -594,9 +594,18 @@ if (sessionStorage.getItem("adminOpen") === "true" && document.getElementById("a
   isAdmin = true;
   document.getElementById("adminLogin").classList.add("hidden");
   document.getElementById("adminDashboard").classList.remove("hidden");
-  renderAdmin(); renderAdminGallery(); renderSlotAdmin(); renderCommissionInfo(); loadSettingsAdmin();
+  renderAdmin();
+  renderAdminGallery();
+  renderSlotAdmin();
+  renderCommissionInfo();
 }
-renderQueue(); renderGallery(); renderProgressPage(); renderCommissionInfo();
+renderQueue();
+renderGallery();
+renderProgressPage();
+renderCommissionInfo();
+loadSettingsAdmin();
+}
+
 
 // ---------- Site customization / UI theme settings ----------
 const defaultSiteSettings = {

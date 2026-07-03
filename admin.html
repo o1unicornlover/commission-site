@@ -67,6 +67,7 @@
               <button class="settings-tab" onclick="showSettingsTab('appearance')">Appearance</button>
               <button class="settings-tab" onclick="showSettingsTab('holiday')">Theme / Holiday</button>
               <button class="settings-tab" onclick="showSettingsTab('social')">Social Links</button>
+              <button class="settings-tab" onclick="showSettingsTab('news')">Latest News</button>
             </aside>
             <div class="settings-content">
               <section id="settings-general" class="settings-panel">
@@ -110,6 +111,7 @@
               </section>
               <section id="settings-social" class="settings-panel hidden">
                 <h3>Social / Contact Links</h3>
+                <p class="small">These show on the homepage banner contact card.</p>
                 <div id="socialAdminList" class="social-admin-list"></div>
                 <div class="form-grid">
                   <input id="socialLabel" placeholder="Label, e.g. Discord">
@@ -117,6 +119,16 @@
                   <input id="socialUrl" placeholder="Link or username">
                 </div>
                 <button class="btn primary" onclick="addSocialLink()">Add Link</button>
+              </section>
+              <section id="settings-news" class="settings-panel hidden">
+                <h3>Latest News</h3>
+                <p class="small">These appear on the homepage latest news card.</p>
+                <div id="newsAdminList" class="social-admin-list"></div>
+                <div class="form-grid">
+                  <input id="newsDate" placeholder="Date, e.g. 05/20">
+                  <input id="newsText" placeholder="News text, e.g. 3D commissions opening soon!">
+                </div>
+                <button class="btn primary" onclick="addNewsItem()">Add News</button>
               </section>
             </div>
           </div>

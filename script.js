@@ -141,13 +141,12 @@ function renderCommissionInfo() {
   if (!grid) return;
   const slots = loadSlots();
   grid.innerHTML = slots.map(slot => `
-    <article class="info-card">
-      <div class="card-topline">
+    <article class="info-card slot-home-row">
+      <div>
         <h3>${slot.title}</h3>
-        <span class="pill ${slot.closed ? "closed-pill" : ""}">${slotLabel(slot)}</span>
+        <p>${slot.price}</p>
       </div>
-      <p>${slot.desc}</p>
-      <strong>${slot.price}</strong>
+      <span class="pill ${slot.closed ? "closed-pill" : ""}">${slotLabel(slot)}</span>
     </article>
   `).join("") || `<p class="small">No commission slot info yet.</p>`;
 }
@@ -549,6 +548,11 @@ const defaultSiteSettings = {
     { id: "S-2", icon: "📷", label: "Instagram", url: "@yourname" },
     { id: "S-3", icon: "✉", label: "Email", url: "your@email.com" }
   ],
+  news: [
+    { id: "N-1", date: "05/20", text: "3D commissions opening soon!" },
+    { id: "N-2", date: "05/18", text: "New art added to gallery ♡" },
+    { id: "N-3", date: "05/15", text: "Working on exciting projects!" }
+  ],
   themes: {
     february: { banner: "", doll: "", particles: true },
     october: { banner: "", doll: "", particles: false },
@@ -562,7 +566,8 @@ function deepMergeSettings(saved) {
     ...base,
     ...saved,
     themes: { ...base.themes, ...(saved.themes || {}) },
-    socials: Array.isArray(saved.socials) ? saved.socials : base.socials
+    socials: Array.isArray(saved.socials) ? saved.socials : base.socials,
+    news: Array.isArray(saved.news) ? saved.news : base.news
   };
 }
 function loadSiteSettings() {
@@ -623,6 +628,8 @@ function applySiteSettings() {
   }
   renderSocialLinks();
   renderFeaturedGallery();
+  renderHomeQueuePreview();
+  renderLatestNews();
 }
 function renderSocialLinks() {
   const box = document.getElementById("socialLinks");
@@ -636,6 +643,29 @@ function renderFeaturedGallery() {
   const items = loadGallery().slice(0, 6);
   box.innerHTML = items.map(item => `<img src="${item.image}" alt="Featured art">`).join("") || Array.from({length:6},()=>`<div class="featured-placeholder">Art</div>`).join("");
 }
+
+function renderHomeQueuePreview() {
+  const box = document.getElementById("homeQueuePreview");
+  if (!box) return;
+  const active = loadCommissions().filter(c => !c.archived).slice(0, 4);
+  box.innerHTML = active.map((c, i) => `
+    <div class="home-table-row">
+      <span>${i + 1}</span>
+      <strong>${c.clientName}</strong>
+      <em>${c.status}</em>
+      <b>${getCommissionProgress(c)}%</b>
+    </div>
+  `).join("") || `<p class="small">No active commissions yet.</p>`;
+}
+function renderLatestNews() {
+  const box = document.getElementById("latestNews");
+  if (!box) return;
+  const settings = loadSiteSettings();
+  box.innerHTML = (settings.news || []).slice(0, 4).map(item => `
+    <div class="news-row"><strong>${item.date}</strong><span>${item.text}</span></div>
+  `).join("") || `<p class="small">No news yet.</p>`;
+}
+
 function showSettingsTab(name) {
   document.querySelectorAll(".settings-tab").forEach(btn => btn.classList.remove("active"));
   const buttons = Array.from(document.querySelectorAll(".settings-tab"));
@@ -655,6 +685,7 @@ function loadSettingsAdmin() {
   setCheck("holidayEnabled", settings.holidayEnabled);
   setVal("manualTheme", settings.manualTheme || "default");
   renderSocialAdmin();
+  renderNewsAdmin();
   loadThemeEditor();
 }
 function saveTextSettings() {
@@ -717,6 +748,29 @@ function deleteSocialLink(id) {
   const settings = loadSiteSettings();
   settings.socials = settings.socials.filter(link => link.id !== id);
   saveSiteSettings(settings); renderSocialAdmin(); applySiteSettings();
+}
+
+function renderNewsAdmin() {
+  const box = document.getElementById("newsAdminList");
+  if (!box) return;
+  const settings = loadSiteSettings();
+  box.innerHTML = (settings.news || []).map(item => `<div class="social-admin-row"><span><strong>${item.date}</strong><small>${item.text}</small></span><button class="btn danger" onclick="deleteNewsItem('${item.id}')">Delete</button></div>`).join("") || `<p class="small">No news items yet.</p>`;
+}
+function addNewsItem() {
+  const settings = loadSiteSettings();
+  const date = document.getElementById("newsDate")?.value.trim();
+  const text = document.getElementById("newsText")?.value.trim();
+  if (!date || !text) return alert("Add a date and news text first.");
+  settings.news = settings.news || [];
+  settings.news.unshift({ id: `N-${Date.now()}`, date, text });
+  saveSiteSettings(settings);
+  ["newsDate","newsText"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  renderNewsAdmin(); applySiteSettings();
+}
+function deleteNewsItem(id) {
+  const settings = loadSiteSettings();
+  settings.news = (settings.news || []).filter(item => item.id !== id);
+  saveSiteSettings(settings); renderNewsAdmin(); applySiteSettings();
 }
 
 if (document.getElementById("adminDashboard")) loadSettingsAdmin();

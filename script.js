@@ -1686,6 +1686,79 @@ async function paymentCardHTML(c) {
   `;
 }
 
+function progressUpdatesHTML(updates) {
+  return (updates || []).map(update => `
+    <article class="stage-card">
+      <h3>${escapeHTML(update.title || update.progress_stage || "Progress Update")} <span class="pill">${Number(update.progress_percent || 0)}%</span></h3>
+      <p>${escapeHTML(update.description || "").replace(/\n/g, "<br>")}</p>
+      ${update.image_url ? `<img src="${escapeHTML(update.image_url)}" alt="${escapeHTML(update.title || "Progress image")}">` : ""}
+      <p class="small">${update.created_at ? new Date(update.created_at).toLocaleString() : ""}</p>
+    </article>
+  `).join("") || `<p class="small">No progress updates yet.</p>`;
+}
+
+async function refreshProgressSectionsOnly() {
+  const area = document.getElementById("progressArea");
+  if (!area) return;
+
+  const id = new URLSearchParams(window.location.search).get("id");
+  const access = JSON.parse(sessionStorage.getItem("progressAccess") || "{}");
+  const c = id ? await getCommissionById(id) : null;
+
+  if (!c || String(c.status || "").toLowerCase() === "archived" || String(access.id) !== String(c.id) || access.password !== c.password) {
+    area.innerHTML = `<div class="progress-card"><h1 class="page-title">Progress Locked</h1><p class="small">Please go back to the queue and enter the correct password.</p><a class="btn primary" href="queue.html">Back to Queue</a></div>`;
+    return;
+  }
+
+  if (!document.getElementById("progressStageList") || !document.getElementById("clientChatMessages")) {
+    await renderProgressPage();
+    return;
+  }
+
+  const updates = await getProgressUpdates(c.id);
+  const progress = progressPercentFromUpdates(updates);
+  const status = latestStatusFromUpdates(c, updates);
+
+  const title = document.getElementById("progressPageTitle");
+  if (title) title.textContent = `${commissionDisplayName(c)} — ${commissionTypeLabel(c)}`;
+
+  const meta = document.getElementById("progressPageMeta");
+  if (meta) meta.textContent = `Commission ID: ${c.id} • Status: ${status}`;
+
+  const previewBox = document.getElementById("progressPreviewBox");
+  if (previewBox) {
+    previewBox.innerHTML = c.preview_image_url
+      ? `<img class="preview progress-main-preview" src="${escapeHTML(c.preview_image_url)}" alt="Commission preview">`
+      : "";
+  }
+
+  const fill = document.getElementById("progressPageFill");
+  if (fill) fill.style.width = `${progress}%`;
+
+  const percent = document.getElementById("progressPagePercent");
+  if (percent) percent.textContent = `${progress}% complete`;
+
+  const stageList = document.getElementById("progressStageList");
+  if (stageList) {
+    const html = progressUpdatesHTML(updates);
+    if (stageList.dataset.lastHtml !== html) {
+      stageList.innerHTML = html;
+      stageList.dataset.lastHtml = html;
+    }
+  }
+
+  const payment = document.getElementById("clientPaymentArea");
+  if (payment) {
+    const html = await paymentCardHTML(c);
+    if (payment.dataset.lastHtml !== html) {
+      payment.innerHTML = html;
+      payment.dataset.lastHtml = html;
+    }
+  }
+
+  await renderClientChat(c.id);
+}
+
 async function renderProgressPage() {
   const area = document.getElementById("progressArea");
   if (!area) return;
@@ -1707,24 +1780,17 @@ async function renderProgressPage() {
     <div class="progress-layout">
       <div class="progress-card">
         <p class="eyebrow">Private progress page</p>
-        <h1 class="page-title">${escapeHTML(commissionDisplayName(c))} — ${escapeHTML(commissionTypeLabel(c))}</h1>
-        <p class="small">Commission ID: ${escapeHTML(c.id)} • Status: ${escapeHTML(status)}</p>
-        ${c.preview_image_url ? `<img class="preview progress-main-preview" src="${escapeHTML(c.preview_image_url)}" alt="Commission preview">` : ""}
-        <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
-        <p class="small">${progress}% complete</p>
-        <div class="stage-list">
-          ${updates.map(update => `
-            <article class="stage-card">
-              <h3>${escapeHTML(update.title || update.progress_stage || "Progress Update")} <span class="pill">${Number(update.progress_percent || 0)}%</span></h3>
-              <p>${escapeHTML(update.description || "").replace(/\n/g, "<br>")}</p>
-              ${update.image_url ? `<img src="${escapeHTML(update.image_url)}" alt="${escapeHTML(update.title || "Progress image")}">` : ""}
-              <p class="small">${update.created_at ? new Date(update.created_at).toLocaleString() : ""}</p>
-            </article>
-          `).join("") || `<p class="small">No progress updates yet.</p>`}
+        <h1 id="progressPageTitle" class="page-title">${escapeHTML(commissionDisplayName(c))} — ${escapeHTML(commissionTypeLabel(c))}</h1>
+        <p id="progressPageMeta" class="small">Commission ID: ${escapeHTML(c.id)} • Status: ${escapeHTML(status)}</p>
+        <div id="progressPreviewBox">${c.preview_image_url ? `<img class="preview progress-main-preview" src="${escapeHTML(c.preview_image_url)}" alt="Commission preview">` : ""}</div>
+        <div class="progress-bar"><div id="progressPageFill" class="progress-fill" style="width:${progress}%"></div></div>
+        <p id="progressPagePercent" class="small">${progress}% complete</p>
+        <div id="progressStageList" class="stage-list">
+          ${progressUpdatesHTML(updates)}
         </div>
       </div>
       <aside class="client-chat">
-        ${await paymentCardHTML(c)}
+        <div id="clientPaymentArea">${await paymentCardHTML(c)}</div>
         <div class="payment-card client-chat-box">
           <h2>Messages</h2>
           <p class="small">Send questions, revision notes, or replies here.</p>
@@ -1734,6 +1800,10 @@ async function renderProgressPage() {
         </div>
       </aside>
     </div>`;
+  const stageList = document.getElementById("progressStageList");
+  if (stageList) stageList.dataset.lastHtml = stageList.innerHTML;
+  const payment = document.getElementById("clientPaymentArea");
+  if (payment) payment.dataset.lastHtml = payment.innerHTML;
   await renderClientChat(c.id);
 }
 
@@ -2086,16 +2156,9 @@ async function refreshProgressSafely() {
   const progressArea = document.getElementById("progressArea");
   if (!progressArea) return;
 
-  const id = new URLSearchParams(window.location.search).get("id");
-
-  // Do not rebuild the whole progress page while the client is typing in chat.
-  // This prevents the message panel from disappearing/closing.
-  if (chatInputIsActive()) {
-    if (id) await renderClientChat?.(id);
-    return;
-  }
-
-  await renderProgressPage?.();
+  // Auto-sync must not rebuild the whole progress page.
+  // This updates only progress data, payment info, and messages.
+  await refreshProgressSectionsOnly?.();
 }
 
 function queueRealtimeRefresh(reason = "change") {
@@ -2160,7 +2223,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 1200);
 });
 
-setInterval(() => {
+setInterval(async () => {
+  // Public page auto-sync. Keep this gentle so forms/chat do not flicker.
   renderQueue?.();
   renderHomeQueuePreview?.();
   renderCommissionInfo?.();
@@ -2172,4 +2236,16 @@ setInterval(() => {
   renderTosPage?.();
   renderSocialLinks?.();
   applySupabaseHomepageSettings?.();
+
+  // Progress pages are special because rebuilding the whole page also rebuilds chat.
+  // This only refreshes chat while typing and avoids the long close/reappear glitch.
+  await refreshProgressSafely?.();
+
+  // Admin chat boxes only update their message lists, not the full commission cards.
+  if (isAdmin) {
+    expandedAdminIds.forEach(id => renderAdminChat?.(id));
+  }
+
+  // Do NOT auto-render admin forms here.
+  // Do NOT rebuild chat containers while typing.
 }, 3000);

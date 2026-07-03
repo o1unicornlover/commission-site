@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header admin-header">
+    <a class="brand" href="admin.html">Admin Dashboard</a>
+    <nav>
+      <a href="index.html">Public Site</a>
+      <a href="queue.html">Queue</a>
+      <a href="gallery.html">Gallery</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="panel compact-panel admin-panel">
+      <h1 class="page-title">Admin</h1>
+      <p class="warning">Concept demo only: this admin page is not secure yet. For real clients, use a backend/database later.</p>
+      <div id="adminLogin">
+        <input id="adminPassword" type="password" placeholder="Admin password" />
+        <button class="btn primary" onclick="adminLogin()">Enter</button>
+        <p class="small">Demo password: <code>admin123</code></p>
+      </div>
+
+      <div id="adminDashboard" class="hidden">
+        <h2>Add Commission</h2>
+        <div class="form-grid">
+          <input id="clientName" placeholder="Buyer display name" />
+          <input id="commissionType" placeholder="Type, e.g. 3D Sculpt" />
+          <input id="status" placeholder="Status, e.g. Blocking" />
+          <input id="previewImage" placeholder="Character image URL or leave blank" />
+          <select id="privacy">
+            <option value="public">Show character image</option>
+            <option value="private">Private/scribble placeholder</option>
+          </select>
+        </div>
+        <button class="btn primary" onclick="addCommission()">Create Commission</button>
+
+        <h2>Active Commissions</h2>
+        <div id="adminList" class="admin-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-async function getSiteSettingsFromSupabase() {
+async function testSupabaseConnection() {
   const { data, error } = await supabaseClient
     .from("site_settings")
     .select("*")
@@ -6,9 +6,11 @@ async function getSiteSettingsFromSupabase() {
     .single();
 
   if (error) {
-    console.error("Error loading site settings:", error);
-    return null;
+    console.error("Supabase test failed:", error);
+    return;
   }
 
-  return data;
+  console.log("Supabase test worked:", data);
 }
+
+testSupabaseConnection();

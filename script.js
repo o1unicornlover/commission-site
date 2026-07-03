@@ -1578,39 +1578,13 @@ function adminLogin() {
 }
 
 async function addCommission() {
-  const clientName = document.getElementById("clientName")?.value.trim() || "Anonymous";
-  const commissionType = document.getElementById("commissionType")?.value.trim() || "Commission";
+  const selectedStartingStage = document.getElementById("startingStage")?.value || "waiting";
+  const firstStage = selectedStartingStage === "custom" ? null : getStage(selectedStartingStage);
   const file = document.getElementById("previewFile")?.files?.[0];
+  const clientName = document.getElementById("clientName")?.value.trim() || "Anonymous";
+  const type = document.getElementById("commissionType")?.value.trim() || "Commission";
+  const privacy = document.getElementById("privacy")?.value || "public";
 
-  let previewUrl = "";
-  if (file) {
-    previewUrl = await uploadImage(file, "gallery");
-    if (!previewUrl) return alert("Preview image upload failed.");
-  }
-
-  const password = randomPassword();
-
-  const added = await createCommission({
-    client_name: clientName,
-    display_name: clientName,
-    commission_type: commissionType,
-    preview_image_url: previewUrl,
-    password,
-    status: "Waiting / Not started"
-  });
-
-  if (!added) return alert("Could not create commission.");
-
-  alert(`Created! Send this to the client:\nPassword: ${password}`);
-
-  ["clientName", "commissionType", "previewFile"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = "";
-  });
-
-  renderAdmin();
-  renderQueue();
-}
   let previewImageUrl = "";
   if (file && privacy === "public") {
     previewImageUrl = await uploadImage(file, "gallery");

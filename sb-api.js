@@ -374,14 +374,24 @@ async function getCommissionById(id) {
 }
 
 async function createCommission(values) {
+  const payload = {
+    client_name: values.client_name || values.display_name || "Anonymous",
+    display_name: values.display_name || values.client_name || "Anonymous",
+    commission_type: values.commission_type || "Commission",
+    preview_image_url: values.preview_image_url || "",
+    password: values.password || "",
+    status: values.status || "Waiting / Not started"
+  };
+
   const { data, error } = await supabaseClient
     .from("commissions")
-    .insert([values])
+    .insert([payload])
     .select()
     .single();
 
   if (error) {
     console.error("Error creating commission:", error);
+    console.error("Commission payload was:", payload);
     return null;
   }
 
@@ -461,19 +471,4 @@ async function deleteProgressUpdate(id) {
   }
 
   return true;
-}
-
-async function createCommission(values) {
-  const { data, error } = await supabaseClient
-    .from("commissions")
-    .insert([values])
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error creating commission:", error);
-    return null;
-  }
-
-  return data;
 }

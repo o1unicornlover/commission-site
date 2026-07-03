@@ -1429,3 +1429,386 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   initializeApp();
 });
+/* =========================================================
+   V2 SUPABASE COMMISSION SYSTEM OVERRIDES
+   These functions intentionally override the older localStorage
+   commission functions above. Keep this block near the bottom.
+========================================================= */
+
+function commissionDisplayName(c) {
+  return c?.display_name || c?.client_name || "Private Client";
+}
+
+function commissionTypeLabel(c) {
+  return c?.commission_type || "Commission";
+}
+
+function commissionPreviewHTML(c) {
+  if (!c?.preview_image_url) return placeholderHTML("No Image Yet");
+  return `<img class="preview" src="${escapeHTML(c.preview_image_url)}" alt="${escapeHTML(commissionDisplayName(c))} preview" onerror="this.outerHTML='<div class=&quot;preview placeholder&quot;>Image Error</div>'">`;
+}
+
+function progressPercentFromUpdates(updates) {
+  if (!Array.isArray(updates) || !updates.length) return 0;
+  return Math.max(...updates.map(u => Number(u.progress_percent || 0)));
+}
+
+function latestStatusFromUpdates(c, updates) {
+  if (String(c?.status || "").toLowerCase() === "archived") return "Archived";
+  if (!Array.isArray(updates) || !updates.length) return c?.status || "Waiting";
+  return updates[updates.length - 1]?.progress_stage || c?.status || "Waiting";
+}
+
+async function renderQueue() {
+  const grid = document.getElementById("queueGrid");
+  if (!grid) return;
+
+  const commissions = await getCommissions();
+  const rows = await Promise.all(commissions.map(async c => ({
+    commission: c,
+    updates: await getProgressUpdates(c.id)
+  })));
+
+  const counter = document.getElementById("queueCount");
+  if (counter) counter.textContent = `${rows.length} active`;
+
+  grid.innerHTML = rows.map(({ commission: c, updates }) => {
+    const progress = progressPercentFromUpdates(updates);
+    const status = latestStatusFromUpdates(c, updates);
+
+    return `
+      <article class="commission-card">
+        ${commissionPreviewHTML(c)}
+        <h3>${escapeHTML(commissionDisplayName(c))}</h3>
+        <p><strong>${escapeHTML(commissionTypeLabel(c))}</strong></p>
+        <p class="small">Status: ${escapeHTML(status)}</p>
+        <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+        <p class="small">Progress: ${progress}%</p>
+        <button class="btn primary" onclick="openPasswordModal('${c.id}')">Access Progress</button>
+      </article>
+    `;
+  }).join("") || `<p class="small">No active commissions yet.</p>`;
+}
+
+function openPasswordModal(id) {
+  selectedCommissionId = id;
+  const input = document.getElementById("clientPassword");
+  const error = document.getElementById("passwordError");
+  const modal = document.getElementById("passwordModal");
+  if (input) input.value = "";
+  if (error) error.textContent = "";
+  if (modal) modal.classList.remove("hidden");
+}
+
+function closeModal() {
+  const modal = document.getElementById("passwordModal");
+  if (modal) modal.classList.add("hidden");
+}
+
+async function checkPassword() {
+  const pass = document.getElementById("clientPassword")?.value.trim();
+  const error = document.getElementById("passwordError");
+  const commission = await getCommissionById(selectedCommissionId);
+
+  if (!commission || String(commission.status || "").toLowerCase() === "archived" || pass !== commission.password) {
+    if (error) error.textContent = "Wrong password or commission was archived.";
+    return;
+  }
+
+  sessionStorage.setItem("progressAccess", JSON.stringify({ id: String(commission.id), password: pass }));
+  window.location.href = `progress.html?id=${encodeURIComponent(commission.id)}`;
+}
+
+async function renderProgressPage() {
+  const area = document.getElementById("progressArea");
+  if (!area) return;
+
+  const id = new URLSearchParams(window.location.search).get("id");
+  const access = JSON.parse(sessionStorage.getItem("progressAccess") || "{}");
+  const c = id ? await getCommissionById(id) : null;
+
+  if (!c || String(c.status || "").toLowerCase() === "archived" || String(access.id) !== String(c.id) || access.password !== c.password) {
+    area.innerHTML = `<div class="progress-card"><h1 class="page-title">Progress Locked</h1><p class="small">Please go back to the queue and enter the correct password.</p><a class="btn primary" href="queue.html">Back to Queue</a></div>`;
+    return;
+  }
+
+  const updates = await getProgressUpdates(c.id);
+  const progress = progressPercentFromUpdates(updates);
+  const status = latestStatusFromUpdates(c, updates);
+
+  area.innerHTML = `
+    <div class="progress-layout">
+      <div class="progress-card">
+        <p class="eyebrow">Private progress page</p>
+        <h1 class="page-title">${escapeHTML(commissionDisplayName(c))} — ${escapeHTML(commissionTypeLabel(c))}</h1>
+        <p class="small">Commission ID: ${escapeHTML(c.id)} • Status: ${escapeHTML(status)}</p>
+        ${c.preview_image_url ? `<img class="preview progress-main-preview" src="${escapeHTML(c.preview_image_url)}" alt="Commission preview">` : ""}
+        <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+        <p class="small">${progress}% complete</p>
+        <div class="stage-list">
+          ${updates.map(update => `
+            <article class="stage-card">
+              <h3>${escapeHTML(update.title || update.progress_stage || "Progress Update")} <span class="pill">${Number(update.progress_percent || 0)}%</span></h3>
+              <p>${escapeHTML(update.description || "").replace(/\n/g, "<br>")}</p>
+              ${update.image_url ? `<img src="${escapeHTML(update.image_url)}" alt="${escapeHTML(update.title || "Progress image")}">` : ""}
+              <p class="small">${update.created_at ? new Date(update.created_at).toLocaleString() : ""}</p>
+            </article>
+          `).join("") || `<p class="small">No progress updates yet.</p>`}
+        </div>
+      </div>
+      <aside class="client-chat">
+        <h2>Notes</h2>
+        <p class="small">Revision chat is still planned. For now, use your normal contact method for replies.</p>
+      </aside>
+    </div>`;
+}
+
+function adminLogin() {
+  if (document.getElementById("adminPassword").value !== ADMIN_PASSWORD) return alert("Wrong admin password.");
+  isAdmin = true;
+  sessionStorage.setItem("adminOpen", "true");
+  document.getElementById("adminLogin")?.classList.add("hidden");
+  document.getElementById("adminDashboard")?.classList.remove("hidden");
+  renderAdmin();
+  renderAdminGallery();
+  renderSlotAdmin();
+  renderCommissionInfo();
+  loadSettingsAdmin();
+  updateAdminOverview();
+}
+
+async function addCommission() {
+  const selectedStartingStage = document.getElementById("startingStage")?.value || "waiting";
+  const firstStage = selectedStartingStage === "custom" ? null : getStage(selectedStartingStage);
+  const file = document.getElementById("previewFile")?.files?.[0];
+  const clientName = document.getElementById("clientName")?.value.trim() || "Anonymous";
+  const type = document.getElementById("commissionType")?.value.trim() || "Commission";
+  const privacy = document.getElementById("privacy")?.value || "public";
+
+  let previewImageUrl = "";
+  if (file && privacy === "public") {
+    previewImageUrl = await uploadImage(file, "gallery");
+    if (!previewImageUrl) return alert("Preview image upload failed.");
+  }
+
+  const password = randomPassword();
+  const startingStatus = firstStage ? firstStage.label : "Waiting / Not started";
+
+  const created = await createCommission({
+    client_name: clientName,
+    display_name: privacy === "private" ? "Private Client" : clientName,
+    commission_type: type,
+    preview_image_url: previewImageUrl,
+    password,
+    status: startingStatus
+  });
+
+  if (!created) return alert("Could not create commission. Check the console for details.");
+
+  if (firstStage) {
+    await createProgressUpdate({
+      commission_id: created.id,
+      title: firstStage.label,
+      description: "Commission added to the tracker.",
+      image_url: "",
+      progress_stage: firstStage.label,
+      progress_percent: firstStage.percent
+    });
+  }
+
+  alert(`Created! Send this to the client:\nID: ${created.id}\nPassword: ${password}`);
+
+  ["clientName", "commissionType", "previewFile"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  renderAdmin();
+  renderQueue();
+  renderHomeQueuePreview();
+  updateAdminOverview();
+}
+
+async function addUpdate(id) {
+  const c = await getCommissionById(id);
+  if (!c || String(c.status || "").toLowerCase() === "archived") return;
+
+  const selected = document.getElementById(`updateStage-${id}`)?.value || "custom";
+  const customTitle = document.getElementById(`updateTitle-${id}`)?.value.trim() || "";
+  const desc = document.getElementById(`updateDesc-${id}`)?.value || "New progress update added.";
+  const file = document.getElementById(`updateImage-${id}`)?.files?.[0];
+  const existingUpdates = await getProgressUpdates(id);
+  const currentProgress = progressPercentFromUpdates(existingUpdates);
+
+  let title = customTitle || "Progress Update";
+  let percent = currentProgress;
+  let progressStage = customTitle || c.status || "Progress Update";
+
+  if (selected !== "custom") {
+    const stage = getStage(selected);
+    progressStage = stage.label;
+    percent = stage.percent;
+    if (!customTitle) title = stage.label;
+  }
+
+  let imageUrl = "";
+  if (file) {
+    imageUrl = await uploadImage(file, "gallery");
+    if (!imageUrl) return alert("Progress image upload failed.");
+  }
+
+  const added = await createProgressUpdate({
+    commission_id: id,
+    title,
+    description: desc,
+    image_url: imageUrl,
+    progress_stage: progressStage,
+    progress_percent: percent
+  });
+
+  if (!added) return alert("Could not add progress update.");
+
+  await updateCommission(id, { status: progressStage });
+  expandedAdminIds.add(String(id));
+  renderAdmin();
+  renderQueue();
+  renderHomeQueuePreview();
+  alert(`Update added. Client progress is now ${percent}%.`);
+}
+
+async function replacePreview(id) {
+  const file = document.getElementById(`previewReplace-${id}`)?.files?.[0];
+  if (!file) return alert("Choose an image first.");
+
+  const url = await uploadImage(file, "gallery");
+  if (!url) return alert("Preview image upload failed.");
+
+  await updateCommission(id, { preview_image_url: url });
+  expandedAdminIds.add(String(id));
+  renderAdmin();
+  renderQueue();
+  renderHomeQueuePreview();
+}
+
+function toggleAdminCommission(id) {
+  const el = document.getElementById(`adminDetails-${id}`);
+  if (!el) return;
+  const willOpen = el.classList.contains("hidden");
+  if (willOpen) expandedAdminIds.add(String(id));
+  else expandedAdminIds.delete(String(id));
+  el.classList.toggle("hidden", !willOpen);
+}
+
+async function archiveCommission(id) {
+  if (!confirm("Archive this commission? It will disappear from the public queue and password access will stop.")) return;
+  await updateCommission(id, { status: "Archived" });
+  renderAdmin();
+  renderQueue();
+  renderHomeQueuePreview();
+  updateAdminOverview();
+}
+
+async function unarchiveCommission(id) {
+  await updateCommission(id, { status: "Waiting" });
+  renderAdmin();
+  renderQueue();
+  renderHomeQueuePreview();
+  updateAdminOverview();
+}
+
+async function deleteProgressUpdateAdmin(updateId, commissionId) {
+  if (!confirm("Delete this progress update?")) return;
+  await deleteProgressUpdate(updateId);
+  expandedAdminIds.add(String(commissionId));
+  renderAdmin();
+  renderQueue();
+  renderHomeQueuePreview();
+}
+
+async function renderAdmin() {
+  if (!isAdmin) return;
+  const list = document.getElementById("adminList");
+  const archiveList = document.getElementById("archiveList");
+  if (!list) return;
+
+  const all = await getCommissions({ includeArchived: true });
+  const details = await Promise.all(all.map(async c => ({ commission: c, updates: await getProgressUpdates(c.id) })));
+  const active = details.filter(row => String(row.commission.status || "").toLowerCase() !== "archived");
+  const archived = details.filter(row => String(row.commission.status || "").toLowerCase() === "archived");
+
+  list.innerHTML = active.map(({ commission: c, updates }) => {
+    const progress = progressPercentFromUpdates(updates);
+    const status = latestStatusFromUpdates(c, updates);
+    return `
+      <article class="admin-accordion">
+        <button class="admin-summary" onclick="toggleAdminCommission('${c.id}')">
+          <span><strong>${escapeHTML(c.id)} — ${escapeHTML(commissionDisplayName(c))}</strong><br><small>${escapeHTML(commissionTypeLabel(c))} • ${escapeHTML(status)} • ${progress}%</small></span>
+          <span class="pill">Open</span>
+        </button>
+        <div id="adminDetails-${c.id}" class="admin-details ${expandedAdminIds.has(String(c.id)) ? "" : "hidden"}">
+          <p class="small">Password: <code>${escapeHTML(c.password || "")}</code></p>
+          <div class="button-row">
+            <input id="previewReplace-${c.id}" type="file" accept="image/*">
+            <button type="button" class="btn" onclick="replacePreview('${c.id}')">Replace board image</button>
+          </div>
+          <div class="update-box">
+            <h4>Add progress update</h4>
+            <div class="update-form">
+              <input id="updateTitle-${c.id}" placeholder="Custom update title, e.g. Blocking out the pose">
+              <select id="updateStage-${c.id}" title="Optional: choose a progress preset. Custom title stays separate.">${stageOptions("custom", true)}</select>
+              <p class="small">Optional dropdown: use it only when you want to change the progress percentage/status. Your update title stays custom.</p>
+              <textarea id="updateDesc-${c.id}" placeholder="Description for the client"></textarea>
+              <input id="updateImage-${c.id}" type="file" accept="image/*">
+              <button class="btn primary" onclick="addUpdate('${c.id}')">Add Update</button>
+            </div>
+          </div>
+          <div class="update-box">
+            <h4>Current updates</h4>
+            ${updates.map(update => `
+              <div class="progress-admin-row">
+                <p class="small"><strong>${escapeHTML(update.title || update.progress_stage || "Progress Update")}</strong> — ${Number(update.progress_percent || 0)}%</p>
+                ${update.image_url ? `<img class="admin-update-thumb" src="${escapeHTML(update.image_url)}" alt="Progress update image">` : ""}
+                <p class="small">${escapeHTML(update.description || "")}</p>
+                <button class="text-btn" onclick="deleteProgressUpdateAdmin('${update.id}', '${c.id}')">delete update</button>
+              </div>
+            `).join("") || `<p class="small">No updates yet.</p>`}
+          </div>
+          <button class="btn danger" onclick="archiveCommission('${c.id}')">Finish / Archive</button>
+        </div>
+      </article>
+    `;
+  }).join("") || `<p class="small">No active commissions.</p>`;
+
+  if (archiveList) {
+    archiveList.innerHTML = archived.map(({ commission: c }) => `
+      <article class="archive-row"><span>${escapeHTML(c.id)} — ${escapeHTML(commissionDisplayName(c))} • ${escapeHTML(commissionTypeLabel(c))}</span><button type="button" class="btn" onclick="unarchiveCommission('${c.id}')">Restore</button></article>
+    `).join("") || `<p class="small">No archived commissions.</p>`;
+  }
+}
+
+async function renderHomeQueuePreview() {
+  const box = document.getElementById("homeQueuePreview");
+  if (!box) return;
+
+  const commissions = (await getCommissions()).slice(0, 4);
+  const rows = await Promise.all(commissions.map(async c => ({ commission: c, updates: await getProgressUpdates(c.id) })));
+
+  box.innerHTML = rows.map(({ commission: c, updates }, i) => `
+    <div class="home-table-row">
+      <span>${i + 1}</span>
+      <strong>${escapeHTML(commissionDisplayName(c))}</strong>
+      <em>${escapeHTML(latestStatusFromUpdates(c, updates))}</em>
+      <b>${progressPercentFromUpdates(updates)}%</b>
+    </div>
+  `).join("") || `<p class="small">No active commissions yet.</p>`;
+}
+
+async function updateAdminOverview() {
+  const commissions = await getCommissions({ includeArchived: true });
+  const active = commissions.filter(c => String(c.status || "").toLowerCase() !== "archived");
+  const gallery = await getGalleryItems();
+  const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+  set("adminTotalCommissions", commissions.length);
+  set("adminActiveCommissions", active.length);
+  set("adminGalleryCount", gallery.length);
+}

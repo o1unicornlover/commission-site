@@ -338,3 +338,127 @@ async function updatePricingItem(id, values) {
 
   return data;
 }
+
+// ---------- Supabase commissions ----------
+async function getCommissions(options = {}) {
+  let query = supabaseClient
+    .from("commissions")
+    .select("*")
+    .order("id", { ascending: false });
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error loading commissions:", error);
+    return [];
+  }
+
+  const rows = data || [];
+  if (options.includeArchived) return rows;
+  return rows.filter(c => String(c.status || "").toLowerCase() !== "archived");
+}
+
+async function getCommissionById(id) {
+  const { data, error } = await supabaseClient
+    .from("commissions")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    console.error("Error loading commission:", error);
+    return null;
+  }
+
+  return data;
+}
+
+async function createCommission(values) {
+  const { data, error } = await supabaseClient
+    .from("commissions")
+    .insert([values])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating commission:", error);
+    return null;
+  }
+
+  return data;
+}
+
+async function updateCommission(id, values) {
+  const { data, error } = await supabaseClient
+    .from("commissions")
+    .update(values)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating commission:", error);
+    return null;
+  }
+
+  return data;
+}
+
+async function deleteCommission(id) {
+  const { error } = await supabaseClient
+    .from("commissions")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error deleting commission:", error);
+    return false;
+  }
+
+  return true;
+}
+
+async function getProgressUpdates(commissionId) {
+  const { data, error } = await supabaseClient
+    .from("progress_updates")
+    .select("*")
+    .eq("commission_id", commissionId)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (error) {
+    console.error("Error loading progress updates:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function createProgressUpdate(values) {
+  const { data, error } = await supabaseClient
+    .from("progress_updates")
+    .insert([values])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating progress update:", error);
+    return null;
+  }
+
+  return data;
+}
+
+async function deleteProgressUpdate(id) {
+  const { error } = await supabaseClient
+    .from("progress_updates")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error deleting progress update:", error);
+    return false;
+  }
+
+  return true;
+}

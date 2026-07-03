@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="style.css?v=ui13" />
+  <link rel="stylesheet" href="style.css?v=ui22" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body>
@@ -21,7 +21,7 @@
   <main>
     <section class="panel compact-panel admin-panel">
       <h1 class="page-title">Admin</h1>
-      <p class="warning">Concept demo only: this admin page is not secure yet. It saves data in your browser storage.</p>
+      <p class="warning">Concept demo only: this admin page is not secure yet. Data is now saved in Supabase.</p>
       <div id="adminLogin">
         <input id="adminPassword" type="password" placeholder="Admin password" />
         <button class="btn primary" onclick="adminLogin()">Enter</button>
@@ -70,7 +70,7 @@
             </div>
             <label class="small">Main board image</label>
             <input id="previewFile" type="file" accept="image/*" />
-            <p class="file-note">For this concept, images are saved locally in your browser.</p>
+            <p class="file-note">Images upload to Supabase Storage and save to the commission record.</p>
             <button class="btn primary" onclick="addCommission()">Create Commission</button>
 
             <hr class="soft-line">
@@ -227,7 +227,7 @@
   
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
-<script src="./sb-api.js?v=6"></script>
-<script src="script.js?v=ui21"></script>
+<script src="./sb-api.js?v=7"></script>
+<script src="script.js?v=ui22"></script>
 </body>
 </html>

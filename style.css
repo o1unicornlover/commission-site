@@ -922,3 +922,237 @@ body[data-theme="december"] {
   --accent2: #fff0f8;
   --site-line-color: rgba(255,240,248,.28);
 }
+
+/* =========================================================
+   Site Customization v2.1 — stronger live theme overrides
+   These rules make the admin color pickers affect the whole site,
+   not just small text accents.
+========================================================= */
+html {
+  background: var(--bg);
+}
+
+body {
+  color: var(--text) !important;
+  background: var(--theme-body-gradient, radial-gradient(circle at top, #2a1d38, var(--bg))) !important;
+}
+
+body.has-custom-site-bg {
+  background-image: var(--site-custom-bg) !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+  background-position: center !important;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 15%, color-mix(in srgb, var(--accent2) 20%, transparent), transparent 28%),
+    radial-gradient(circle at 80% 10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 26%);
+}
+
+.site-header,
+.admin-header {
+  background: color-mix(in srgb, var(--panel) 82%, transparent) !important;
+  border-bottom-color: var(--line) !important;
+}
+
+.brand,
+nav a:hover,
+.eyebrow,
+.text-btn {
+  color: var(--accent) !important;
+}
+
+nav,
+.small,
+.file-note,
+.chat-message span,
+.social-link small {
+  color: var(--muted) !important;
+}
+
+.panel,
+.info-card,
+.admin-card,
+.admin-accordion,
+.admin-section,
+.stage-card,
+.update-box,
+.modal-card,
+.client-chat,
+.pricing-card,
+.grouped-pricing-card,
+.price-example-card,
+.pricing-admin-card,
+.social-admin-row,
+.slot-admin-row,
+.archive-row,
+.gallery-card,
+.commission-card,
+.home-table-row,
+.news-row,
+.mini-panel,
+.glow-panel {
+  background: var(--theme-panel-soft, color-mix(in srgb, var(--panel) 88%, transparent)) !important;
+  border-color: var(--line) !important;
+  color: var(--text) !important;
+}
+
+.info-card,
+.commission-card,
+.gallery-card,
+.stage-card,
+.price-example-card,
+.slot-home-row,
+.chat-message,
+.admin-gallery-item {
+  background: var(--theme-card-soft, color-mix(in srgb, var(--panel2) 90%, transparent)) !important;
+}
+
+.visual-hero {
+  background: var(--theme-hero-gradient) !important;
+  border-color: var(--line) !important;
+  box-shadow:
+    0 22px 90px color-mix(in srgb, var(--accent) 20%, transparent),
+    inset 0 0 40px color-mix(in srgb, var(--accent2) 10%, transparent) !important;
+}
+
+.visual-hero.has-custom-banner {
+  background-image: var(--hero-banner-image) !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+.visual-hero::before {
+  background-image:
+    radial-gradient(circle, color-mix(in srgb, var(--accent2) 55%, white) 0 1px, transparent 2px),
+    repeating-linear-gradient(135deg, transparent 0 18px, color-mix(in srgb, var(--accent) 14%, transparent) 19px 20px) !important;
+}
+
+.visual-hero::after {
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 28%, transparent), transparent) !important;
+  border-top-color: var(--line) !important;
+}
+
+.hero-copy h1,
+.page-title,
+h1,
+h2,
+h3,
+h4,
+strong {
+  color: var(--text);
+}
+
+.btn,
+.copy-btn,
+.settings-tab,
+.admin-nav-btn {
+  color: var(--text) !important;
+  background: color-mix(in srgb, var(--panel2) 72%, transparent) !important;
+  border-color: var(--line) !important;
+}
+
+.btn.primary,
+.primary,
+.settings-tab.active,
+.admin-nav-btn.active {
+  color: color-mix(in srgb, var(--bg) 80%, #000) !important;
+  background: linear-gradient(135deg, var(--accent), var(--accent2)) !important;
+  border-color: transparent !important;
+}
+
+input,
+select,
+textarea {
+  color: var(--text) !important;
+  background: color-mix(in srgb, var(--bg) 82%, transparent) !important;
+  border-color: var(--line) !important;
+}
+
+input[type="color"] {
+  background: transparent !important;
+  border-color: var(--line) !important;
+}
+
+.pill,
+.closed-pill,
+.payment-status-pill {
+  color: var(--text) !important;
+  background: color-mix(in srgb, var(--panel2) 70%, transparent) !important;
+  border-color: var(--line) !important;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, var(--accent), var(--accent2)) !important;
+}
+
+.progress-bar,
+.chat-messages,
+.preview,
+.price-example-placeholder,
+.featured-placeholder {
+  background: color-mix(in srgb, var(--bg) 78%, transparent) !important;
+  border-color: var(--line) !important;
+}
+
+.social-card {
+  background: color-mix(in srgb, var(--panel) 78%, transparent) !important;
+  border-color: var(--line) !important;
+}
+
+.social-card h3,
+.social-link span,
+.icon-badge {
+  color: var(--accent) !important;
+}
+
+.featured-gallery img,
+.gallery-image-btn,
+.gallery-image-btn img {
+  border-color: var(--line) !important;
+}
+
+/* Valentine moodboard-inspired theme when February is active */
+body[data-theme="february"] {
+  --valentine-gloss: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,198,229,.78) 48%, rgba(255,98,181,.28));
+}
+
+body[data-theme="february"] .visual-hero:not(.has-custom-banner) {
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255,255,255,.95), transparent 20%),
+    radial-gradient(circle at 80% 26%, rgba(255,79,174,.30), transparent 28%),
+    repeating-radial-gradient(circle at 70% 35%, rgba(255,79,174,.15) 0 5px, transparent 6px 18px),
+    linear-gradient(135deg, #fff7fc 0%, #ffd6ec 45%, #ff9bd2 100%) !important;
+}
+
+body[data-theme="february"] .btn,
+body[data-theme="february"] .settings-tab,
+body[data-theme="february"] .admin-nav-btn {
+  background: var(--valentine-gloss) !important;
+  color: #8c1d58 !important;
+  border-color: rgba(255,79,174,.38) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 8px 24px rgba(255,79,174,.12);
+}
+
+body[data-theme="february"] .btn.primary,
+body[data-theme="february"] .primary,
+body[data-theme="february"] .settings-tab.active,
+body[data-theme="february"] .admin-nav-btn.active {
+  color: #fff !important;
+  background: linear-gradient(180deg, #ff9bd2, #ff4fae) !important;
+  text-shadow: 0 1px 0 rgba(120,0,60,.35);
+}
+
+body[data-theme="february"] .panel,
+body[data-theme="february"] .info-card,
+body[data-theme="february"] .mini-panel,
+body[data-theme="february"] .glow-panel,
+body[data-theme="february"] .client-chat {
+  box-shadow: 0 16px 48px rgba(255,79,174,.16), inset 0 1px 0 rgba(255,255,255,.55) !important;
+}

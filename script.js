@@ -1093,7 +1093,9 @@ async function saveDefaultAppearance() {
   if (navIcon) settings.navIcon = navIcon;
 
   if (Object.keys(updates).length) {
-    const saved = await updateSiteSettings(updates);
+    updates.default_theme = document.getElementById("manualTheme")?.value || settings.default_theme || "default";
+
+  const saved = await updateSiteSettings(updates);
     if (!saved) return alert("Appearance could not be saved to Supabase.");
 
     if (saved.banner_url) settings.defaultBanner = saved.banner_url;
@@ -2372,6 +2374,8 @@ function getColorInput(id, fallback) {
 function applyThemeVariables(themeKey, theme, settings) {
   const root = document.documentElement;
   const active = { ...SITE_THEME_DEFAULTS.default, ...theme };
+  const border = active.border || "#8f4a79";
+
   root.style.setProperty("--bg", active.bg);
   root.style.setProperty("--panel", active.panel);
   root.style.setProperty("--panel2", active.panel2);
@@ -2379,18 +2383,27 @@ function applyThemeVariables(themeKey, theme, settings) {
   root.style.setProperty("--muted", active.muted);
   root.style.setProperty("--accent", active.accent);
   root.style.setProperty("--accent2", active.accent2);
-  root.style.setProperty("--site-line-color", active.border || "rgba(255,255,255,.1)");
-  root.style.setProperty("--line", active.border ? `${active.border}66` : "rgba(255,255,255,.1)");
+  root.style.setProperty("--danger", active.danger || "#ff7d93");
+  root.style.setProperty("--site-line-color", border);
+  root.style.setProperty("--line", `${border}66`);
+
+  // Extra variables used by the stronger customization CSS.
+  root.style.setProperty("--theme-border", border);
+  root.style.setProperty("--theme-panel-soft", `color-mix(in srgb, ${active.panel} 88%, transparent)`);
+  root.style.setProperty("--theme-card-soft", `color-mix(in srgb, ${active.panel2} 90%, transparent)`);
+  root.style.setProperty("--theme-button-soft", `linear-gradient(180deg, color-mix(in srgb, ${active.accent2} 62%, white), color-mix(in srgb, ${active.accent} 82%, ${active.panel2}))`);
+  root.style.setProperty("--theme-body-gradient", `radial-gradient(circle at 18% 8%, color-mix(in srgb, ${active.accent2} 24%, transparent), transparent 28%), radial-gradient(circle at 82% 18%, color-mix(in srgb, ${active.accent} 22%, transparent), transparent 30%), linear-gradient(135deg, color-mix(in srgb, ${active.panel2} 40%, ${active.bg}), ${active.bg})`);
+  root.style.setProperty("--theme-hero-gradient", `radial-gradient(circle at 18% 20%, color-mix(in srgb, ${active.accent} 30%, transparent), transparent 24%), radial-gradient(circle at 78% 30%, color-mix(in srgb, ${active.accent2} 24%, transparent), transparent 22%), linear-gradient(135deg, color-mix(in srgb, ${active.panel2} 40%, ${active.bg}), ${active.bg})`);
+
   document.body.dataset.theme = themeKey;
 
   const bg = active.background_url || settings?.background_url || "";
   if (bg) {
-    document.body.style.backgroundImage = `linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.22)), url('${bg}')`;
-    document.body.style.backgroundSize = "cover";
-    document.body.style.backgroundAttachment = "fixed";
-    document.body.style.backgroundPosition = "center";
+    document.body.classList.add("has-custom-site-bg");
+    document.body.style.setProperty("--site-custom-bg", `linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.18)), url('${bg}')`);
   } else {
-    document.body.style.backgroundImage = "";
+    document.body.classList.remove("has-custom-site-bg");
+    document.body.style.removeProperty("--site-custom-bg");
   }
 }
 
@@ -2427,10 +2440,14 @@ async function applySupabaseHomepageSettings() {
   const hero = document.getElementById("homeHero");
   if (hero) {
     if (banner) {
-      hero.style.backgroundImage = `linear-gradient(90deg, rgba(7,6,10,.42), rgba(7,6,10,.08)), url('${banner}')`;
+      hero.classList.add("has-custom-banner");
+      hero.style.setProperty("--hero-banner-image", `linear-gradient(90deg, rgba(7,6,10,.32), rgba(7,6,10,.06)), url('${banner}')`);
+      hero.style.backgroundImage = `linear-gradient(90deg, rgba(7,6,10,.32), rgba(7,6,10,.06)), url('${banner}')`;
       hero.style.backgroundSize = "cover";
       hero.style.backgroundPosition = "center";
     } else {
+      hero.classList.remove("has-custom-banner");
+      hero.style.removeProperty("--hero-banner-image");
       hero.style.backgroundImage = "";
     }
   }
@@ -2506,16 +2523,19 @@ async function saveDefaultAppearance() {
     const url = await uploadImage(bannerFile, "banners");
     if (!url) return alert("Banner upload failed. Check the banners bucket policy.");
     updates.banner_url = url;
+    themes.default.banner_url = url;
   }
   if (dollFile) {
     const url = await uploadImage(dollFile, "pagedolls");
     if (!url) return alert("Page doll upload failed. Check the pagedolls bucket policy.");
     updates.pagedoll_url = url;
+    themes.default.pagedoll_url = url;
   }
   if (bgFile) {
     const url = await uploadImage(bgFile, "backgrounds");
     if (!url) return alert("Background upload failed. Check the backgrounds bucket policy.");
     updates.background_url = url;
+    themes.default.background_url = url;
   }
   if (favFile) {
     const url = await uploadImage(favFile, "backgrounds");
@@ -2555,6 +2575,9 @@ async function saveDefaultAppearance() {
 async function clearDefaultImages() {
   const settings = await getSiteSettings();
   const themes = normalizeThemeSettings(settings?.theme_settings);
+  themes.default.banner_url = "";
+  themes.default.pagedoll_url = "";
+  themes.default.background_url = "";
   const saved = await updateSiteSettings({
     banner_url: "",
     pagedoll_url: "",

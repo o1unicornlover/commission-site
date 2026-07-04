@@ -1,9 +1,21 @@
 /*
-  Commission Website API Loader - Stage 1
-  The original Supabase API functions now live in /api/core.js.
-  This wrapper keeps all existing HTML script tags working.
+  Commission Website API Loader - Stage 2
+  Loads feature-based Supabase API files while keeping old global function names.
 */
-(function loadApiCore() {
-  const version = "stage1-api19";
-  document.write(`<script src="./api/core.js?v=${version}"><\/script>`);
+(function loadApiScripts() {
+  const version = "stage2-api20";
+  [
+    "./api/site-api.js",
+    "./api/slots-api.js",
+    "./api/socials-api.js",
+    "./api/gallery-api.js",
+    "./api/tos-api.js",
+    "./api/uploads-api.js",
+    "./api/pricing-api.js",
+    "./api/commissions-api.js",
+    "./api/progress-api.js",
+    "./api/chat-api.js"
+  ].forEach(src => {
+    document.write(`<script src="${src}?v=${version}"><\/script>`);
+  });
 })();

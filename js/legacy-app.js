@@ -1,89 +1,8 @@
-const ADMIN_PASSWORD = "admin123"; // Concept only. Real security needs a backend.
-let selectedCommissionId = null;
-let isAdmin = false;
-let expandedAdminIds = new Set();
-
-const PROGRESS_STAGE_GROUPS = [
-  {
-    group: "General",
-    stages: [
-      { key: "accepted", label: "Payment Received / Accepted", percent: 5 },
-      { key: "references", label: "References Checked", percent: 10 },
-      { key: "waiting", label: "Waiting / In Queue", percent: 10 },
-      { key: "review", label: "Client Review", percent: 95 },
-      { key: "complete", label: "Complete / Delivered", percent: 100 }
-    ]
-  },
-  {
-    group: "2D Art",
-    stages: [
-      { key: "2d-sketch", label: "2D — Sketch", percent: 20 },
-      { key: "2d-lineart", label: "2D — Lineart", percent: 40 },
-      { key: "2d-flats", label: "2D — Flat Colors", percent: 60 },
-      { key: "2d-coloring", label: "2D — Coloring", percent: 70 },
-      { key: "2d-rendering", label: "2D — Rendering", percent: 85 },
-      { key: "2d-final", label: "2D — Final Polish", percent: 95 }
-    ]
-  },
-  {
-    group: "3D Sculpt / Model",
-    stages: [
-      { key: "3d-blocking", label: "3D — Blocking", percent: 20 },
-      { key: "3d-base", label: "3D — Base Sculpt", percent: 35 },
-      { key: "3d-refine", label: "3D — Refining Shapes", percent: 50 },
-      { key: "3d-hair-clothes", label: "3D — Hair / Clothes", percent: 65 },
-      { key: "3d-details", label: "3D — Details", percent: 75 },
-      { key: "3d-retopo", label: "3D — Retopology", percent: 80 },
-      { key: "3d-uv", label: "3D — UVs", percent: 84 },
-      { key: "3d-texture", label: "3D — Texturing", percent: 90 },
-      { key: "3d-render", label: "3D — Render / Final Preview", percent: 95 }
-    ]
-  },
-  {
-    group: "Animation",
-    stages: [
-      { key: "anim-storyboard", label: "Animation — Storyboard / Plan", percent: 15 },
-      { key: "anim-rough", label: "Animation — Rough Motion", percent: 35 },
-      { key: "anim-cleanup", label: "Animation — Cleanup", percent: 55 },
-      { key: "anim-color", label: "Animation — Color / Texture", percent: 70 },
-      { key: "anim-render", label: "Animation — Rendering", percent: 90 },
-      { key: "anim-final", label: "Animation — Final Export", percent: 98 }
-    ]
-  }
-];
-const PROGRESS_STAGES = PROGRESS_STAGE_GROUPS.flatMap(group => group.stages);
-
-const defaultCommissions = [
-  {
-    id: "CM-001",
-    clientName: "Luna",
-    type: "3D Sculpt",
-    status: "Blocking",
-    privacy: "public",
-    previewImage: "",
-    password: "mango-42-fox",
-    archived: false,
-    stages: [
-      { stageKey: "accepted", title: "Payment Received / Accepted", desc: "Commission accepted and added to the queue.", image: "", done: true, percent: 5 },
-      { stageKey: "blocking", title: "Blocking", desc: "Base proportions and pose are being sculpted.", image: "", done: true, percent: 20 },
-      { stageKey: "refinement", title: "Refinement", desc: "Anatomy, clothes, and hair details come next.", image: "", done: false, percent: 50 }
-    ]
-  },
-  {
-    id: "CM-002",
-    clientName: "Private Client",
-    type: "Fullbody Art",
-    status: "Waiting",
-    privacy: "private",
-    previewImage: "",
-    password: "star-18-milk",
-    archived: false,
-    stages: [
-      { stageKey: "accepted", title: "Payment Received / Accepted", desc: "Commission accepted and waiting to start.", image: "", done: true, percent: 5 }
-    ]
-  }
-];
-
+/*
+  Refactor Stage 2 - legacy app compatibility layer.
+  Most feature code still lives here for now. Constants, utilities, and autosync
+  have been moved out first because they are lowest risk.
+*/
 function loadCommissions() {
   const saved = localStorage.getItem("commissions");
   if (!saved) {
@@ -96,11 +15,6 @@ function saveCommissions(commissions) { localStorage.setItem("commissions", JSON
 function loadGallery() { return JSON.parse(localStorage.getItem("galleryItems") || "[]"); }
 function saveGallery(items) { localStorage.setItem("galleryItems", JSON.stringify(items)); }
 
-const defaultSlotSettings = [
-  { id: "2d", title: "2D Art", desc: "Character art, outfit design, rendered illustrations.", price: "", current: 0, max: 4, closed: false },
-  { id: "3d", title: "3D Model", desc: "Character models, sculpts, figure-style models, and 3D previews.", price: "", current: 0, max: 2, closed: false },
-  { id: "anim", title: "Animation", desc: "Short loops, character animation, simple motion tests.", price: "", current: 0, max: 2, closed: true }
-];
 
 function normalizeSlotTitle(title) {
   const clean = String(title || "").trim();
@@ -264,28 +178,15 @@ async function renderSlotAdmin() {
 }
 
 
-function fileToDataURL(file) {
-  return new Promise((resolve) => {
-    if (!file) return resolve("");
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsDataURL(file);
-  });
-}
 
-function randomPassword() {
-  const words = ["mango", "fox", "star", "pearl", "moon", "lace", "berry", "pixel", "cloud", "milk", "rose", "sketch"];
-  return `${words[Math.floor(Math.random()*words.length)]}-${Math.floor(10+Math.random()*90)}-${words[Math.floor(Math.random()*words.length)]}`;
-}
-function getStage(key) { return PROGRESS_STAGES.find(s => s.key === key) || PROGRESS_STAGES[0]; }
-function stageOptions(selected="accepted", includeNone=false) {
-  const none = includeNone ? `<option value="custom" ${selected === "custom" ? "selected" : ""}>Optional — no progress change</option>` : "";
-  return none + PROGRESS_STAGE_GROUPS.map(group => `
-    <optgroup label="${group.group}">
-      ${group.stages.map(s => `<option value="${s.key}" ${s.key === selected ? "selected" : ""}>${s.label} — ${s.percent}%</option>`).join("")}
-    </optgroup>
-  `).join("");
-}
+
+
+
+
+
+
+
+
 function chatKey(id) { return `chat-${id}`; }
 function loadChat(id) { return JSON.parse(localStorage.getItem(chatKey(id)) || "[]"); }
 function saveChat(id, messages) { localStorage.setItem(chatKey(id), JSON.stringify(messages)); }
@@ -293,7 +194,8 @@ function getCommissionProgress(c) {
   if (!c.stages?.length) return 0;
   return Math.max(...c.stages.map(s => Number(s.percent || getStage(s.stageKey).percent || 0)));
 }
-function placeholderHTML(text = "Private Commission") { return `<div class="preview placeholder">${text}</div>`; }
+
+
 function imageHTML(c) {
   if (c.privacy === "private" || !c.previewImage) return placeholderHTML(c.privacy === "private" ? "Private Preview" : "No Image Yet");
   return `<img class="preview" src="${c.previewImage}" alt="${c.clientName} character preview" onerror="this.outerHTML='<div class=&quot;preview placeholder&quot;>Image Error</div>'">`;
@@ -745,14 +647,10 @@ function getActiveTheme(settings = loadSiteSettings()) {
   if (month === 12) return "december";
   return "default";
 }
-function themeLabel(theme) {
-  return ({ default: "Default", february: "February", october: "Halloween", december: "Christmas" })[theme] || "Default";
-}
-function setFavicon(dataUrl) {
-  let link = document.querySelector("link[rel='icon']");
-  if (!link) { link = document.createElement("link"); link.rel = "icon"; document.head.appendChild(link); }
-  link.href = dataUrl;
-}
+
+
+
+
 function applySiteSettings() {
   const settings = loadSiteSettings();
   const active = getActiveTheme(settings);
@@ -807,16 +705,10 @@ function applySiteSettings() {
   renderPricingPage();
   renderTosPage();
 }
-function renderSocialIcon(icon) {
-  const value = String(icon || "♡").trim();
-  if (value.startsWith("fa-") || value.includes(" fa-")) return `<i class="${value}" aria-hidden="true"></i>`;
-  return `<span>${value}</span>`;
-}
-function safeLink(url) {
-  const value = String(url || "").trim();
-  if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("mailto:")) return value;
-  return "#";
-}
+
+
+
+
 async function renderSocialLinks() {
   const box = document.getElementById("socialLinks");
   if (!box) return;
@@ -1455,9 +1347,8 @@ async function applySupabaseHomepageSettings() {
 }
 
 
-function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
-}
+
+
 
 // ---------- Single safe initialization ----------
 function initializeApp() {
@@ -2198,117 +2089,6 @@ async function updateAdminOverview() {
   set("adminActiveCommissions", active.length);
   set("adminGalleryCount", gallery.length);
 }
-
-/* =========================================================
-   REALTIME V2 STABLE BLOCK
-   Listens for Supabase database changes and re-renders only
-   the page sections that exist on the current page.
-========================================================= */
-let realtimeChannel = null;
-let realtimeRefreshTimer = null;
-
-function chatInputIsActive() {
-  const active = document.activeElement;
-  return Boolean(active && (active.id === "clientChatInput" || String(active.id || "").startsWith("adminChatInput-")));
-}
-
-async function refreshProgressSafely() {
-  const progressArea = document.getElementById("progressArea");
-  if (!progressArea) return;
-
-  // Auto-sync must not rebuild the whole progress page.
-  // This updates only progress data, payment info, and messages.
-  await refreshProgressSectionsOnly?.();
-}
-
-function queueRealtimeRefresh(reason = "change") {
-  console.log("Realtime refresh queued:", reason);
-  clearTimeout(realtimeRefreshTimer);
-  realtimeRefreshTimer = setTimeout(async () => {
-    try {
-      if (document.getElementById("queueGrid")) await renderQueue?.();
-      await refreshProgressSafely();
-      if (document.getElementById("homeQueuePreview")) await renderHomeQueuePreview?.();
-      if (document.getElementById("adminDashboard")) {
-        await updateAdminOverview?.();
-      }
-    } catch (error) {
-      console.error("Realtime refresh failed:", error);
-    }
-  }, 250);
-}
-
-function setupRealtime() {
-  if (!window.supabaseClient) {
-    console.error("Realtime failed: supabaseClient not found.");
-    return null;
-  }
-
-  if (realtimeChannel) {
-    supabaseClient.removeChannel(realtimeChannel);
-    realtimeChannel = null;
-  }
-
-  realtimeChannel = supabaseClient
-    .channel(`site-realtime-${Date.now()}`)
-    .on("postgres_changes", { event: "*", schema: "public", table: "commissions" }, payload => {
-      console.log("Realtime commissions event:", payload);
-      queueRealtimeRefresh("commissions");
-    })
-    .on("postgres_changes", { event: "*", schema: "public", table: "progress_updates" }, payload => {
-      console.log("Realtime progress event:", payload);
-      queueRealtimeRefresh("progress_updates");
-    })
-    .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, payload => {
-      console.log("Realtime chat event:", payload);
-      const commissionId = payload?.new?.commission_id || payload?.old?.commission_id;
-      if (commissionId) {
-        renderClientChat?.(commissionId);
-        renderAdminChat?.(commissionId);
-      }
-    })
-    .subscribe(status => {
-      console.log("Realtime status:", status);
-    });
-
-  return realtimeChannel;
-}
-
-window.setupRealtime = setupRealtime;
-
-// Start realtime after the normal app initialization finishes.
-document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(() => {
-    setupRealtime();
-  }, 1200);
-});
-
-setInterval(async () => {
-  // Public page auto-sync. Keep this gentle so forms/chat do not flicker.
-  renderQueue?.();
-  renderHomeQueuePreview?.();
-  renderCommissionInfo?.();
-
-  renderGallery?.();
-  renderFeaturedGallery?.();
-
-  renderPricingPage?.();
-  renderTosPage?.();
-  renderSocialLinks?.();
-  applySupabaseHomepageSettings?.();
-
-  // Progress pages are special because rebuilding the whole page also rebuilds chat.
-  // This only refreshes chat while typing and avoids the long close/reappear glitch.
-  await refreshProgressSafely?.();
-
-  // Admin chat boxes only update their message lists, not the full commission cards.
-  if (isAdmin) {
-    expandedAdminIds.forEach(id => renderAdminChat?.(id));
-  }
-
-  // Do NOT auto-render admin forms here.
-  // Do NOT rebuild chat containers while typing.
-}, 3000);
 
 /* =========================================================
    SITE CUSTOMIZATION V2 OVERRIDES

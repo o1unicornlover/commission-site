@@ -1,0 +1,28 @@
+Refactor Stage 1
+================
+
+What changed:
+- script.js is now a tiny loader.
+- The previous big script.js moved to js/legacy-app.js.
+- sb-api.js is now a tiny loader.
+- The previous API file moved to api/core.js.
+- Placeholder module files were added for future splitting.
+
+What should change visually:
+- Nothing.
+
+What to replace/upload:
+- script.js
+- sb-api.js
+- js/legacy-app.js
+- api/core.js
+- js/app.js
+- js/utils.js
+- js/ui.js
+- js/autosync.js
+
+Recommended cache versions in HTML:
+<script src="./sb-api.js?v=19"></script>
+<script src="script.js?v=ui39"></script>
+
+No SQL needed.

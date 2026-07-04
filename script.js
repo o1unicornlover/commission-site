@@ -2307,3 +2307,394 @@ setInterval(async () => {
   // Do NOT auto-render admin forms here.
   // Do NOT rebuild chat containers while typing.
 }, 3000);
+
+/* =========================================================
+   SITE CUSTOMIZATION V2 OVERRIDES
+   - Supabase favicon/news
+   - default + holiday colors
+   - holiday backgrounds/banner/page dolls
+   - banner upload fix
+========================================================= */
+const SITE_THEME_DEFAULTS = {
+  default: {
+    bg: "#100f17", panel: "#181624", panel2: "#211d31", text: "#f6efff", muted: "#b8adc8",
+    accent: "#f4a6d7", accent2: "#b79cff", border: "#8f4a79",
+    banner_url: "", pagedoll_url: "", background_url: "", particles: false
+  },
+  february: {
+    bg: "#ffe6f4", panel: "#fff4fb", panel2: "#ffd8ee", text: "#5a173f", muted: "#945b78",
+    accent: "#ff4fae", accent2: "#ff9bd2", border: "#ff9bd2",
+    banner_url: "", pagedoll_url: "", background_url: "", particles: true
+  },
+  october: {
+    bg: "#10080a", panel: "#1c1018", panel2: "#2a1525", text: "#fff2e9", muted: "#d4a88e",
+    accent: "#ff7a38", accent2: "#c985ff", border: "#b6552c",
+    banner_url: "", pagedoll_url: "", background_url: "", particles: false
+  },
+  december: {
+    bg: "#100f17", panel: "#181624", panel2: "#211d31", text: "#fff8fb", muted: "#d9c8d4",
+    accent: "#ff5f8f", accent2: "#fff0f8", border: "#e8d1dc",
+    banner_url: "", pagedoll_url: "", background_url: "", particles: true
+  }
+};
+
+function normalizeThemeSettings(raw) {
+  let parsed = raw || {};
+  if (typeof parsed === "string") {
+    try { parsed = JSON.parse(parsed); } catch { parsed = {}; }
+  }
+  const merged = {};
+  Object.keys(SITE_THEME_DEFAULTS).forEach(key => {
+    merged[key] = { ...SITE_THEME_DEFAULTS[key], ...(parsed?.[key] || {}) };
+  });
+  return merged;
+}
+
+function activeThemeKeyFromSettings(settings) {
+  if (!settings) return "default";
+  const manual = settings.default_theme || settings.manual_theme || "default";
+  if (!settings.holiday_enabled) return manual;
+  const month = new Date().getMonth() + 1;
+  if (month === 2) return "february";
+  if (month === 10) return "october";
+  if (month === 12) return "december";
+  return manual || "default";
+}
+
+function setColorInput(id, value) {
+  const el = document.getElementById(id);
+  if (el && value) el.value = value;
+}
+function getColorInput(id, fallback) {
+  return document.getElementById(id)?.value || fallback;
+}
+
+function applyThemeVariables(themeKey, theme, settings) {
+  const root = document.documentElement;
+  const active = { ...SITE_THEME_DEFAULTS.default, ...theme };
+  root.style.setProperty("--bg", active.bg);
+  root.style.setProperty("--panel", active.panel);
+  root.style.setProperty("--panel2", active.panel2);
+  root.style.setProperty("--text", active.text);
+  root.style.setProperty("--muted", active.muted);
+  root.style.setProperty("--accent", active.accent);
+  root.style.setProperty("--accent2", active.accent2);
+  root.style.setProperty("--site-line-color", active.border || "rgba(255,255,255,.1)");
+  root.style.setProperty("--line", active.border ? `${active.border}66` : "rgba(255,255,255,.1)");
+  document.body.dataset.theme = themeKey;
+
+  const bg = active.background_url || settings?.background_url || "";
+  if (bg) {
+    document.body.style.backgroundImage = `linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.22)), url('${bg}')`;
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundAttachment = "fixed";
+    document.body.style.backgroundPosition = "center";
+  } else {
+    document.body.style.backgroundImage = "";
+  }
+}
+
+function setFaviconUrl(url) {
+  if (!url) return;
+  let link = document.querySelector("link[rel='icon']");
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "icon";
+    document.head.appendChild(link);
+  }
+  link.href = url;
+}
+
+async function applySupabaseHomepageSettings() {
+  const settings = await getSiteSettings();
+  if (!settings) return;
+
+  const allThemes = normalizeThemeSettings(settings.theme_settings);
+  const themeKey = activeThemeKeyFromSettings(settings);
+  const activeTheme = allThemes[themeKey] || allThemes.default;
+  applyThemeVariables(themeKey, activeTheme, settings);
+
+  const title = document.getElementById("homeTitle");
+  if (title) title.textContent = settings.homepage_title || "Welcome!";
+
+  const subtitle = document.getElementById("homeSubtitle");
+  if (subtitle) subtitle.textContent = settings.homepage_subtitle || "";
+
+  const note = document.getElementById("commissionInfoNote");
+  if (note) note.textContent = settings.homepage_news || "";
+
+  const banner = activeTheme.banner_url || settings.banner_url || "";
+  const hero = document.getElementById("homeHero");
+  if (hero) {
+    if (banner) {
+      hero.style.backgroundImage = `linear-gradient(90deg, rgba(7,6,10,.42), rgba(7,6,10,.08)), url('${banner}')`;
+      hero.style.backgroundSize = "cover";
+      hero.style.backgroundPosition = "center";
+    } else {
+      hero.style.backgroundImage = "";
+    }
+  }
+
+  const dollUrl = activeTheme.pagedoll_url || settings.pagedoll_url || "";
+  const doll = document.getElementById("pageDoll");
+  const fallback = document.getElementById("pageDollFallback");
+  if (doll) {
+    if (dollUrl) {
+      doll.src = dollUrl;
+      doll.classList.remove("hidden");
+      if (fallback) fallback.classList.add("hidden");
+    } else {
+      doll.classList.add("hidden");
+      if (fallback) fallback.classList.remove("hidden");
+    }
+  }
+
+  if (settings.favicon_url) setFaviconUrl(settings.favicon_url);
+  renderLatestNews?.();
+}
+
+async function loadSettingsAdmin() {
+  const local = loadSiteSettings();
+  const supa = await getSiteSettings();
+  const settings = supa || {};
+  const themes = normalizeThemeSettings(settings.theme_settings);
+
+  const setVal = (id, value) => { const el = document.getElementById(id); if (el) el.value = value ?? ""; };
+  const setCheck = (id, value) => { const el = document.getElementById(id); if (el) el.checked = Boolean(value); };
+
+  setVal("settingTitle", settings.homepage_title || local.title);
+  setVal("settingSubtitle", settings.homepage_subtitle || local.subtitle);
+  setVal("settingNote", settings.homepage_news || local.commissionNote);
+
+  setCheck("holidayEnabled", settings.holiday_enabled ?? local.holidayEnabled);
+  setVal("manualTheme", settings.default_theme || local.manualTheme || "default");
+  setVal("navIconInput", settings.nav_icon || local.navIcon || "✧");
+  setCheck("galleryBorderEnabled", settings.gallery_border_enabled ?? local.galleryBorderEnabled);
+
+  const def = themes.default;
+  setColorInput("appearanceBg", def.bg);
+  setColorInput("appearancePanel", def.panel);
+  setColorInput("appearancePanel2", def.panel2);
+  setColorInput("appearanceText", def.text);
+  setColorInput("appearanceMuted", def.muted);
+  setColorInput("appearanceAccent", def.accent);
+  setColorInput("appearanceAccent2", def.accent2);
+  setColorInput("appearanceBorder", def.border);
+
+  renderSocialAdmin?.();
+  renderPricingAdmin?.();
+  renderNewsAdmin?.();
+  renderTosAdmin?.();
+  loadPaymentSettingsAdmin?.();
+  loadThemeEditor?.();
+}
+
+async function saveDefaultAppearance() {
+  const settings = await getSiteSettings();
+  if (!settings) return alert("Could not load site settings. Make sure your settings row exists.");
+  const themes = normalizeThemeSettings(settings.theme_settings);
+
+  const updates = {};
+  const bannerFile = document.getElementById("defaultBannerFile")?.files?.[0];
+  const dollFile = document.getElementById("defaultDollFile")?.files?.[0];
+  const bgFile = document.getElementById("backgroundFile")?.files?.[0];
+  const favFile = document.getElementById("faviconFile")?.files?.[0];
+  const galleryBorderFile = document.getElementById("galleryBorderFile")?.files?.[0];
+  const navIcon = document.getElementById("navIconInput")?.value.trim();
+
+  if (bannerFile) {
+    const url = await uploadImage(bannerFile, "banners");
+    if (!url) return alert("Banner upload failed. Check the banners bucket policy.");
+    updates.banner_url = url;
+  }
+  if (dollFile) {
+    const url = await uploadImage(dollFile, "pagedolls");
+    if (!url) return alert("Page doll upload failed. Check the pagedolls bucket policy.");
+    updates.pagedoll_url = url;
+  }
+  if (bgFile) {
+    const url = await uploadImage(bgFile, "backgrounds");
+    if (!url) return alert("Background upload failed. Check the backgrounds bucket policy.");
+    updates.background_url = url;
+  }
+  if (favFile) {
+    const url = await uploadImage(favFile, "backgrounds");
+    if (!url) return alert("Favicon upload failed. This uses the backgrounds bucket.");
+    updates.favicon_url = url;
+  }
+  if (galleryBorderFile) {
+    const url = await uploadImage(galleryBorderFile, "gallery-borders");
+    if (!url) return alert("Gallery border upload failed. Check the gallery-borders bucket policy.");
+    updates.gallery_border_url = url;
+  }
+
+  if (navIcon) updates.nav_icon = navIcon;
+  updates.gallery_border_enabled = Boolean(document.getElementById("galleryBorderEnabled")?.checked);
+
+  themes.default = {
+    ...themes.default,
+    bg: getColorInput("appearanceBg", themes.default.bg),
+    panel: getColorInput("appearancePanel", themes.default.panel),
+    panel2: getColorInput("appearancePanel2", themes.default.panel2),
+    text: getColorInput("appearanceText", themes.default.text),
+    muted: getColorInput("appearanceMuted", themes.default.muted),
+    accent: getColorInput("appearanceAccent", themes.default.accent),
+    accent2: getColorInput("appearanceAccent2", themes.default.accent2),
+    border: getColorInput("appearanceBorder", themes.default.border)
+  };
+  updates.theme_settings = themes;
+
+  const saved = await updateSiteSettings(updates);
+  if (!saved) return alert("Appearance could not be saved. Did you run Site Customization v2 SQL?");
+
+  await applySupabaseHomepageSettings();
+  await renderGallery?.();
+  alert("Default appearance saved.");
+}
+
+async function clearDefaultImages() {
+  const settings = await getSiteSettings();
+  const themes = normalizeThemeSettings(settings?.theme_settings);
+  const saved = await updateSiteSettings({
+    banner_url: "",
+    pagedoll_url: "",
+    background_url: "",
+    favicon_url: "",
+    gallery_border_url: "",
+    gallery_border_enabled: false,
+    theme_settings: themes
+  });
+  if (!saved) return alert("Could not clear appearance images.");
+  await applySupabaseHomepageSettings();
+  alert("Default images cleared.");
+}
+
+async function loadThemeEditor() {
+  const settings = await getSiteSettings?.();
+  const themes = normalizeThemeSettings(settings?.theme_settings);
+  const theme = document.getElementById("themeEditSelect")?.value || "february";
+  const cfg = themes[theme] || SITE_THEME_DEFAULTS[theme];
+
+  const part = document.getElementById("holidayParticles");
+  if (part) part.checked = Boolean(cfg.particles);
+  setColorInput("themeBg", cfg.bg);
+  setColorInput("themePanel", cfg.panel);
+  setColorInput("themePanel2", cfg.panel2);
+  setColorInput("themeText", cfg.text);
+  setColorInput("themeMuted", cfg.muted);
+  setColorInput("themeAccent", cfg.accent);
+  setColorInput("themeAccent2", cfg.accent2);
+  setColorInput("themeBorder", cfg.border);
+}
+
+async function saveHolidaySettings() {
+  const current = await getSiteSettings();
+  if (!current) return alert("Could not load site settings.");
+  const themes = normalizeThemeSettings(current.theme_settings);
+  const theme = document.getElementById("themeEditSelect")?.value || "february";
+  const cfg = { ...themes[theme] };
+
+  const bannerFile = document.getElementById("holidayBannerFile")?.files?.[0];
+  const dollFile = document.getElementById("holidayDollFile")?.files?.[0];
+  const bgFile = document.getElementById("holidayBackgroundFile")?.files?.[0];
+
+  if (bannerFile) {
+    const url = await uploadImage(bannerFile, "banners");
+    if (!url) return alert("Holiday banner upload failed.");
+    cfg.banner_url = url;
+  }
+  if (dollFile) {
+    const url = await uploadImage(dollFile, "pagedolls");
+    if (!url) return alert("Holiday page doll upload failed.");
+    cfg.pagedoll_url = url;
+  }
+  if (bgFile) {
+    const url = await uploadImage(bgFile, "backgrounds");
+    if (!url) return alert("Holiday background upload failed.");
+    cfg.background_url = url;
+  }
+
+  cfg.particles = Boolean(document.getElementById("holidayParticles")?.checked);
+  cfg.bg = getColorInput("themeBg", cfg.bg);
+  cfg.panel = getColorInput("themePanel", cfg.panel);
+  cfg.panel2 = getColorInput("themePanel2", cfg.panel2);
+  cfg.text = getColorInput("themeText", cfg.text);
+  cfg.muted = getColorInput("themeMuted", cfg.muted);
+  cfg.accent = getColorInput("themeAccent", cfg.accent);
+  cfg.accent2 = getColorInput("themeAccent2", cfg.accent2);
+  cfg.border = getColorInput("themeBorder", cfg.border);
+  themes[theme] = cfg;
+
+  const saved = await updateSiteSettings({
+    holiday_enabled: Boolean(document.getElementById("holidayEnabled")?.checked),
+    default_theme: document.getElementById("manualTheme")?.value || "default",
+    theme_settings: themes
+  });
+  if (!saved) return alert("Holiday settings could not be saved. Did you run Site Customization v2 SQL?");
+
+  await applySupabaseHomepageSettings();
+  alert(`${themeLabel?.(theme) || theme} theme saved.`);
+}
+
+async function renderLatestNews() {
+  const box = document.getElementById("latestNews");
+  if (!box) return;
+  const settings = await getSiteSettings?.();
+  let news = settings?.news_items || [];
+  if (typeof news === "string") {
+    try { news = JSON.parse(news); } catch { news = []; }
+  }
+  if (!Array.isArray(news) || !news.length) {
+    const local = loadSiteSettings?.();
+    news = local?.news || [];
+  }
+  box.innerHTML = (news || []).slice(0, 4).map(item => `
+    <div class="news-row"><strong>${escapeHTML(item.date || "")}</strong><span>${escapeHTML(item.text || "")}</span></div>
+  `).join("") || `<p class="small">No news yet.</p>`;
+}
+
+async function renderNewsAdmin() {
+  const box = document.getElementById("newsAdminList");
+  if (!box) return;
+  const settings = await getSiteSettings?.();
+  let news = settings?.news_items || [];
+  if (typeof news === "string") {
+    try { news = JSON.parse(news); } catch { news = []; }
+  }
+  box.innerHTML = (news || []).map(item => `
+    <div class="social-admin-row">
+      <span><strong>${escapeHTML(item.date || "")}</strong><small>${escapeHTML(item.text || "")}</small></span>
+      <button class="btn danger" onclick="deleteNewsItem('${item.id}')">Delete</button>
+    </div>
+  `).join("") || `<p class="small">No news items yet.</p>`;
+}
+
+async function addNewsItem() {
+  const date = document.getElementById("newsDate")?.value.trim();
+  const text = document.getElementById("newsText")?.value.trim();
+  if (!date || !text) return alert("Add a date and news text first.");
+  const settings = await getSiteSettings?.();
+  let news = settings?.news_items || [];
+  if (typeof news === "string") {
+    try { news = JSON.parse(news); } catch { news = []; }
+  }
+  if (!Array.isArray(news)) news = [];
+  news.unshift({ id: `N-${Date.now()}`, date, text });
+  const saved = await updateSiteSettings({ news_items: news });
+  if (!saved) return alert("News could not be saved. Did you run Site Customization v2 SQL?");
+  ["newsDate", "newsText"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  renderNewsAdmin();
+  renderLatestNews();
+}
+
+async function deleteNewsItem(id) {
+  const settings = await getSiteSettings?.();
+  let news = settings?.news_items || [];
+  if (typeof news === "string") {
+    try { news = JSON.parse(news); } catch { news = []; }
+  }
+  news = (news || []).filter(item => String(item.id) !== String(id));
+  await updateSiteSettings({ news_items: news });
+  renderNewsAdmin();
+  renderLatestNews();
+}

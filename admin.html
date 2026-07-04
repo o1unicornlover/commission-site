@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="style.css?v=ui28" />
+  <link rel="stylesheet" href="style.css?v=ui29" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body>
@@ -138,6 +138,20 @@
                   <input id="galleryBorderFile" type="file" accept="image/*">
                   <p class="small">Best resolution: upload a transparent PNG frame around 1024×1024 px or 1200×1200 px. Keep the center transparent so the artwork shows through. Square frames work best because gallery thumbnails are square.</p>
                   <label class="small"><input id="galleryBorderEnabled" type="checkbox"> Enable custom gallery borders</label>
+
+                  <hr class="soft-line">
+                  <h4>Default site colors</h4>
+                  <p class="small">These control the normal site colors when a holiday theme is not overriding them.</p>
+                  <div class="color-grid">
+                    <label>Background <input id="appearanceBg" type="color" value="#100f17"></label>
+                    <label>Panel <input id="appearancePanel" type="color" value="#181624"></label>
+                    <label>Card <input id="appearancePanel2" type="color" value="#211d31"></label>
+                    <label>Text <input id="appearanceText" type="color" value="#f6efff"></label>
+                    <label>Muted text <input id="appearanceMuted" type="color" value="#b8adc8"></label>
+                    <label>Accent <input id="appearanceAccent" type="color" value="#f4a6d7"></label>
+                    <label>Accent 2 <input id="appearanceAccent2" type="color" value="#b79cff"></label>
+                    <label>Borders <input id="appearanceBorder" type="color" value="#8f4a79"></label>
+                  </div>
                   <div class="button-row"><button class="btn primary" onclick="saveDefaultAppearance()">Save Appearance</button><button class="btn" onclick="clearDefaultImages()">Clear Images</button></div>
                 </section>
                 <section id="settings-holiday" class="settings-panel hidden">
@@ -161,7 +175,23 @@
                   <input id="holidayBannerFile" type="file" accept="image/*">
                   <label class="small">Holiday page doll image</label>
                   <input id="holidayDollFile" type="file" accept="image/*">
+                  <label class="small">Holiday background image / pattern</label>
+                  <input id="holidayBackgroundFile" type="file" accept="image/*">
                   <label class="small"><input id="holidayParticles" type="checkbox"> Enable foreground particles for this theme</label>
+
+                  <hr class="soft-line">
+                  <h4>Holiday colors</h4>
+                  <p class="small">These let each holiday have its own vibe. Valentine can be light pink, Halloween can be orange/dark, etc.</p>
+                  <div class="color-grid">
+                    <label>Background <input id="themeBg" type="color" value="#ffe6f4"></label>
+                    <label>Panel <input id="themePanel" type="color" value="#fff3fb"></label>
+                    <label>Card <input id="themePanel2" type="color" value="#ffd6ec"></label>
+                    <label>Text <input id="themeText" type="color" value="#5a173f"></label>
+                    <label>Muted text <input id="themeMuted" type="color" value="#9b5a7c"></label>
+                    <label>Accent <input id="themeAccent" type="color" value="#ff4fae"></label>
+                    <label>Accent 2 <input id="themeAccent2" type="color" value="#ff9bd2"></label>
+                    <label>Borders <input id="themeBorder" type="color" value="#ff9bd2"></label>
+                  </div>
                   <button class="btn primary" onclick="saveHolidaySettings()">Save Holiday Settings</button>
                 </section>
                 <section id="settings-social" class="settings-panel hidden">
@@ -245,7 +275,7 @@
   
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
-<script src="./sb-api.js?v=16"></script>
-<script src="script.js?v=ui36"></script>
+<script src="./sb-api.js?v=17"></script>
+<script src="script.js?v=ui37"></script>
 </body>
 </html>

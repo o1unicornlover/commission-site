@@ -800,3 +800,125 @@ body .home-dashboard {
   border-color: transparent;
   font-weight: 800;
 }
+
+/* ---------- Site Customization v2 ---------- */
+:root {
+  --site-radius: 26px;
+  --site-line-color: rgba(255, 155, 210, .25);
+}
+body {
+  background-color: var(--bg);
+  background-image: var(--active-bg-image, radial-gradient(circle at top, #2a1d38, var(--bg)));
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
+}
+.site-header,
+.panel,
+.info-card,
+.commission-card,
+.gallery-card,
+.admin-card,
+.stage-card,
+.update-box,
+.admin-accordion,
+.social-card,
+.client-chat {
+  border-color: var(--site-line-color, var(--line));
+}
+.panel { background: color-mix(in srgb, var(--panel) 88%, transparent); }
+.info-card, .commission-card, .gallery-card, .admin-card, .stage-card, .client-chat { background: color-mix(in srgb, var(--panel2) 92%, transparent); }
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 8px 0 12px;
+}
+.color-grid label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255,255,255,.035);
+}
+.color-grid input[type="color"] {
+  padding: 0;
+  height: 38px;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* Valentine / February theme: glossy pink webcore */
+body[data-theme="february"] {
+  --bg: #ffe6f4;
+  --panel: #fff4fb;
+  --panel2: #ffd8ee;
+  --text: #5a173f;
+  --muted: #945b78;
+  --accent: #ff4fae;
+  --accent2: #ff9bd2;
+  --site-line-color: rgba(255, 79, 174, .36);
+}
+body[data-theme="february"] .site-header {
+  background: rgba(255, 244, 251, .78);
+  border-bottom-color: rgba(255,79,174,.32);
+}
+body[data-theme="february"] .brand,
+body[data-theme="february"] .page-title,
+body[data-theme="february"] .hero-copy h1 {
+  color: #ff4fae;
+  text-shadow: 0 0 14px rgba(255,79,174,.35), 0 2px 0 rgba(255,255,255,.9);
+}
+body[data-theme="february"] .visual-hero {
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255,255,255,.78), transparent 18%),
+    radial-gradient(circle at 75% 35%, rgba(255,79,174,.22), transparent 25%),
+    linear-gradient(135deg, #fff6fc 0%, #ffd6ec 48%, #ff9bd2 100%);
+  border-color: rgba(255,79,174,.42);
+  box-shadow: 0 22px 80px rgba(255,79,174,.22), inset 0 0 42px rgba(255,255,255,.6);
+}
+body[data-theme="february"] .visual-hero::before {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,.9) 0 1px, transparent 2px),
+    radial-gradient(circle at 20px 20px, rgba(255,79,174,.20) 0 8px, transparent 9px),
+    radial-gradient(circle at 60px 60px, rgba(255,155,210,.22) 0 7px, transparent 8px);
+  background-size: 70px 70px, 90px 90px, 90px 90px;
+  opacity: .9;
+}
+body[data-theme="february"] .btn,
+body[data-theme="february"] .settings-tab,
+body[data-theme="february"] input,
+body[data-theme="february"] textarea,
+body[data-theme="february"] select {
+  background: linear-gradient(180deg, rgba(255,255,255,.82), rgba(255,214,236,.78));
+  color: var(--text);
+  border-color: rgba(255,79,174,.35);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+}
+body[data-theme="february"] .primary {
+  background: linear-gradient(180deg, #ffb8df, #ff4fae);
+  color: #4b0b32;
+  border: 1px solid rgba(255,255,255,.75);
+}
+body[data-theme="february"] .social-card,
+body[data-theme="february"] .mini-panel,
+body[data-theme="february"] .featured-panel {
+  background: rgba(255, 244, 251, .74);
+  backdrop-filter: blur(10px);
+}
+
+body[data-theme="october"] {
+  --accent: #ff7a38;
+  --accent2: #c985ff;
+  --site-line-color: rgba(255,122,56,.35);
+}
+body[data-theme="december"] {
+  --accent: #ff5f8f;
+  --accent2: #fff0f8;
+  --site-line-color: rgba(255,240,248,.28);
+}

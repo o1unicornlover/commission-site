@@ -1,4 +1,4 @@
-/* Admin studio overview: attention cards, recent client activity, and PWA install control. */
+/* Admin studio overview: attention cards, recent client activity, payments, and PWA install control. */
 (function initAdminStudioDashboard() {
   const onAdmin = /(^|\/)admin\.html$/i.test(location.pathname) || location.pathname.endsWith("/admin.html");
   if (!onAdmin) return;
@@ -36,6 +36,15 @@
     else window.showAdminPage?.("inbox");
   }
 
+  function openCommissionMessages(id) {
+    if (window.openAdminInboxConversation) {
+      window.openAdminInboxConversation(id);
+      return;
+    }
+    location.hash = `message-${encodeURIComponent(id)}`;
+    openInbox();
+  }
+
   function ensureStudioOverview() {
     const dashboard = document.getElementById("adminPage-dash");
     if (!dashboard || document.getElementById("adminStudioOverview")) return;
@@ -62,11 +71,20 @@
           <button type="button" class="btn primary" id="studioOpenInbox">Open Inbox</button>
         </div>
         <div id="studioRecentActivity"><p class="small">Loading recent activity…</p></div>
+      </div>
+      <div class="panel compact-panel">
+        <div class="section-title">
+          <div><p class="eyebrow">Money check</p><h3>Payment queue</h3></div>
+          <span class="pill" id="studioPaymentQueueBadge">0 waiting</span>
+        </div>
+        <p class="small">Quickly clear paid commissions or jump into the client conversation without rebuilding the commission editor.</p>
+        <div id="studioPaymentQueue"><p class="small">Loading payment queue…</p></div>
       </div>`;
 
     dashboard.appendChild(block);
     document.getElementById("refreshStudioOverview")?.addEventListener("click", refreshStudioOverview);
     document.getElementById("studioOpenInbox")?.addEventListener("click", openInbox);
+    document.getElementById("studioPaymentQueue")?.addEventListener("click", handlePaymentQueueClick);
   }
 
   async function collectMessageSummary(commissions) {
@@ -87,6 +105,72 @@
   function paymentNeedsAttention(commission) {
     const state = String(commission?.payment_status || "").toLowerCase();
     return state === "awaiting payment" || state === "requested" || state === "pending";
+  }
+
+  function renderPaymentQueue(commissions) {
+    const box = document.getElementById("studioPaymentQueue");
+    const badge = document.getElementById("studioPaymentQueueBadge");
+    if (!box) return;
+
+    const awaiting = (commissions || []).filter(paymentNeedsAttention);
+    if (badge) badge.textContent = `${awaiting.length} waiting`;
+
+    if (!awaiting.length) {
+      box.innerHTML = `<article class="info-card"><strong>All clear ♡</strong><p class="small">No active commissions are currently waiting for payment.</p></article>`;
+      return;
+    }
+
+    box.innerHTML = awaiting.map(commission => {
+      const id = String(commission.id || "");
+      const name = commission.display_name || commission.client_name || "Private Client";
+      const type = commission.commission_type || "Commission";
+      const price = commission.price ? String(commission.price) : "Price not set";
+      const state = commission.payment_status || "Awaiting payment";
+      return `<article class="info-card" data-payment-commission="${escapeHTML(id)}">
+        <div class="section-title">
+          <div>
+            <strong>${escapeHTML(name)}</strong>
+            <p class="small">${escapeHTML(type)} • ${escapeHTML(price)}</p>
+          </div>
+          <span class="pill">${escapeHTML(state)}</span>
+        </div>
+        <div class="button-row">
+          <button type="button" class="btn primary" data-payment-action="paid" data-payment-id="${escapeHTML(id)}">Mark Paid</button>
+          <button type="button" class="btn" data-payment-action="message" data-payment-id="${escapeHTML(id)}">Message Client</button>
+        </div>
+      </article>`;
+    }).join("");
+  }
+
+  async function handlePaymentQueueClick(event) {
+    const button = event.target.closest("[data-payment-action]");
+    if (!button) return;
+    const id = button.dataset.paymentId;
+    const action = button.dataset.paymentAction;
+    if (!id) return;
+
+    if (action === "message") {
+      openCommissionMessages(id);
+      return;
+    }
+
+    if (action === "paid") {
+      if (!window.updateCommission) return alert("Commission updates are unavailable right now.");
+      button.disabled = true;
+      const oldText = button.textContent;
+      button.textContent = "Saving…";
+      try {
+        const updated = await window.updateCommission(id, { payment_status: "Paid" });
+        if (!updated) throw new Error("Update failed");
+        await refreshStudioOverview();
+        window.renderAdmin?.();
+      } catch (error) {
+        console.warn("Could not mark commission paid", error);
+        button.disabled = false;
+        button.textContent = oldText;
+        alert("Could not mark this commission as paid. Please try again.");
+      }
+    }
   }
 
   async function refreshStudioOverview() {
@@ -125,9 +209,15 @@
               ${unread ? `<span class="pill">${unread} unread</span>` : `<span class="pill">Read</span>`}
             </div>
             <p>${escapeHTML(String(latest.message || "").slice(0, 180))}</p>
+            <div class="button-row"><button type="button" class="btn" data-recent-message-id="${escapeHTML(String(commission.id))}">Open conversation</button></div>
           </article>`;
         }).join("") : '<p class="small">No client messages yet.</p>';
+        recentBox.querySelectorAll("[data-recent-message-id]").forEach(button => {
+          button.addEventListener("click", () => openCommissionMessages(button.dataset.recentMessageId));
+        });
       }
+
+      renderPaymentQueue(active);
     } catch (error) {
       console.warn("Studio overview refresh failed", error);
     }

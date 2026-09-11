@@ -1,12 +1,27 @@
-/* Admin-only PWA helpers: installability, client-message notifications, unread badge, and chime. */
+/* Admin-only PWA helpers: installability, unified inbox, unread state, client-message notifications, and chime. */
 (function initAdminApp() {
   const onAdmin = /(^|\/)admin\.html$/i.test(location.pathname) || location.pathname.endsWith("/admin.html");
   if (!onAdmin) return;
 
-  let unread = 0;
   let audioCtx = null;
   let notificationChannel = null;
   let notificationsEnabled = localStorage.getItem("adminMessageNotifications") === "true";
+  let inboxRefreshTimer = null;
+  const READ_KEY = "adminConversationReadTimes";
+
+  function getReadTimes() {
+    try { return JSON.parse(localStorage.getItem(READ_KEY) || "{}"); }
+    catch { return {}; }
+  }
+
+  function saveReadTimes(value) {
+    localStorage.setItem(READ_KEY, JSON.stringify(value || {}));
+  }
+
+  function messageTime(row) {
+    const t = new Date(row?.created_at || 0).getTime();
+    return Number.isFinite(t) ? t : 0;
+  }
 
   function addManifest() {
     if (!document.querySelector('link[rel="manifest"]')) {
@@ -56,9 +71,37 @@
     });
   }
 
-  function updateBadge() {
+  async function getInboxRows() {
+    if (!window.getCommissions || !window.getChatMessages) return [];
+    const commissions = await window.getCommissions({ includeArchived: true });
+    const readTimes = getReadTimes();
+    const rows = await Promise.all((commissions || []).map(async commission => {
+      const messages = await window.getChatMessages(commission.id);
+      const clientMessages = (messages || []).filter(m => m.sender === "client");
+      const latest = clientMessages[clientMessages.length - 1] || null;
+      const lastRead = Number(readTimes[String(commission.id)] || 0);
+      const unreadCount = clientMessages.filter(m => messageTime(m) > lastRead).length;
+      return { commission, messages, latest, unreadCount };
+    }));
+
+    return rows
+      .filter(row => row.latest)
+      .sort((a, b) => messageTime(b.latest) - messageTime(a.latest));
+  }
+
+  async function syncBadge() {
+    let unread = 0;
+    try {
+      const rows = await getInboxRows();
+      unread = rows.reduce((sum, row) => sum + row.unreadCount, 0);
+    } catch (error) {
+      console.warn("Unread count refresh failed", error);
+    }
+
     const btn = document.getElementById("adminNotificationToggle");
     if (btn) btn.textContent = notificationsEnabled ? `🔔 Messages${unread ? ` (${unread})` : ""}` : "🔕 Enable message alerts";
+    const inboxButton = document.querySelector('[data-admin-page="inbox"]');
+    if (inboxButton) inboxButton.textContent = unread ? `Inbox (${unread})` : "Inbox";
     document.title = unread ? `(${unread}) Admin Dashboard` : "Admin Dashboard";
     if (navigator.setAppBadge) {
       if (unread) navigator.setAppBadge(unread).catch(() => {});
@@ -66,17 +109,129 @@
     }
   }
 
-  function clearUnread() {
-    unread = 0;
-    updateBadge();
+  function escapeText(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function displayName(c) {
+    return c?.display_name || c?.client_name || "Private Client";
+  }
+
+  async function markConversationRead(commissionId) {
+    const messages = await window.getChatMessages?.(commissionId) || [];
+    const latestClient = messages.filter(m => m.sender === "client").at(-1);
+    if (latestClient) {
+      const times = getReadTimes();
+      times[String(commissionId)] = messageTime(latestClient) || Date.now();
+      saveReadTimes(times);
+    }
+    await syncBadge();
+  }
+
+  async function openCommissionFromInbox(commissionId) {
+    await markConversationRead(commissionId);
+    window.showAdminPage?.("commissions");
+    if (window.expandedAdminIds?.add) window.expandedAdminIds.add(String(commissionId));
+    await window.renderAdmin?.();
+    setTimeout(() => {
+      const node = document.querySelector(`[data-commission-id="${CSS.escape(String(commissionId))}"]`) || document.getElementById(`commission-${commissionId}`);
+      node?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+  }
+
+  async function renderAdminInbox() {
+    const box = document.getElementById("adminInboxList");
+    if (!box) return;
+    box.innerHTML = '<p class="small">Loading conversations…</p>';
+    const rows = await getInboxRows();
+
+    if (!rows.length) {
+      box.innerHTML = '<article class="info-card"><h3>No client messages yet</h3><p class="small">New client replies will appear here automatically.</p></article>';
+      await syncBadge();
+      return;
+    }
+
+    box.innerHTML = rows.map(({ commission: c, latest, unreadCount }) => {
+      const status = String(c.status || "Active");
+      const when = latest?.created_at ? new Date(latest.created_at).toLocaleString() : "";
+      return `
+        <article class="info-card" data-inbox-commission="${escapeText(c.id)}">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">${unreadCount ? `${unreadCount} unread` : "Up to date"}</p>
+              <h3>${escapeText(displayName(c))}</h3>
+            </div>
+            <span class="pill">${escapeText(c.commission_type || "Commission")}</span>
+          </div>
+          <p>${escapeText(latest?.message || "")}</p>
+          <p class="small">${escapeText(status)}${when ? ` • ${escapeText(when)}` : ""}</p>
+          <div class="button-row">
+            <button type="button" class="btn ${unreadCount ? "primary" : ""}" data-open-inbox-commission="${escapeText(c.id)}">Open conversation</button>
+            ${unreadCount ? `<button type="button" class="btn" data-mark-inbox-read="${escapeText(c.id)}">Mark read</button>` : ""}
+          </div>
+        </article>`;
+    }).join("");
+
+    box.querySelectorAll("[data-open-inbox-commission]").forEach(button => {
+      button.addEventListener("click", () => openCommissionFromInbox(button.dataset.openInboxCommission));
+    });
+    box.querySelectorAll("[data-mark-inbox-read]").forEach(button => {
+      button.addEventListener("click", async () => {
+        await markConversationRead(button.dataset.markInboxRead);
+        await renderAdminInbox();
+      });
+    });
+    await syncBadge();
+  }
+
+  function injectInbox() {
+    const sidebar = document.querySelector(".admin-sidebar");
+    const content = document.querySelector(".admin-content");
+    if (!sidebar || !content || document.getElementById("adminPage-inbox")) return;
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "admin-nav-btn";
+    button.dataset.adminPage = "inbox";
+    button.textContent = "Inbox";
+    button.addEventListener("click", () => {
+      window.showAdminPage?.("inbox");
+      renderAdminInbox();
+    });
+
+    const commissionsButton = sidebar.querySelector('[data-admin-page="commissions"]');
+    commissionsButton?.insertAdjacentElement("afterend", button);
+
+    const page = document.createElement("section");
+    page.id = "adminPage-inbox";
+    page.className = "admin-page";
+    page.innerHTML = `
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Client messages</p>
+          <h2>Inbox</h2>
+        </div>
+        <button type="button" class="btn" id="refreshAdminInbox">Refresh</button>
+      </div>
+      <p class="small">Every client conversation in one place. Unread state is kept on this admin device and new messages update in real time.</p>
+      <div id="adminInboxList" class="admin-list"></div>`;
+    const commissionsPage = document.getElementById("adminPage-commissions");
+    commissionsPage?.insertAdjacentElement("afterend", page);
+    document.getElementById("refreshAdminInbox")?.addEventListener("click", renderAdminInbox);
   }
 
   async function showMessageNotification(row) {
-    if (!notificationsEnabled || row?.sender !== "client") return;
-    unread += 1;
-    updateBadge();
-    chime();
+    if (row?.sender !== "client") return;
+    await syncBadge();
+    if (document.getElementById("adminPage-inbox")?.classList.contains("active")) await renderAdminInbox();
+    if (!notificationsEnabled) return;
 
+    chime();
     const body = String(row?.message || "New client message").slice(0, 150);
     if ("Notification" in window && Notification.permission === "granted") {
       try {
@@ -101,7 +256,7 @@
     if (!("Notification" in window)) {
       notificationsEnabled = true;
       localStorage.setItem("adminMessageNotifications", "true");
-      updateBadge();
+      await syncBadge();
       return alert("Chime alerts are enabled. This browser does not support desktop notifications.");
     }
 
@@ -109,7 +264,7 @@
     if (permission === "default") permission = await Notification.requestPermission();
     notificationsEnabled = permission !== "denied";
     localStorage.setItem("adminMessageNotifications", String(notificationsEnabled));
-    updateBadge();
+    await syncBadge();
     if (notificationsEnabled) chime();
   }
 
@@ -124,10 +279,13 @@
     button.style.padding = "8px 12px";
     button.addEventListener("click", async () => {
       if (!notificationsEnabled) await enableNotifications();
-      else clearUnread();
+      else {
+        notificationsEnabled = false;
+        localStorage.setItem("adminMessageNotifications", "false");
+        await syncBadge();
+      }
     });
     header.appendChild(button);
-    updateBadge();
   }
 
   function subscribeToClientMessages() {
@@ -150,14 +308,24 @@
     window.addEventListener("keydown", once, { once: true });
   }
 
-  window.addEventListener("focus", clearUnread);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) clearUnread(); });
+  function startInboxPolling() {
+    clearInterval(inboxRefreshTimer);
+    inboxRefreshTimer = setInterval(async () => {
+      await syncBadge();
+      if (document.getElementById("adminPage-inbox")?.classList.contains("active")) await renderAdminInbox();
+    }, 10000);
+  }
 
   document.addEventListener("DOMContentLoaded", () => {
     addManifest();
     registerServiceWorker();
     injectControls();
+    injectInbox();
     armAfterUserGesture();
-    setTimeout(subscribeToClientMessages, 900);
+    setTimeout(async () => {
+      subscribeToClientMessages();
+      await syncBadge();
+      startInboxPolling();
+    }, 900);
   });
 })();

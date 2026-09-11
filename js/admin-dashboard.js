@@ -1,4 +1,4 @@
-/* Admin studio overview: attention cards, recent client activity, payments, and PWA install control. */
+/* Admin studio overview: attention cards, recent client activity, payments, active work, and PWA install control. */
 (function initAdminStudioDashboard() {
   const onAdmin = /(^|\/)admin\.html$/i.test(location.pathname) || location.pathname.endsWith("/admin.html");
   if (!onAdmin) return;
@@ -22,7 +22,7 @@
   }
 
   function timeOf(row) {
-    const value = new Date(row?.created_at || 0).getTime();
+    const value = new Date(row?.created_at || row?.updated_at || 0).getTime();
     return Number.isFinite(value) ? value : 0;
   }
 
@@ -43,6 +43,17 @@
     }
     location.hash = `message-${encodeURIComponent(id)}`;
     openInbox();
+  }
+
+  async function openCommissionEditor(id) {
+    window.showAdminPage?.("commissions");
+    if (window.expandedAdminIds?.add) window.expandedAdminIds.add(String(id));
+    await window.renderAdmin?.();
+    setTimeout(() => {
+      const safeId = window.CSS?.escape ? CSS.escape(String(id)) : String(id).replace(/[^a-zA-Z0-9_-]/g, "");
+      const node = document.querySelector(`[data-commission-id="${safeId}"]`) || document.getElementById(`commission-${safeId}`);
+      node?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
   }
 
   function ensureStudioOverview() {
@@ -67,6 +78,14 @@
       </div>
       <div class="panel compact-panel">
         <div class="section-title">
+          <div><p class="eyebrow">Current work</p><h3>Active work queue</h3></div>
+          <span class="pill" id="studioWorkQueueBadge">0 active</span>
+        </div>
+        <p class="small">A quick working view of live commissions. Open the editor for progress/payment controls or jump directly into the client conversation.</p>
+        <div id="studioWorkQueue"><p class="small">Loading active work…</p></div>
+      </div>
+      <div class="panel compact-panel">
+        <div class="section-title">
           <div><p class="eyebrow">Latest contact</p><h3>Recent client activity</h3></div>
           <button type="button" class="btn primary" id="studioOpenInbox">Open Inbox</button>
         </div>
@@ -85,6 +104,7 @@
     document.getElementById("refreshStudioOverview")?.addEventListener("click", refreshStudioOverview);
     document.getElementById("studioOpenInbox")?.addEventListener("click", openInbox);
     document.getElementById("studioPaymentQueue")?.addEventListener("click", handlePaymentQueueClick);
+    document.getElementById("studioWorkQueue")?.addEventListener("click", handleWorkQueueClick);
   }
 
   async function collectMessageSummary(commissions) {
@@ -105,6 +125,62 @@
   function paymentNeedsAttention(commission) {
     const state = String(commission?.payment_status || "").toLowerCase();
     return state === "awaiting payment" || state === "requested" || state === "pending";
+  }
+
+  function workPriority(commission) {
+    const status = String(commission?.status || "").toLowerCase();
+    if (status.includes("feedback") || status.includes("review")) return 0;
+    if (paymentNeedsAttention(commission)) return 1;
+    if (status.includes("waiting") || status.includes("queue")) return 3;
+    return 2;
+  }
+
+  function renderWorkQueue(commissions) {
+    const box = document.getElementById("studioWorkQueue");
+    const badge = document.getElementById("studioWorkQueueBadge");
+    if (!box) return;
+
+    const rows = [...(commissions || [])]
+      .sort((a, b) => workPriority(a) - workPriority(b) || timeOf(b) - timeOf(a))
+      .slice(0, 6);
+
+    if (badge) badge.textContent = `${(commissions || []).length} active`;
+    if (!rows.length) {
+      box.innerHTML = `<article class="info-card"><strong>No active commissions</strong><p class="small">New work will appear here automatically.</p></article>`;
+      return;
+    }
+
+    box.innerHTML = rows.map(commission => {
+      const id = String(commission.id || "");
+      const name = commission.display_name || commission.client_name || "Private Client";
+      const type = commission.commission_type || "Commission";
+      const status = commission.status || "Active";
+      const payment = commission.payment_status || "";
+      const updated = commission.updated_at ? new Date(commission.updated_at).toLocaleDateString() : "";
+      return `<article class="info-card" data-work-commission="${escapeHTML(id)}">
+        <div class="section-title">
+          <div>
+            <strong>${escapeHTML(name)}</strong>
+            <p class="small">${escapeHTML(type)}${updated ? ` • updated ${escapeHTML(updated)}` : ""}</p>
+          </div>
+          <span class="pill">${escapeHTML(status)}</span>
+        </div>
+        ${payment ? `<p class="small">Payment: ${escapeHTML(payment)}</p>` : ""}
+        <div class="button-row">
+          <button type="button" class="btn primary" data-work-action="edit" data-work-id="${escapeHTML(id)}">Open commission</button>
+          <button type="button" class="btn" data-work-action="message" data-work-id="${escapeHTML(id)}">Message</button>
+        </div>
+      </article>`;
+    }).join("");
+  }
+
+  function handleWorkQueueClick(event) {
+    const button = event.target.closest("[data-work-action]");
+    if (!button) return;
+    const id = button.dataset.workId;
+    if (!id) return;
+    if (button.dataset.workAction === "message") openCommissionMessages(id);
+    else openCommissionEditor(id);
   }
 
   function renderPaymentQueue(commissions) {
@@ -197,6 +273,8 @@
       if (unreadEl) unreadEl.textContent = String(messageSummary.unread);
       if (paymentEl) paymentEl.textContent = String(awaiting);
       if (slotsEl) slotsEl.textContent = String(openSlots);
+
+      renderWorkQueue(active);
 
       const recentBox = document.getElementById("studioRecentActivity");
       if (recentBox) {

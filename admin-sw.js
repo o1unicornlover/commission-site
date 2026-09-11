@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v10";
+const ADMIN_CACHE = "commission-admin-v11";
 const ADMIN_SHELL = [
   "./admin.html",
   "./style.css",
@@ -7,7 +7,8 @@ const ADMIN_SHELL = [
   "./supabase-config.js",
   "./admin-manifest.webmanifest",
   "./admin-icon.svg",
-  "./js/admin-app-health.js"
+  "./js/admin-app-health.js",
+  "./js/admin-mobile.js"
 ];
 
 self.addEventListener("install", event => {

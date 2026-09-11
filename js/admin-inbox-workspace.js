@@ -4,6 +4,7 @@
   if (!onAdmin) return;
 
   const READ_KEY = 'adminConversationReadTimes';
+  const DRAFT_KEY = 'adminInboxReplyDrafts';
   let activeCommissionId = '';
   let threadChannel = null;
 
@@ -19,6 +20,32 @@
   function messageTime(row) {
     const time = new Date(row?.created_at || 0).getTime();
     return Number.isFinite(time) ? time : 0;
+  }
+
+  function loadDrafts() {
+    try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}') || {}; }
+    catch { return {}; }
+  }
+
+  function draftFor(commissionId) {
+    return String(loadDrafts()[String(commissionId)] || '');
+  }
+
+  function saveDraft(commissionId, value) {
+    if (!commissionId) return;
+    const drafts = loadDrafts();
+    const clean = String(value || '');
+    if (clean) drafts[String(commissionId)] = clean;
+    else delete drafts[String(commissionId)];
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
+  }
+
+  function updateDraftStatus() {
+    const input = document.getElementById('adminInboxReply');
+    const status = document.getElementById('adminInboxReplyStatus');
+    if (!input || !status || status.dataset.sendState === 'busy') return;
+    const count = input.value.length;
+    status.textContent = count ? `Draft saved • ${count.toLocaleString()} character${count === 1 ? '' : 's'}` : '';
   }
 
   function saveReadTime(commissionId, messages) {
@@ -75,6 +102,11 @@
     document.getElementById('adminInboxCloseThread')?.addEventListener('click', closeThread);
     document.getElementById('adminInboxOpenCommission')?.addEventListener('click', openFullCommission);
     document.getElementById('adminInboxSendReply')?.addEventListener('click', sendReply);
+    document.getElementById('adminInboxReply')?.addEventListener('input', event => {
+      if (!activeCommissionId) return;
+      saveDraft(activeCommissionId, event.target.value);
+      updateDraftStatus();
+    });
     document.getElementById('adminInboxReply')?.addEventListener('keydown', event => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         event.preventDefault();
@@ -122,6 +154,10 @@
 
   async function openThread(commissionId) {
     if (!commissionId) return;
+    const previousId = activeCommissionId;
+    const input = document.getElementById('adminInboxReply');
+    if (previousId && input && previousId !== String(commissionId)) saveDraft(previousId, input.value);
+
     activeCommissionId = String(commissionId);
     const workspace = ensureWorkspace();
     if (!workspace) return;
@@ -135,8 +171,14 @@
       ? `${c.commission_type || 'Commission'} • ${c.status || 'Active'} • ${c.id}`
       : `Commission ${activeCommissionId}`;
 
+    const reply = document.getElementById('adminInboxReply');
     const status = document.getElementById('adminInboxReplyStatus');
-    if (status) status.textContent = '';
+    if (reply) reply.value = draftFor(activeCommissionId);
+    if (status) {
+      status.dataset.sendState = '';
+      status.textContent = '';
+    }
+    updateDraftStatus();
     await refreshThread();
     history.replaceState(null, '', `#message-${encodeURIComponent(activeCommissionId)}`);
     workspace.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -144,6 +186,8 @@
   }
 
   function closeThread() {
+    const input = document.getElementById('adminInboxReply');
+    if (activeCommissionId && input) saveDraft(activeCommissionId, input.value);
     activeCommissionId = '';
     document.getElementById('adminInboxWorkspace')?.classList.add('hidden');
     if (location.hash.startsWith('#message-')) history.replaceState(null, '', `${location.pathname}${location.search}`);
@@ -163,7 +207,10 @@
     const button = document.getElementById('adminInboxSendReply');
     if (button) button.disabled = true;
     if (input) input.disabled = true;
-    if (status) status.textContent = 'Sending…';
+    if (status) {
+      status.dataset.sendState = 'busy';
+      status.textContent = 'Sending…';
+    }
     const sent = await window.createChatMessage?.({
       commission_id: activeCommissionId,
       sender: 'admin',
@@ -172,13 +219,21 @@
     if (button) button.disabled = false;
     if (input) input.disabled = false;
     if (!sent) {
-      if (status) status.textContent = 'Message could not be sent.';
+      if (status) {
+        status.dataset.sendState = '';
+        status.textContent = 'Message could not be sent. Your draft is still saved.';
+      }
+      saveDraft(activeCommissionId, input?.value || message);
       input?.focus();
       return;
     }
 
+    saveDraft(activeCommissionId, '');
     if (input) input.value = '';
-    if (status) status.textContent = 'Sent.';
+    if (status) {
+      status.dataset.sendState = '';
+      status.textContent = 'Sent.';
+    }
     await refreshThread();
     input?.focus();
     setTimeout(() => { if (status?.textContent === 'Sent.') status.textContent = ''; }, 1800);
@@ -187,6 +242,8 @@
   async function openFullCommission() {
     if (!activeCommissionId) return;
     const idToOpen = activeCommissionId;
+    const input = document.getElementById('adminInboxReply');
+    if (input) saveDraft(idToOpen, input.value);
     await markThreadRead(idToOpen);
     window.showAdminPage?.('commissions');
     if (window.expandedAdminIds?.add) window.expandedAdminIds.add(idToOpen);

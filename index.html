@@ -5,25 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YourName Commissions</title>
   <link rel="stylesheet" href="style.css?v=ui40" />
-  <link rel="stylesheet" href="home-v3.css?v=1" />
+  <link rel="stylesheet" href="home-v4.css?v=1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-  <style>
-    .home-v3 .hero-banner-media {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      min-height: 100%;
-      border-radius: inherit;
-      background-position: center;
-      background-size: cover;
-      opacity: .34;
-      mix-blend-mode: multiply;
-      pointer-events: none;
-      overflow: hidden;
-    }
-  </style>
 </head>
-<body class="home-v3">
+<body class="home-v4">
   <header class="site-header">
     <a class="brand" href="index.html">YourName</a>
     <nav>
@@ -37,7 +22,6 @@
 
   <main>
     <section class="hero visual-hero">
-      <!-- Site Settings can still place your real banner here. It is a separate media layer now. -->
       <div id="homeHero" class="hero-banner-media" aria-hidden="true"></div>
 
       <div class="social-card" id="socialCard">
@@ -45,19 +29,20 @@
         <div id="socialLinks"></div>
       </div>
 
-      <div class="hero-copy">
-        <p class="eyebrow">Illustration • Character Design • 3D • Animation</p>
-        <h1 id="homeTitle">Welcome!</h1>
-        <p id="homeSubtitle">Commission hub and progress tracker.</p>
-        <div class="button-row centered-buttons">
-          <a class="btn primary" href="queue.html">View Queue →</a>
-          <a class="btn" href="pricing.html">See Pricing</a>
-          <a class="btn" href="tos.html">Read TOS</a>
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Illustration • Character Design • 3D • Animation</p>
+          <h1 id="homeTitle">Welcome!</h1>
+          <p id="homeSubtitle">Commission hub and progress tracker.</p>
+          <div class="button-row centered-buttons">
+            <a class="btn primary" href="queue.html">View Queue →</a>
+            <a class="btn" href="pricing.html">See Pricing</a>
+            <a class="btn" href="tos.html">Read TOS</a>
+          </div>
+          <span class="hero-note">custom art • clear progress • client updates ♡</span>
         </div>
       </div>
 
-      <!-- Code-only placeholder for the transparent character PNG that will pop out of the banner.
-           Later we can replace this SVG with your own uploaded character image without changing layout. -->
       <div class="banner-character" aria-hidden="true">
         <svg viewBox="0 0 520 720" role="img" aria-label="Character image placeholder silhouette">
           <path class="silhouette-fill" d="M296 50c-58 0-106 45-111 104-31 14-58 48-67 90-7 34-1 69 17 96-25 35-38 80-35 126 4 66 39 126 90 164 20 15 33 38 36 63l4 27h196l-2-41c-2-35-16-68-39-94 39-42 61-100 58-160-3-58-29-111-71-148 11-27 13-58 6-86-11-42-38-76-74-91-13-31-43-50-78-50z"/>
@@ -67,6 +52,8 @@
         </svg>
         <span class="banner-character-label">YOUR CHARACTER PNG</span>
       </div>
+
+      <div class="hero-sticker">Make good ideas look even better. ♡</div>
     </section>
 
     <section class="home-dashboard" aria-label="Commission dashboard">
@@ -105,21 +92,6 @@
         <div id="latestNews" class="news-list"></div>
         <p class="small" id="commissionInfoNote">Contact me first through social media. Once accepted, your private progress page will be created.</p>
       </article>
-
-      <article class="panel mini-panel glow-panel featured-callout">
-        <div class="mini-title">
-          <span class="icon-badge">★</span>
-          <div>
-            <p class="eyebrow">Portfolio</p>
-            <h2>Featured</h2>
-          </div>
-        </div>
-        <div class="featured-mini-preview" aria-label="Artwork preview placeholders">
-          <div class="mini-art-placeholder">Preview 01</div>
-          <div class="mini-art-placeholder">Preview 02</div>
-        </div>
-        <a class="btn full" href="gallery.html">View Gallery</a>
-      </article>
     </section>
 
     <section class="panel compact-panel fancy-panel featured-panel">
@@ -131,28 +103,12 @@
         <a class="btn" href="gallery.html">View Gallery →</a>
       </div>
 
-      <!-- Deliberately neutral previews: these are layout placeholders, not generated artwork. -->
       <div id="featuredGallery" class="featured-gallery art-preview-grid">
-        <article class="art-preview-card">
-          <div class="art-preview-placeholder"></div>
-          <div class="art-preview-meta"><strong>Artwork 01</strong><span>Illustration</span></div>
-        </article>
-        <article class="art-preview-card">
-          <div class="art-preview-placeholder"></div>
-          <div class="art-preview-meta"><strong>Artwork 02</strong><span>Commission</span></div>
-        </article>
-        <article class="art-preview-card">
-          <div class="art-preview-placeholder"></div>
-          <div class="art-preview-meta"><strong>Artwork 03</strong><span>Character</span></div>
-        </article>
-        <article class="art-preview-card">
-          <div class="art-preview-placeholder"></div>
-          <div class="art-preview-meta"><strong>Artwork 04</strong><span>3D / WIP</span></div>
-        </article>
-        <article class="art-preview-card">
-          <div class="art-preview-placeholder"></div>
-          <div class="art-preview-meta"><strong>Artwork 05</strong><span>Personal</span></div>
-        </article>
+        <article class="art-preview-card"><div class="art-preview-placeholder"></div><div class="art-preview-meta"><strong>Artwork 01</strong><span>Illustration</span></div></article>
+        <article class="art-preview-card"><div class="art-preview-placeholder"></div><div class="art-preview-meta"><strong>Artwork 02</strong><span>Commission</span></div></article>
+        <article class="art-preview-card"><div class="art-preview-placeholder"></div><div class="art-preview-meta"><strong>Artwork 03</strong><span>Character</span></div></article>
+        <article class="art-preview-card"><div class="art-preview-placeholder"></div><div class="art-preview-meta"><strong>Artwork 04</strong><span>3D / WIP</span></div></article>
+        <article class="art-preview-card"><div class="art-preview-placeholder"></div><div class="art-preview-meta"><strong>Artwork 05</strong><span>Personal</span></div></article>
       </div>
     </section>
 

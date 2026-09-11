@@ -1,4 +1,4 @@
-/* Mobile-first admin navigation without introducing another visual theme layer. */
+/* Mobile-first admin navigation and light admin cleanup. No extra visual theme layer. */
 (function initAdminMobileNavigation() {
   const ADMIN_PAGES = [
     ["dash", "Dashboard"],
@@ -30,6 +30,42 @@
     mobileBar.hidden = !media.matches;
     const sidebar = document.querySelector(".admin-sidebar");
     if (sidebar) sidebar.hidden = media.matches;
+  }
+
+  function retireStaleAppearanceControls() {
+    document.querySelectorAll('[data-settings-tab="holiday"], #settings-holiday').forEach(el => el.remove());
+
+    const settingsIntro = document.querySelector("#adminPage-settings > .small");
+    if (settingsIntro) {
+      settingsIntro.textContent = "Manage homepage content, uploaded brand assets, social links, pricing, news, TOS, and payments. Live colors stay locked to the single style.css design.";
+    }
+
+    const appearance = document.getElementById("settings-appearance");
+    if (!appearance) return;
+    const heading = appearance.querySelector("h3");
+    if (heading) heading.textContent = "Assets & Branding";
+
+    const firstColor = document.getElementById("appearanceBg");
+    const colorGrid = firstColor?.closest(".color-grid");
+    if (colorGrid) {
+      const description = colorGrid.previousElementSibling;
+      const colorHeading = description?.previousElementSibling;
+      if (description?.classList?.contains("small")) description.remove();
+      if (colorHeading?.tagName === "H4") colorHeading.remove();
+      colorGrid.remove();
+    }
+
+    [...appearance.querySelectorAll("button")]
+      .filter(button => /save appearance/i.test(button.textContent || ""))
+      .forEach(button => button.remove());
+
+    if (!appearance.querySelector("[data-permanent-theme-note]")) {
+      const note = document.createElement("p");
+      note.className = "small";
+      note.dataset.permanentThemeNote = "true";
+      note.textContent = "The permanent pink / cyan / lime visual system is controlled only by style.css. You can still change artwork, logo assets, backgrounds, and gallery framing here.";
+      appearance.insertBefore(note, heading?.nextSibling || appearance.firstChild);
+    }
   }
 
   function buildMobileBar() {
@@ -101,6 +137,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    retireStaleAppearanceControls();
     buildMobileBar();
     observePageChanges();
     media.addEventListener?.("change", setMobileState);

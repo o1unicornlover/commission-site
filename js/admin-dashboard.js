@@ -30,6 +30,12 @@
     return document.getElementById("adminPage-dash")?.classList.contains("active");
   }
 
+  function openInbox() {
+    const inboxButton = document.querySelector('[data-admin-page="inbox"]');
+    if (inboxButton) inboxButton.click();
+    else window.showAdminPage?.("inbox");
+  }
+
   function ensureStudioOverview() {
     const dashboard = document.getElementById("adminPage-dash");
     if (!dashboard || document.getElementById("adminStudioOverview")) return;
@@ -60,10 +66,7 @@
 
     dashboard.appendChild(block);
     document.getElementById("refreshStudioOverview")?.addEventListener("click", refreshStudioOverview);
-    document.getElementById("studioOpenInbox")?.addEventListener("click", () => {
-      window.showAdminPage?.("inbox");
-      window.renderAdminInbox?.();
-    });
+    document.getElementById("studioOpenInbox")?.addEventListener("click", openInbox);
   }
 
   async function collectMessageSummary(commissions) {
@@ -171,10 +174,22 @@
     }, 20000);
   }
 
+  function openFromNotification(commissionId) {
+    openInbox();
+    if (commissionId) location.hash = `message-${encodeURIComponent(commissionId)}`;
+  }
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.addEventListener("message", event => {
+      if (event.data?.type === "open-inbox-commission") openFromNotification(event.data.commissionId || "");
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     ensureStudioOverview();
     injectInstallButton();
     setTimeout(refreshStudioOverview, 1100);
     startRefreshLoop();
+    if (location.hash.startsWith("#message-")) setTimeout(openInbox, 1300);
   });
 })();

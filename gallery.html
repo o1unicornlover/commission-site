@@ -4,12 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gallery</title>
-  <link rel="stylesheet" href="style.css?v=ui40" />
-  <link rel="stylesheet" href="public-v4.css?v=1" />
+  <link rel="stylesheet" href="style.css?v=clean1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
-<body class="public-v4">
-  <header class="site-header"><a class="brand" href="index.html">YourName</a><nav><a href="index.html">Home</a><a href="pricing.html">Pricing</a><a href="queue.html">Queue</a><a href="gallery.html">Gallery</a><a href="tos.html">TOS</a></nav></header>
+<body>
+  <header class="site-header"><a class="brand" href="index.html">YourName</a><nav><a href="index.html">Home</a><a href="pricing.html">Pricing</a><a href="queue.html">Queue</a><a href="gallery.html" aria-current="page">Gallery</a><a href="tos.html">TOS</a></nav></header>
   <main><section class="panel compact-panel"><p class="eyebrow">Finished work</p><h1 class="page-title">Gallery</h1><div id="galleryGrid" class="gallery-grid"></div></section></main>
   <div id="galleryModal" class="modal hidden" onclick="closeGalleryPreview()"><div class="image-modal-card"><button class="close" onclick="closeGalleryPreview()">×</button><img id="galleryModalImage" src="" alt="Expanded gallery art"></div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="./sb-api.js?v=20"></script><script src="script.js?v=ui40"></script>

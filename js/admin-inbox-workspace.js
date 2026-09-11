@@ -3,6 +3,7 @@
   const onAdmin = /(^|\/)admin\.html$/i.test(location.pathname) || location.pathname.endsWith('/admin.html');
   if (!onAdmin) return;
 
+  const READ_KEY = 'adminConversationReadTimes';
   let activeCommissionId = '';
   let threadChannel = null;
 
@@ -13,6 +14,31 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  function messageTime(row) {
+    const time = new Date(row?.created_at || 0).getTime();
+    return Number.isFinite(time) ? time : 0;
+  }
+
+  function saveReadTime(commissionId, messages) {
+    const latestClient = (messages || []).filter(message => String(message.sender || '').toLowerCase() === 'client').at(-1);
+    if (!latestClient) return false;
+    let readTimes = {};
+    try { readTimes = JSON.parse(localStorage.getItem(READ_KEY) || '{}') || {}; }
+    catch { readTimes = {}; }
+    readTimes[String(commissionId)] = messageTime(latestClient) || Date.now();
+    localStorage.setItem(READ_KEY, JSON.stringify(readTimes));
+    return true;
+  }
+
+  async function markThreadRead(commissionId, messages) {
+    if (!commissionId) return;
+    const rows = messages || await window.getChatMessages?.(commissionId) || [];
+    if (!saveReadTime(commissionId, rows)) return;
+    // admin-app.js owns the badge/list rendering. Re-rendering the Inbox is safe because
+    // the thread workspace is a sibling and stays mounted while its list refreshes.
+    window.dispatchEvent(new CustomEvent('admin-inbox-read-state-changed', { detail: { commissionId: String(commissionId) } }));
   }
 
   function ensureWorkspace() {
@@ -84,10 +110,14 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  async function refreshThread() {
+  async function refreshThread({ markRead = true } = {}) {
     if (!activeCommissionId) return;
     const messages = await window.getChatMessages?.(activeCommissionId) || [];
     renderMessages(messages);
+    const inboxVisible = document.getElementById('adminPage-inbox')?.classList.contains('active');
+    if (markRead && inboxVisible && document.visibilityState === 'visible') {
+      await markThreadRead(activeCommissionId, messages);
+    }
   }
 
   async function openThread(commissionId) {
@@ -110,6 +140,7 @@
     await refreshThread();
     history.replaceState(null, '', `#message-${encodeURIComponent(activeCommissionId)}`);
     workspace.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setTimeout(() => document.getElementById('adminInboxReply')?.focus({ preventScroll: true }), 180);
   }
 
   function closeThread() {
@@ -125,11 +156,13 @@
     const message = input?.value.trim() || '';
     if (!message) {
       if (status) status.textContent = 'Type a message first.';
+      input?.focus();
       return;
     }
 
     const button = document.getElementById('adminInboxSendReply');
     if (button) button.disabled = true;
+    if (input) input.disabled = true;
     if (status) status.textContent = 'Sending…';
     const sent = await window.createChatMessage?.({
       commission_id: activeCommissionId,
@@ -137,25 +170,30 @@
       message
     });
     if (button) button.disabled = false;
+    if (input) input.disabled = false;
     if (!sent) {
       if (status) status.textContent = 'Message could not be sent.';
+      input?.focus();
       return;
     }
 
     if (input) input.value = '';
     if (status) status.textContent = 'Sent.';
     await refreshThread();
+    input?.focus();
     setTimeout(() => { if (status?.textContent === 'Sent.') status.textContent = ''; }, 1800);
   }
 
   async function openFullCommission() {
     if (!activeCommissionId) return;
+    const idToOpen = activeCommissionId;
+    await markThreadRead(idToOpen);
     window.showAdminPage?.('commissions');
-    if (window.expandedAdminIds?.add) window.expandedAdminIds.add(activeCommissionId);
+    if (window.expandedAdminIds?.add) window.expandedAdminIds.add(idToOpen);
     await window.renderAdmin?.();
     setTimeout(() => {
-      const id = CSS.escape(activeCommissionId);
-      const node = document.querySelector(`[data-commission-id="${id}"]`) || document.getElementById(`commission-${activeCommissionId}`);
+      const id = CSS.escape(idToOpen);
+      const node = document.querySelector(`[data-commission-id="${id}"]`) || document.getElementById(`commission-${idToOpen}`);
       node?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 120);
   }
@@ -166,10 +204,7 @@
       if (!button) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      const id = button.dataset.openInboxCommission;
-      const markRead = button.closest('[data-inbox-commission]')?.querySelector('[data-mark-inbox-read]');
-      markRead?.click();
-      openThread(id);
+      openThread(button.dataset.openInboxCommission);
     }, true);
   }
 
@@ -178,7 +213,9 @@
     threadChannel = supabaseClient
       .channel(`admin-inline-thread-${Date.now()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, payload => {
-        if (activeCommissionId && String(payload?.new?.commission_id || '') === activeCommissionId) refreshThread();
+        if (!activeCommissionId || String(payload?.new?.commission_id || '') !== activeCommissionId) return;
+        const shouldRead = document.visibilityState === 'visible' && document.getElementById('adminPage-inbox')?.classList.contains('active');
+        refreshThread({ markRead: shouldRead });
       })
       .subscribe();
   }
@@ -191,8 +228,16 @@
     setTimeout(() => openThread(id), 250);
   }
 
+  function markVisibleThreadRead() {
+    if (!activeCommissionId || document.visibilityState !== 'visible') return;
+    if (!document.getElementById('adminPage-inbox')?.classList.contains('active')) return;
+    refreshThread({ markRead: true });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     interceptInboxOpen();
+    document.addEventListener('visibilitychange', markVisibleThreadRead);
+    window.addEventListener('hashchange', openHashThread);
     setTimeout(() => {
       ensureWorkspace();
       subscribeThread();

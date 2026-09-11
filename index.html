@@ -4,14 +4,30 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YourName Commissions</title>
-  <link rel="stylesheet" href="style.css?v=ui29" />
+  <link rel="stylesheet" href="style.css?v=ui40" />
+  <link rel="stylesheet" href="home-v3.css?v=1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <style>
+    .home-v3 .hero-banner-media {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      min-height: 100%;
+      border-radius: inherit;
+      background-position: center;
+      background-size: cover;
+      opacity: .34;
+      mix-blend-mode: multiply;
+      pointer-events: none;
+      overflow: hidden;
+    }
+  </style>
 </head>
-<body>
+<body class="home-v3">
   <header class="site-header">
-    <a class="brand" href="index.html">✧ YourName</a>
+    <a class="brand" href="index.html">YourName</a>
     <nav>
-      <a href="index.html">Home</a>
+      <a href="index.html" aria-current="page">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="queue.html">Queue</a>
       <a href="gallery.html">Gallery</a>
@@ -20,27 +36,43 @@
   </header>
 
   <main>
-    <section class="hero visual-hero" id="homeHero">
+    <section class="hero visual-hero">
+      <!-- Site Settings can still place your real banner here. It is a separate media layer now. -->
+      <div id="homeHero" class="hero-banner-media" aria-hidden="true"></div>
+
       <div class="social-card" id="socialCard">
-        <h3>Socials</h3>
+        <h3>Stay connected ♡</h3>
         <div id="socialLinks"></div>
       </div>
+
       <div class="hero-copy">
-        <p class="eyebrow">2D Art • 3D Sculpting • Animation</p>
+        <p class="eyebrow">Illustration • Character Design • 3D • Animation</p>
         <h1 id="homeTitle">Welcome!</h1>
         <p id="homeSubtitle">Commission hub and progress tracker.</p>
         <div class="button-row centered-buttons">
-          <a class="btn primary" href="queue.html">View Queue</a>
-          <a class="btn" href="pricing.html">Pricing</a>
+          <a class="btn primary" href="queue.html">View Queue →</a>
+          <a class="btn" href="pricing.html">See Pricing</a>
           <a class="btn" href="tos.html">Read TOS</a>
         </div>
       </div>
+
+      <!-- Code-only placeholder for the transparent character PNG that will pop out of the banner.
+           Later we can replace this SVG with your own uploaded character image without changing layout. -->
+      <div class="banner-character" aria-hidden="true">
+        <svg viewBox="0 0 520 720" role="img" aria-label="Character image placeholder silhouette">
+          <path class="silhouette-fill" d="M296 50c-58 0-106 45-111 104-31 14-58 48-67 90-7 34-1 69 17 96-25 35-38 80-35 126 4 66 39 126 90 164 20 15 33 38 36 63l4 27h196l-2-41c-2-35-16-68-39-94 39-42 61-100 58-160-3-58-29-111-71-148 11-27 13-58 6-86-11-42-38-76-74-91-13-31-43-50-78-50z"/>
+          <path class="silhouette-fill" d="M169 274c-40 20-72 60-86 109-15 53-7 110 22 153 21 31 54 53 90 63l14-61c-25-11-42-34-46-60-6-37 8-76 38-100z"/>
+          <path class="silhouette-fill" d="M377 274c40 20 72 60 86 109 15 53 7 110-22 153-21 31-54 53-90 63l-14-61c25-11 42-34 46-60 6-37-8-76-38-100z"/>
+          <path class="silhouette-accent" d="M159 225c48-37 88-42 121-18M344 210c36 19 58 51 63 93M203 432c48 29 103 30 154 2"/>
+        </svg>
+        <span class="banner-character-label">YOUR CHARACTER PNG</span>
+      </div>
     </section>
 
-    <section class="home-dashboard">
+    <section class="home-dashboard" aria-label="Commission dashboard">
       <article class="panel mini-panel glow-panel">
         <div class="mini-title">
-          <span class="icon-badge">♡</span>
+          <span class="icon-badge">▣</span>
           <div>
             <p class="eyebrow">Status & info</p>
             <h2>Commission Slots</h2>
@@ -52,7 +84,7 @@
 
       <article class="panel mini-panel glow-panel">
         <div class="mini-title">
-          <span class="icon-badge">✿</span>
+          <span class="icon-badge">⌛</span>
           <div>
             <p class="eyebrow">See where you are</p>
             <h2>Queue Status</h2>
@@ -66,24 +98,68 @@
         <div class="mini-title">
           <span class="icon-badge">✦</span>
           <div>
-            <p class="eyebrow">Updates & announcements</p>
+            <p class="eyebrow">Updates</p>
             <h2>Latest News</h2>
           </div>
         </div>
         <div id="latestNews" class="news-list"></div>
         <p class="small" id="commissionInfoNote">Contact me first through social media. Once accepted, your private progress page will be created.</p>
       </article>
+
+      <article class="panel mini-panel glow-panel featured-callout">
+        <div class="mini-title">
+          <span class="icon-badge">★</span>
+          <div>
+            <p class="eyebrow">Portfolio</p>
+            <h2>Featured</h2>
+          </div>
+        </div>
+        <div class="featured-mini-preview" aria-label="Artwork preview placeholders">
+          <div class="mini-art-placeholder">Preview 01</div>
+          <div class="mini-art-placeholder">Preview 02</div>
+        </div>
+        <a class="btn full" href="gallery.html">View Gallery</a>
+      </article>
     </section>
 
     <section class="panel compact-panel fancy-panel featured-panel">
       <div class="section-title">
         <div>
-          <p class="eyebrow">Portfolio</p>
-          <h2>Featured Work</h2>
+          <p class="eyebrow">Portfolio previews</p>
+          <h2>Featured Work ✦</h2>
         </div>
         <a class="btn" href="gallery.html">View Gallery →</a>
       </div>
-      <div id="featuredGallery" class="featured-gallery"></div>
+
+      <!-- Deliberately neutral previews: these are layout placeholders, not generated artwork. -->
+      <div id="featuredGallery" class="featured-gallery art-preview-grid">
+        <article class="art-preview-card">
+          <div class="art-preview-placeholder"></div>
+          <div class="art-preview-meta"><strong>Artwork 01</strong><span>Illustration</span></div>
+        </article>
+        <article class="art-preview-card">
+          <div class="art-preview-placeholder"></div>
+          <div class="art-preview-meta"><strong>Artwork 02</strong><span>Commission</span></div>
+        </article>
+        <article class="art-preview-card">
+          <div class="art-preview-placeholder"></div>
+          <div class="art-preview-meta"><strong>Artwork 03</strong><span>Character</span></div>
+        </article>
+        <article class="art-preview-card">
+          <div class="art-preview-placeholder"></div>
+          <div class="art-preview-meta"><strong>Artwork 04</strong><span>3D / WIP</span></div>
+        </article>
+        <article class="art-preview-card">
+          <div class="art-preview-placeholder"></div>
+          <div class="art-preview-meta"><strong>Artwork 05</strong><span>Personal</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="home-footer-strip" aria-label="Artist footer message">
+      <strong>A brighter world <em>through art.</em></strong>
+      <span>Thank you for being here ♡</span>
+      <span>Create • Connect • Belong</span>
     </section>
   </main>
 
@@ -91,8 +167,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-<link rel="stylesheet" href="style.css?v=ui30" />
-<script src="./sb-api.js?v=20"></script>
-<script src="script.js?v=ui40"></script>
+  <script src="./sb-api.js?v=20"></script>
+  <script src="script.js?v=ui40"></script>
 </body>
 </html>

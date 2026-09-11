@@ -61,9 +61,11 @@
       const filter = button.dataset.inboxFilter;
       const base = filter === 'unread' ? 'Unread' : filter === 'drafts' ? 'Drafts' : 'All';
       const count = filter === 'unread' ? counts.unread : filter === 'drafts' ? counts.drafts : counts.all;
-      button.textContent = `${base} (${count})`;
+      const nextLabel = `${base} (${count})`;
+      if (button.textContent !== nextLabel) button.textContent = nextLabel;
       button.classList.toggle('primary', filter === activeFilter);
-      button.setAttribute('aria-pressed', String(filter === activeFilter));
+      const pressed = String(filter === activeFilter);
+      if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
     });
   }
 
@@ -98,15 +100,16 @@
       empty?.remove();
       return;
     }
+    const nextHtml = activeFilter === 'drafts'
+      ? '<h3>No saved drafts</h3><p class="small">Replies you start and leave unfinished will appear here.</p>'
+      : '<h3>Inbox caught up</h3><p class="small">There are no unread client conversations right now.</p>';
     if (!empty) {
       empty = document.createElement('article');
       empty.id = 'adminInboxFilterEmpty';
       empty.className = 'info-card';
       list.insertAdjacentElement('afterend', empty);
     }
-    empty.innerHTML = activeFilter === 'drafts'
-      ? '<h3>No saved drafts</h3><p class="small">Replies you start and leave unfinished will appear here.</p>'
-      : '<h3>Inbox caught up</h3><p class="small">There are no unread client conversations right now.</p>';
+    if (empty.innerHTML !== nextHtml) empty.innerHTML = nextHtml;
   }
 
   function decorateInbox() {
@@ -122,7 +125,7 @@
       if (cardHasDraft(card, drafts)) draftCount += 1;
       ensureDraftBadge(card, drafts);
       const show = shouldShow(card, drafts);
-      card.hidden = !show;
+      if (card.hidden === show) card.hidden = !show;
       if (show) visible += 1;
     });
 
@@ -141,7 +144,14 @@
 
   function observeInbox() {
     if (observer) return;
-    observer = new MutationObserver(queueDecorate);
+    observer = new MutationObserver(records => {
+      const relevant = records.some(record => {
+        const target = record.target?.nodeType === Node.ELEMENT_NODE ? record.target : record.target?.parentElement;
+        return target?.closest?.('#adminInboxList, #adminInboxWorkspace') ||
+          Array.from(record.addedNodes || []).some(node => node.nodeType === Node.ELEMENT_NODE && (node.id === 'adminInboxList' || node.querySelector?.('#adminInboxList')));
+      });
+      if (relevant) queueDecorate();
+    });
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
   }
 

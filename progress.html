@@ -4,12 +4,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Commission Progress</title>
-  <link rel="stylesheet" href="style.css?v=clean1" />
+  <link rel="stylesheet" href="style.css?v=clean2" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body>
-  <header class="site-header"><a class="brand" href="index.html">YourName</a><nav><a href="index.html">Home</a><a href="pricing.html">Pricing</a><a href="queue.html">Queue</a><a href="gallery.html">Gallery</a></nav></header>
-  <main><section class="panel compact-panel"><a class="text-btn" href="queue.html">← Back to queue</a><div id="progressArea"></div></section></main>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="./sb-api.js?v=20"></script><script src="script.js?v=clean2"></script>
+  <header class="site-header">
+    <a class="brand" href="index.html">YourName</a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="queue.html" aria-current="page">Queue</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="tos.html">TOS</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="panel compact-panel fancy-panel">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Private client space</p>
+          <h1 class="page-title">Progress</h1>
+          <p class="small">Your commission updates, payment status, files, and messages stay together here.</p>
+        </div>
+        <a class="btn" href="queue.html">← Back to Queue</a>
+      </div>
+      <div id="progressArea"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="./sb-api.js?v=20"></script>
+  <script src="script.js?v=clean3"></script>
 </body>
 </html>

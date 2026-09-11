@@ -3,7 +3,7 @@
   Loader for the gradually modularized frontend.
 */
 (function loadAppScripts() {
-  const version = "stage2-clean9";
+  const version = "stage2-clean10";
   [
     "./js/constants.js",
     "./js/utils.js",
@@ -15,6 +15,7 @@
     "./js/admin-dashboard.js",
     "./js/admin-routing.js",
     "./js/admin-productivity.js",
+    "./js/admin-inbox-workspace.js",
     "./js/autosync.js"
   ].forEach(src => {
     document.write(`<script src="${src}?v=${version}"><\/script>`);

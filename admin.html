@@ -101,12 +101,11 @@
 
           <section id="adminPage-settings" class="admin-page">
             <h2>Site Settings</h2>
-            <p class="small">Customize the public homepage, banner, page doll, social links, news, and holiday mode.</p>
+            <p class="small">Customize homepage content, branding assets, social links, pricing, news, terms, and payments.</p>
             <div class="settings-layout">
               <aside class="settings-menu">
                 <button type="button" class="settings-tab active" data-settings-tab="general" onclick="showSettingsTab('general')">General</button>
-                <button type="button" class="settings-tab" data-settings-tab="appearance" onclick="showSettingsTab('appearance')">Appearance</button>
-                <button type="button" class="settings-tab" data-settings-tab="holiday" onclick="showSettingsTab('holiday')">Theme / Holiday</button>
+                <button type="button" class="settings-tab" data-settings-tab="appearance" onclick="showSettingsTab('appearance')">Assets &amp; Branding</button>
                 <button type="button" class="settings-tab" data-settings-tab="social" onclick="showSettingsTab('social')">Social Links</button>
                 <button type="button" class="settings-tab" data-settings-tab="pricing" onclick="showSettingsTab('pricing')">Pricing Page</button>
                 <button type="button" class="settings-tab" data-settings-tab="news" onclick="showSettingsTab('news')">Latest News</button>
@@ -122,7 +121,8 @@
                   <button class="btn primary" onclick="saveTextSettings()">Save Text</button>
                 </section>
                 <section id="settings-appearance" class="settings-panel hidden">
-                  <h3>Default Appearance</h3>
+                  <h3>Assets &amp; Branding</h3>
+                  <p class="small">Manage the permanent site artwork and branding. Live palette controls are handled by Theme Studio.</p>
                   <label class="small">Default banner image</label>
                   <input id="defaultBannerFile" type="file" accept="image/*">
                   <label class="small">Default page doll image</label>
@@ -138,61 +138,7 @@
                   <input id="galleryBorderFile" type="file" accept="image/*">
                   <p class="small">Best resolution: upload a transparent PNG frame around 1024×1024 px or 1200×1200 px. Keep the center transparent so the artwork shows through. Square frames work best because gallery thumbnails are square.</p>
                   <label class="small"><input id="galleryBorderEnabled" type="checkbox"> Enable custom gallery borders</label>
-
-                  <hr class="soft-line">
-                  <h4>Default site colors</h4>
-                  <p class="small">These control the normal site colors when a holiday theme is not overriding them.</p>
-                  <div class="color-grid">
-                    <label>Background <input id="appearanceBg" type="color" value="#100f17"></label>
-                    <label>Panel <input id="appearancePanel" type="color" value="#181624"></label>
-                    <label>Card <input id="appearancePanel2" type="color" value="#211d31"></label>
-                    <label>Text <input id="appearanceText" type="color" value="#f6efff"></label>
-                    <label>Muted text <input id="appearanceMuted" type="color" value="#b8adc8"></label>
-                    <label>Accent <input id="appearanceAccent" type="color" value="#f4a6d7"></label>
-                    <label>Accent 2 <input id="appearanceAccent2" type="color" value="#b79cff"></label>
-                    <label>Borders <input id="appearanceBorder" type="color" value="#8f4a79"></label>
-                  </div>
-                  <div class="button-row"><button class="btn primary" onclick="saveDefaultAppearance()">Save Appearance</button><button class="btn" onclick="clearDefaultImages()">Clear Images</button></div>
-                </section>
-                <section id="settings-holiday" class="settings-panel hidden">
-                  <h3>Theme / Holiday Mode</h3>
-                  <label class="small"><input id="holidayEnabled" type="checkbox"> Enable automatic holiday themes</label>
-                  <label class="small">Manual theme</label>
-                  <select id="manualTheme">
-                    <option value="default">Default</option>
-                    <option value="february">February / Valentine</option>
-                    <option value="october">October / Halloween</option>
-                    <option value="december">December / Christmas</option>
-                  </select>
-                  <p class="small">Manual theme is used when holiday mode is off. Holiday mode chooses based on the month.</p>
-                  <label class="small">Theme to edit</label>
-                  <select id="themeEditSelect" onchange="loadThemeEditor()">
-                    <option value="february">February / Valentine</option>
-                    <option value="october">October / Halloween</option>
-                    <option value="december">December / Christmas</option>
-                  </select>
-                  <label class="small">Holiday banner image</label>
-                  <input id="holidayBannerFile" type="file" accept="image/*">
-                  <label class="small">Holiday page doll image</label>
-                  <input id="holidayDollFile" type="file" accept="image/*">
-                  <label class="small">Holiday background image / pattern</label>
-                  <input id="holidayBackgroundFile" type="file" accept="image/*">
-                  <label class="small"><input id="holidayParticles" type="checkbox"> Enable foreground particles for this theme</label>
-
-                  <hr class="soft-line">
-                  <h4>Holiday colors</h4>
-                  <p class="small">These let each holiday have its own vibe. Valentine can be light pink, Halloween can be orange/dark, etc.</p>
-                  <div class="color-grid">
-                    <label>Background <input id="themeBg" type="color" value="#ffe6f4"></label>
-                    <label>Panel <input id="themePanel" type="color" value="#fff3fb"></label>
-                    <label>Card <input id="themePanel2" type="color" value="#ffd6ec"></label>
-                    <label>Text <input id="themeText" type="color" value="#5a173f"></label>
-                    <label>Muted text <input id="themeMuted" type="color" value="#9b5a7c"></label>
-                    <label>Accent <input id="themeAccent" type="color" value="#ff4fae"></label>
-                    <label>Accent 2 <input id="themeAccent2" type="color" value="#ff9bd2"></label>
-                    <label>Borders <input id="themeBorder" type="color" value="#ff9bd2"></label>
-                  </div>
-                  <button class="btn primary" onclick="saveHolidaySettings()">Save Holiday Settings</button>
+                  <div class="button-row"><button class="btn" onclick="clearDefaultImages()">Clear Images</button></div>
                 </section>
                 <section id="settings-social" class="settings-panel hidden">
                   <h3>Social / Contact Links</h3>

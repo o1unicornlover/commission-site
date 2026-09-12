@@ -9,7 +9,13 @@
   let soundEnabled = localStorage.getItem("adminMessageSound") !== "false";
   let desktopNotificationsEnabled = localStorage.getItem("adminDesktopNotifications") !== "false";
   let inboxRefreshTimer = null;
+  let inboxRefreshBusy = false;
+  let inboxRowsCache = [];
+  let inboxRowsCachedAt = 0;
+  let inboxRowsPromise = null;
   const READ_KEY = "adminConversationReadTimes";
+  const INBOX_CACHE_MS = 15000;
+  const INBOX_POLL_MS = 30000;
 
   function getReadTimes() {
     try { return JSON.parse(localStorage.getItem(READ_KEY) || "{}"); }
@@ -89,29 +95,44 @@
     });
   }
 
-  async function getInboxRows() {
-    if (!window.getCommissions || !window.getChatMessages) return [];
-    const commissions = await window.getCommissions({ includeArchived: true });
-    const readTimes = getReadTimes();
-    const rows = await Promise.all((commissions || []).map(async commission => {
-      const messages = await window.getChatMessages(commission.id);
-      const clientMessages = (messages || []).filter(m => m.sender === "client");
-      const latest = clientMessages[clientMessages.length - 1] || null;
-      const lastRead = Number(readTimes[String(commission.id)] || 0);
-      const unreadCount = clientMessages.filter(m => messageTime(m) > lastRead).length;
-      return { commission, messages, latest, unreadCount };
-    }));
-
-    return rows
-      .filter(row => row.latest)
-      .sort((a, b) => messageTime(b.latest) - messageTime(a.latest));
+  function invalidateInboxRows() {
+    inboxRowsCachedAt = 0;
   }
 
-  async function syncBadge() {
+  async function getInboxRows(force = false) {
+    if (!window.getCommissions || !window.getChatMessages) return [];
+    const now = Date.now();
+    if (!force && inboxRowsCachedAt && (now - inboxRowsCachedAt) < INBOX_CACHE_MS) return inboxRowsCache;
+    if (inboxRowsPromise) return inboxRowsPromise;
+
+    inboxRowsPromise = (async () => {
+      const commissions = await window.getCommissions({ includeArchived: true });
+      const readTimes = getReadTimes();
+      const rows = await Promise.all((commissions || []).map(async commission => {
+        const messages = await window.getChatMessages(commission.id);
+        const clientMessages = (messages || []).filter(m => m.sender === "client");
+        const latest = clientMessages[clientMessages.length - 1] || null;
+        const lastRead = Number(readTimes[String(commission.id)] || 0);
+        const unreadCount = clientMessages.filter(m => messageTime(m) > lastRead).length;
+        return { commission, messages, latest, unreadCount };
+      }));
+
+      inboxRowsCache = rows
+        .filter(row => row.latest)
+        .sort((a, b) => messageTime(b.latest) - messageTime(a.latest));
+      inboxRowsCachedAt = Date.now();
+      return inboxRowsCache;
+    })();
+
+    try { return await inboxRowsPromise; }
+    finally { inboxRowsPromise = null; }
+  }
+
+  async function syncBadge(rows = null, force = false) {
     let unread = 0;
     try {
-      const rows = await getInboxRows();
-      unread = rows.reduce((sum, row) => sum + row.unreadCount, 0);
+      const source = rows || await getInboxRows(force);
+      unread = source.reduce((sum, row) => sum + row.unreadCount, 0);
     } catch (error) {
       console.warn("Unread count refresh failed", error);
     }
@@ -148,7 +169,8 @@
       times[String(commissionId)] = messageTime(latestClient) || Date.now();
       saveReadTimes(times);
     }
-    await syncBadge();
+    invalidateInboxRows();
+    await syncBadge(null, true);
   }
 
   async function openCommissionFromInbox(commissionId) {
@@ -162,15 +184,15 @@
     }, 120);
   }
 
-  async function renderAdminInbox() {
+  async function renderAdminInbox(force = false) {
     const box = document.getElementById("adminInboxList");
     if (!box) return;
     box.innerHTML = '<p class="small">Loading conversations…</p>';
-    const rows = await getInboxRows();
+    const rows = await getInboxRows(force);
 
     if (!rows.length) {
       box.innerHTML = '<article class="info-card"><h3>No client messages yet</h3><p class="small">New client replies will appear here automatically.</p></article>';
-      await syncBadge();
+      await syncBadge(rows);
       return;
     }
 
@@ -201,10 +223,10 @@
     box.querySelectorAll("[data-mark-inbox-read]").forEach(button => {
       button.addEventListener("click", async () => {
         await markConversationRead(button.dataset.markInboxRead);
-        await renderAdminInbox();
+        await renderAdminInbox(true);
       });
     });
-    await syncBadge();
+    await syncBadge(rows);
   }
 
   function injectInbox() {
@@ -240,13 +262,15 @@
       <div id="adminInboxList" class="admin-list"></div>`;
     const commissionsPage = document.getElementById("adminPage-commissions");
     commissionsPage?.insertAdjacentElement("afterend", page);
-    document.getElementById("refreshAdminInbox")?.addEventListener("click", renderAdminInbox);
+    document.getElementById("refreshAdminInbox")?.addEventListener("click", () => renderAdminInbox(true));
   }
 
   async function showMessageNotification(row) {
     if (row?.sender !== "client") return;
-    await syncBadge();
-    if (document.getElementById("adminPage-inbox")?.classList.contains("active")) await renderAdminInbox();
+    invalidateInboxRows();
+    const inboxActive = document.getElementById("adminPage-inbox")?.classList.contains("active");
+    if (inboxActive) await renderAdminInbox(true);
+    else await syncBadge(null, true);
     if (!notificationsEnabled) return;
 
     if (soundEnabled) chime();
@@ -343,12 +367,21 @@
     window.addEventListener("keydown", once, { once: true });
   }
 
+  async function refreshInboxFallback() {
+    if (document.hidden || inboxRefreshBusy) return;
+    inboxRefreshBusy = true;
+    try {
+      const inboxActive = document.getElementById("adminPage-inbox")?.classList.contains("active");
+      if (inboxActive) await renderAdminInbox(true);
+      else await syncBadge(null, true);
+    } finally {
+      inboxRefreshBusy = false;
+    }
+  }
+
   function startInboxPolling() {
     clearInterval(inboxRefreshTimer);
-    inboxRefreshTimer = setInterval(async () => {
-      await syncBadge();
-      if (document.getElementById("adminPage-inbox")?.classList.contains("active")) await renderAdminInbox();
-    }, 10000);
+    inboxRefreshTimer = setInterval(refreshInboxFallback, INBOX_POLL_MS);
   }
 
   window.adminAlertPreferences = {
@@ -356,6 +389,10 @@
     set: setAlertPreferences,
     testChime: () => chime(true)
   };
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshInboxFallback();
+  });
 
   document.addEventListener("DOMContentLoaded", () => {
     addManifest();
@@ -365,7 +402,7 @@
     armAfterUserGesture();
     setTimeout(async () => {
       subscribeToClientMessages();
-      await syncBadge();
+      await syncBadge(null, true);
       startInboxPolling();
     }, 900);
   });

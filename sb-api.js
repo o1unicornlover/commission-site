@@ -9,6 +9,23 @@
 
   if (onAdmin) {
     let liveSyncLoaded = false;
+    let adminAppLoaded = false;
+
+    function loadAdminAppShell() {
+      if (adminAppLoaded || document.querySelector('script[data-admin-app-shell]')) return;
+      adminAppLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "./js/admin-app.js?v=admin-inbox1";
+      script.async = false;
+      script.dataset.adminAppShell = "true";
+      script.onerror = () => {
+        adminAppLoaded = false;
+        script.remove();
+        console.warn("Admin inbox/alert module failed to load");
+      };
+      document.body.appendChild(script);
+    }
 
     function loadAdminLiveSync() {
       if (liveSyncLoaded) return;
@@ -29,6 +46,12 @@
       };
       document.body.appendChild(script);
     }
+
+    // admin-app.js is intentionally lightweight before unlock: it wires the
+    // install/inbox/notification shell, but its data reads safely no-op until
+    // admin-runtime.js has loaded the API layer. Keep the heavier feature stack
+    // out of startup while responsiveness is being rebuilt module by module.
+    loadAdminAppShell();
 
     window.addEventListener("admin-runtime-ready", loadAdminLiveSync, { once: true });
     if (document.documentElement.dataset.adminBoot === "ready") {

@@ -4,7 +4,7 @@
   while avoiding public-only page helpers from the general site loader.
 */
 (function loadAdminScripts() {
-  const version = "admin-runtime-1";
+  const version = "admin-runtime-2";
   const modules = [
     "./js/constants.js",
     "./js/utils.js",
@@ -25,7 +25,32 @@
     "./js/autosync.js"
   ];
 
-  for (const src of modules) {
-    document.write(`<script src="${src}?v=${version}"><\/script>`);
+  function loadOne(src) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = `${src}?v=${version}`;
+      script.async = false;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.body.appendChild(script);
+    });
+  }
+
+  async function boot() {
+    document.documentElement.dataset.adminBoot = "loading";
+    try {
+      for (const src of modules) await loadOne(src);
+      document.documentElement.dataset.adminBoot = "ready";
+      window.dispatchEvent(new CustomEvent("admin-runtime-ready"));
+    } catch (error) {
+      document.documentElement.dataset.adminBoot = "error";
+      console.error("Admin runtime failed to load", error);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+  } else {
+    boot();
   }
 })();

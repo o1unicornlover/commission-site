@@ -15,6 +15,7 @@
     let pwaUpdatesLoaded = false;
     let appearanceGuardLoaded = false;
     let adminRoutingLoaded = false;
+    let adminProductivityLoaded = false;
 
     function loadAdminAppShell() {
       if (adminAppLoaded || document.querySelector('script[data-admin-app-shell]')) return;
@@ -100,6 +101,22 @@
       document.body.appendChild(script);
     }
 
+    function loadAdminProductivity() {
+      if (adminProductivityLoaded || document.querySelector('script[data-admin-productivity]')) return;
+      adminProductivityLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "./js/admin-productivity.js?v=admin-productivity2";
+      script.async = false;
+      script.dataset.adminProductivity = "true";
+      script.onerror = () => {
+        adminProductivityLoaded = false;
+        script.remove();
+        console.warn("Admin productivity tools failed to load");
+      };
+      document.body.appendChild(script);
+    }
+
     function loadAdminAppHealth() {
       if (appHealthLoaded || document.querySelector('script[data-admin-app-health]')) return;
       appHealthLoaded = true;
@@ -138,6 +155,7 @@
       loadAdminLiveSync();
       loadAdminAppearanceGuard();
       loadAdminRouting();
+      loadAdminProductivity();
       loadAdminAppHealth();
     }
 

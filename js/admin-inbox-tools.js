@@ -11,6 +11,7 @@
   let replyStateCache = new Map();
   let replyStateFetchedAt = 0;
   let replyStatePromise = null;
+  let initialized = false;
 
   function loadDrafts() {
     try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}') || {}; }
@@ -35,6 +36,10 @@
 
   function cardNeedsReply(card) {
     return replyStateCache.get(cardId(card)) === true;
+  }
+
+  function inboxIsActive() {
+    return document.getElementById('adminPage-inbox')?.classList.contains('active');
   }
 
   async function refreshReplyStates(force = false) {
@@ -202,41 +207,45 @@
     decorateQueued = true;
     requestAnimationFrame(async () => {
       decorateQueued = false;
-      if (activeFilter === 'reply') await refreshReplyStates();
+      if (activeFilter === 'reply' && inboxIsActive()) await refreshReplyStates();
       decorateInbox();
     });
   }
 
   function observeInbox() {
     if (observer) return;
-    observer = new MutationObserver(records => {
-      const relevant = records.some(record => {
-        const target = record.target?.nodeType === Node.ELEMENT_NODE ? record.target : record.target?.parentElement;
-        return target?.closest?.('#adminInboxList, #adminInboxWorkspace') ||
-          Array.from(record.addedNodes || []).some(node => node.nodeType === Node.ELEMENT_NODE && (node.id === 'adminInboxList' || node.querySelector?.('#adminInboxList')));
-      });
-      if (relevant) {
-        replyStateFetchedAt = 0;
-        queueDecorate();
-      }
+    const root = document.getElementById('adminPage-inbox') || document.getElementById('adminInboxList');
+    if (!root) return;
+    observer = new MutationObserver(() => {
+      replyStateFetchedAt = 0;
+      queueDecorate();
     });
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    observer.observe(root, { childList: true, subtree: true, characterData: true });
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(async () => {
-      decorateInbox();
-      observeInbox();
+  async function bootInboxTools() {
+    if (initialized) return;
+    initialized = true;
+    decorateInbox();
+    observeInbox();
+    if (inboxIsActive()) {
       await refreshReplyStates();
       decorateInbox();
-    }, 1100);
-  });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(bootInboxTools, 250), { once: true });
+  } else {
+    setTimeout(bootInboxTools, 0);
+  }
 
   window.addEventListener('storage', event => {
     if (event.key === DRAFT_KEY) queueDecorate();
   });
   window.addEventListener('admin-inbox-read-state-changed', queueDecorate);
   window.addEventListener('focus', async () => {
+    if (!inboxIsActive()) return;
     replyStateFetchedAt = 0;
     await refreshReplyStates();
     decorateInbox();

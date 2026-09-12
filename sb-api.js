@@ -11,6 +11,8 @@
     let liveSyncLoaded = false;
     let adminAppLoaded = false;
     let mobileNavLoaded = false;
+    let appHealthLoaded = false;
+    let pwaUpdatesLoaded = false;
 
     function loadAdminAppShell() {
       if (adminAppLoaded || document.querySelector('script[data-admin-app-shell]')) return;
@@ -64,9 +66,43 @@
       document.body.appendChild(script);
     }
 
+    function loadAdminAppHealth() {
+      if (appHealthLoaded || document.querySelector('script[data-admin-app-health]')) return;
+      appHealthLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "./js/admin-app-health.js?v=admin-health2";
+      script.async = false;
+      script.dataset.adminAppHealth = "true";
+      script.onload = loadAdminPwaUpdates;
+      script.onerror = () => {
+        appHealthLoaded = false;
+        script.remove();
+        console.warn("Admin app status module failed to load");
+      };
+      document.body.appendChild(script);
+    }
+
+    function loadAdminPwaUpdates() {
+      if (pwaUpdatesLoaded || document.querySelector('script[data-admin-pwa-updates]')) return;
+      pwaUpdatesLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "./js/admin-pwa-updates.js?v=admin-updates2";
+      script.async = false;
+      script.dataset.adminPwaUpdates = "true";
+      script.onerror = () => {
+        pwaUpdatesLoaded = false;
+        script.remove();
+        console.warn("Admin app update controls failed to load");
+      };
+      document.body.appendChild(script);
+    }
+
     function loadUnlockedAdminLayers() {
       loadAdminMobileNav();
       loadAdminLiveSync();
+      loadAdminAppHealth();
     }
 
     // admin-app.js is intentionally lightweight before unlock: it wires the

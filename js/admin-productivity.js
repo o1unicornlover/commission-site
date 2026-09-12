@@ -1,10 +1,13 @@
 /* Admin productivity helpers. Uses existing style.css components only. */
 (function initAdminProductivity() {
   const onAdmin = /(^|\/)admin\.html$/i.test(location.pathname) || location.pathname.endsWith('/admin.html');
-  if (!onAdmin) return;
+  if (!onAdmin || window.__adminProductivityModuleReady) return;
+  window.__adminProductivityModuleReady = true;
 
   const LAST_PAGE_KEY = 'adminLastPage';
   let lastAppliedQuery = '';
+  let observer = null;
+  let mutationQueued = false;
 
   function clickPage(page) {
     const button = document.querySelector(`[data-admin-page="${CSS.escape(page)}"]`);
@@ -27,12 +30,12 @@
     if (location.hash.startsWith('#message-')) return;
     const page = localStorage.getItem(LAST_PAGE_KEY);
     if (!page || page === 'dash') return;
-    setTimeout(() => clickPage(page), 450);
+    setTimeout(() => clickPage(page), 250);
   }
 
   function injectQuickNav() {
     const dashboard = document.getElementById('adminDashboard');
-    const content = document.querySelector('.admin-content');
+    const content = dashboard?.querySelector('.admin-content');
     if (!dashboard || !content || document.getElementById('adminQuickNav')) return;
 
     const bar = document.createElement('div');
@@ -84,7 +87,7 @@
     const dashboard = document.getElementById('adminDashboard');
     if (!dashboard || document.getElementById('adminGlobalSearch')) return;
 
-    const target = document.getElementById('adminQuickNav') || document.querySelector('.admin-content');
+    const target = document.getElementById('adminQuickNav') || dashboard.querySelector('.admin-content');
     if (!target) return;
     const wrap = document.createElement('div');
     wrap.className = 'form-grid';
@@ -135,23 +138,39 @@
     }
   }
 
-  function observeDynamicLists() {
-    const observer = new MutationObserver(() => {
-      injectQuickNav();
-      injectSearch();
-      addSearchHints();
-      if (lastAppliedQuery) applySearch(lastAppliedQuery);
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    installPageMemory();
+  function refreshDynamicTools() {
     injectQuickNav();
     injectSearch();
     addSearchHints();
+    if (lastAppliedQuery) applySearch(lastAppliedQuery);
+  }
+
+  function observeDynamicLists() {
+    if (observer) return;
+    const dashboard = document.getElementById('adminDashboard');
+    if (!dashboard) return;
+    observer = new MutationObserver(() => {
+      if (mutationQueued) return;
+      mutationQueued = true;
+      requestAnimationFrame(() => {
+        mutationQueued = false;
+        refreshDynamicTools();
+      });
+    });
+    observer.observe(dashboard, { childList: true, subtree: true });
+  }
+
+  function initialize() {
+    installPageMemory();
+    refreshDynamicTools();
     installShortcuts();
     observeDynamicLists();
     restoreLastPage();
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize, { once: true });
+  } else {
+    initialize();
+  }
 })();

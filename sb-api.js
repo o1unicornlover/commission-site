@@ -1,9 +1,14 @@
 /*
   Commission Website API Loader - Stage 2
-  Loads feature-based Supabase API files while keeping old global function names.
+  Public pages keep the compatibility loader. The admin page now loads its API
+  modules lazily from admin-runtime.js after unlock so admin.html can paint and
+  accept input immediately instead of blocking on ten extra scripts.
 */
 (function loadApiScripts() {
-  const version = "stage2-api20";
+  const onAdmin = /(^|\/)admin\.html$/i.test(location.pathname) || location.pathname.endsWith("/admin.html");
+  if (onAdmin) return;
+
+  const version = "stage2-api21";
   [
     "./api/site-api.js",
     "./api/slots-api.js",

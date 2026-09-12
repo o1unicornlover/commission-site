@@ -4,9 +4,13 @@
   if (!onAdmin) return;
 
   const DRAFT_KEY = 'adminInboxReplyDrafts';
+  const REPLY_CACHE_MS = 15000;
   let activeFilter = 'all';
   let observer = null;
   let decorateQueued = false;
+  let replyStateCache = new Map();
+  let replyStateFetchedAt = 0;
+  let replyStatePromise = null;
 
   function loadDrafts() {
     try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}') || {}; }
@@ -27,6 +31,37 @@
 
   function cardHasDraft(card, drafts = loadDrafts()) {
     return Boolean(String(drafts[cardId(card)] || '').trim());
+  }
+
+  function cardNeedsReply(card) {
+    return replyStateCache.get(cardId(card)) === true;
+  }
+
+  async function refreshReplyStates(force = false) {
+    const cards = inboxCards();
+    if (!cards.length || !window.getChatMessages) return replyStateCache;
+    const fresh = Date.now() - replyStateFetchedAt < REPLY_CACHE_MS;
+    if (!force && fresh) return replyStateCache;
+    if (replyStatePromise) return replyStatePromise;
+
+    replyStatePromise = Promise.all(cards.map(async card => {
+      const id = cardId(card);
+      if (!id) return;
+      try {
+        const messages = await window.getChatMessages(id) || [];
+        const latest = messages.at(-1);
+        replyStateCache.set(id, latest?.sender === 'client');
+      } catch (error) {
+        console.warn('Could not determine inbox reply state', id, error);
+      }
+    })).then(() => {
+      replyStateFetchedAt = Date.now();
+      return replyStateCache;
+    }).finally(() => {
+      replyStatePromise = null;
+    });
+
+    return replyStatePromise;
   }
 
   function ensureDraftBadge(card, drafts) {
@@ -50,8 +85,30 @@
     else card.prepend(badge);
   }
 
+  function ensureReplyBadge(card) {
+    if (!card) return;
+    const needsReply = cardNeedsReply(card);
+    let badge = card.querySelector('[data-admin-reply-badge]');
+    if (!needsReply) {
+      badge?.remove();
+      return;
+    }
+    if (badge) return;
+
+    badge = document.createElement('span');
+    badge.className = 'pill';
+    badge.dataset.adminReplyBadge = 'true';
+    badge.textContent = 'Needs reply';
+    const title = card.querySelector('.section-title');
+    const buttonRow = card.querySelector('.button-row');
+    if (title) title.appendChild(badge);
+    else if (buttonRow) buttonRow.insertAdjacentElement('beforebegin', badge);
+    else card.prepend(badge);
+  }
+
   function shouldShow(card, drafts) {
     if (activeFilter === 'unread') return cardHasUnread(card);
+    if (activeFilter === 'reply') return cardNeedsReply(card);
     if (activeFilter === 'drafts') return cardHasDraft(card, drafts);
     return true;
   }
@@ -59,8 +116,8 @@
   function updateFilterButtons(counts) {
     document.querySelectorAll('[data-inbox-filter]').forEach(button => {
       const filter = button.dataset.inboxFilter;
-      const base = filter === 'unread' ? 'Unread' : filter === 'drafts' ? 'Drafts' : 'All';
-      const count = filter === 'unread' ? counts.unread : filter === 'drafts' ? counts.drafts : counts.all;
+      const base = filter === 'unread' ? 'Unread' : filter === 'reply' ? 'Needs reply' : filter === 'drafts' ? 'Drafts' : 'All';
+      const count = filter === 'unread' ? counts.unread : filter === 'reply' ? counts.reply : filter === 'drafts' ? counts.drafts : counts.all;
       const nextLabel = `${base} (${count})`;
       if (button.textContent !== nextLabel) button.textContent = nextLabel;
       button.classList.toggle('primary', filter === activeFilter);
@@ -81,12 +138,14 @@
     bar.innerHTML = `
       <button type="button" class="btn primary" data-inbox-filter="all" aria-pressed="true">All</button>
       <button type="button" class="btn" data-inbox-filter="unread" aria-pressed="false">Unread</button>
+      <button type="button" class="btn" data-inbox-filter="reply" aria-pressed="false">Needs reply</button>
       <button type="button" class="btn" data-inbox-filter="drafts" aria-pressed="false">Drafts</button>`;
     list.insertAdjacentElement('beforebegin', bar);
 
     bar.querySelectorAll('[data-inbox-filter]').forEach(button => {
-      button.addEventListener('click', () => {
+      button.addEventListener('click', async () => {
         activeFilter = button.dataset.inboxFilter || 'all';
+        if (activeFilter === 'reply') await refreshReplyStates(true);
         decorateInbox();
       });
     });
@@ -102,7 +161,9 @@
     }
     const nextHtml = activeFilter === 'drafts'
       ? '<h3>No saved drafts</h3><p class="small">Replies you start and leave unfinished will appear here.</p>'
-      : '<h3>Inbox caught up</h3><p class="small">There are no unread client conversations right now.</p>';
+      : activeFilter === 'reply'
+        ? '<h3>No clients waiting</h3><p class="small">Every visible conversation has an artist reply as its latest message.</p>'
+        : '<h3>Inbox caught up</h3><p class="small">There are no unread client conversations right now.</p>';
     if (!empty) {
       empty = document.createElement('article');
       empty.id = 'adminInboxFilterEmpty';
@@ -117,27 +178,31 @@
     const cards = inboxCards();
     const drafts = loadDrafts();
     let unread = 0;
+    let reply = 0;
     let draftCount = 0;
     let visible = 0;
 
     cards.forEach(card => {
       if (cardHasUnread(card)) unread += 1;
+      if (cardNeedsReply(card)) reply += 1;
       if (cardHasDraft(card, drafts)) draftCount += 1;
       ensureDraftBadge(card, drafts);
+      ensureReplyBadge(card);
       const show = shouldShow(card, drafts);
       if (card.hidden === show) card.hidden = !show;
       if (show) visible += 1;
     });
 
-    updateFilterButtons({ all: cards.length, unread, drafts: draftCount });
+    updateFilterButtons({ all: cards.length, unread, reply, drafts: draftCount });
     ensureEmptyState(visible);
   }
 
   function queueDecorate() {
     if (decorateQueued) return;
     decorateQueued = true;
-    requestAnimationFrame(() => {
+    requestAnimationFrame(async () => {
       decorateQueued = false;
+      if (activeFilter === 'reply') await refreshReplyStates();
       decorateInbox();
     });
   }
@@ -150,15 +215,20 @@
         return target?.closest?.('#adminInboxList, #adminInboxWorkspace') ||
           Array.from(record.addedNodes || []).some(node => node.nodeType === Node.ELEMENT_NODE && (node.id === 'adminInboxList' || node.querySelector?.('#adminInboxList')));
       });
-      if (relevant) queueDecorate();
+      if (relevant) {
+        replyStateFetchedAt = 0;
+        queueDecorate();
+      }
     });
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
+    setTimeout(async () => {
       decorateInbox();
       observeInbox();
+      await refreshReplyStates();
+      decorateInbox();
     }, 1100);
   });
 
@@ -166,4 +236,9 @@
     if (event.key === DRAFT_KEY) queueDecorate();
   });
   window.addEventListener('admin-inbox-read-state-changed', queueDecorate);
+  window.addEventListener('focus', async () => {
+    replyStateFetchedAt = 0;
+    await refreshReplyStates();
+    decorateInbox();
+  });
 })();

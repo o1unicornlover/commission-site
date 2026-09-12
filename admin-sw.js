@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v12";
+const ADMIN_CACHE = "commission-admin-v13";
 const ADMIN_SHELL = [
   "./admin.html",
   "./style.css",
@@ -21,6 +21,7 @@ const ADMIN_SHELL = [
   "./js/admin-inbox-tools.js",
   "./js/admin-app-health.js",
   "./js/admin-mobile.js",
+  "./js/admin-accessibility.js",
   "./js/autosync.js"
 ];
 

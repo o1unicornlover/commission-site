@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v11";
+const ADMIN_CACHE = "commission-admin-v12";
 const ADMIN_SHELL = [
   "./admin.html",
   "./style.css",
@@ -7,8 +7,21 @@ const ADMIN_SHELL = [
   "./supabase-config.js",
   "./admin-manifest.webmanifest",
   "./admin-icon.svg",
+  "./js/constants.js",
+  "./js/utils.js",
+  "./js/legacy-app.js",
+  "./js/clean-appearance.js",
+  "./js/site-customization.js",
+  "./js/runtime-stability.js",
+  "./js/admin-app.js",
+  "./js/admin-dashboard.js",
+  "./js/admin-routing.js",
+  "./js/admin-productivity.js",
+  "./js/admin-inbox-workspace.js",
+  "./js/admin-inbox-tools.js",
   "./js/admin-app-health.js",
-  "./js/admin-mobile.js"
+  "./js/admin-mobile.js",
+  "./js/autosync.js"
 ];
 
 self.addEventListener("install", event => {
@@ -35,11 +48,18 @@ self.addEventListener("fetch", event => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        const copy = response.clone();
-        caches.open(ADMIN_CACHE).then(cache => cache.put(event.request, copy));
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(ADMIN_CACHE).then(cache => cache.put(event.request, copy));
+        }
         return response;
       })
-      .catch(() => caches.match(event.request).then(hit => hit || caches.match("./admin.html")))
+      .catch(async () => {
+        const hit = await caches.match(event.request);
+        if (hit) return hit;
+        if (event.request.mode === "navigate") return caches.match("./admin.html");
+        return Response.error();
+      })
   );
 });
 

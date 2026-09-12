@@ -7,6 +7,7 @@
   const DRAFT_KEY = 'adminInboxReplyDrafts';
   let activeCommissionId = '';
   let threadChannel = null;
+  let initialized = false;
 
   function esc(value) {
     return String(value ?? '')
@@ -63,8 +64,6 @@
     if (!commissionId) return;
     const rows = messages || await window.getChatMessages?.(commissionId) || [];
     if (!saveReadTime(commissionId, rows)) return;
-    // admin-app.js owns the badge/list rendering. Re-rendering the Inbox is safe because
-    // the thread workspace is a sibling and stays mounted while its list refreshes.
     window.dispatchEvent(new CustomEvent('admin-inbox-read-state-changed', { detail: { commissionId: String(commissionId) } }));
   }
 
@@ -282,7 +281,7 @@
     const id = decodeURIComponent(location.hash.slice('#message-'.length));
     if (!id) return;
     window.showAdminPage?.('inbox');
-    setTimeout(() => openThread(id), 250);
+    setTimeout(() => openThread(id), 120);
   }
 
   function markVisibleThreadRead() {
@@ -291,16 +290,22 @@
     refreshThread({ markRead: true });
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  function bootInboxWorkspace() {
+    if (initialized) return;
+    initialized = true;
     interceptInboxOpen();
     document.addEventListener('visibilitychange', markVisibleThreadRead);
     window.addEventListener('hashchange', openHashThread);
-    setTimeout(() => {
-      ensureWorkspace();
-      subscribeThread();
-      openHashThread();
-    }, 1000);
-  });
+    ensureWorkspace();
+    subscribeThread();
+    openHashThread();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(bootInboxWorkspace, 250), { once: true });
+  } else {
+    setTimeout(bootInboxWorkspace, 0);
+  }
 
   navigator.serviceWorker?.addEventListener?.('message', event => {
     if (event.data?.type !== 'open-inbox-commission') return;

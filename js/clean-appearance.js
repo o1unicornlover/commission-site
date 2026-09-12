@@ -144,9 +144,17 @@
     if (manualTheme) manualTheme.closest("label")?.remove();
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  function initializeAppearanceGuard() {
     removeRetiredThemeArtifacts();
     retireThemeControls();
     window.applySiteSettings();
-  });
+  }
+
+  window.refreshSingleAppearanceSystem = initializeAppearanceGuard;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeAppearanceGuard, { once: true });
+  } else {
+    initializeAppearanceGuard();
+  }
 })();

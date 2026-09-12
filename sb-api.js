@@ -1,12 +1,41 @@
 /*
   Commission Website API Loader - Stage 2
-  Public pages keep the compatibility loader. The admin page now loads its API
+  Public pages keep the compatibility loader. The admin page loads its API
   modules lazily from admin-runtime.js after unlock so admin.html can paint and
   accept input immediately instead of blocking on ten extra scripts.
 */
 (function loadApiScripts() {
   const onAdmin = /(^|\/)admin\.html$/i.test(location.pathname) || location.pathname.endsWith("/admin.html");
-  if (onAdmin) return;
+
+  if (onAdmin) {
+    let liveSyncLoaded = false;
+
+    function loadAdminLiveSync() {
+      if (liveSyncLoaded) return;
+      liveSyncLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "./js/autosync.js?v=admin-live1";
+      script.async = false;
+      script.onload = () => {
+        if (typeof window.setupRealtime === "function") {
+          try { window.setupRealtime(); }
+          catch (error) { console.warn("Admin realtime setup failed", error); }
+        }
+      };
+      script.onerror = () => {
+        liveSyncLoaded = false;
+        console.warn("Admin live sync module failed to load");
+      };
+      document.body.appendChild(script);
+    }
+
+    window.addEventListener("admin-runtime-ready", loadAdminLiveSync, { once: true });
+    if (document.documentElement.dataset.adminBoot === "ready") {
+      queueMicrotask(loadAdminLiveSync);
+    }
+    return;
+  }
 
   const version = "stage2-api21";
   [

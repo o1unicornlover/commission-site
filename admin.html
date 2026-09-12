@@ -117,54 +117,85 @@
                   <input id="settingTitle" placeholder="Homepage title">
                   <textarea id="settingSubtitle" placeholder="Homepage subtitle"></textarea>
                   <input id="settingNote" placeholder="Commission info note">
-                  <button class="btn primary" onclick="saveSettings()">Save General Settings</button>
+                  <button class="btn primary" onclick="saveTextSettings()">Save Text</button>
                 </section>
                 <section id="settings-appearance" class="settings-panel hidden">
                   <h3>Assets &amp; Branding</h3>
-                  <p class="small">Upload the permanent site assets used by the current design.</p>
-                  <div class="form-grid">
-                    <label>Homepage banner <input id="bannerFile" type="file" accept="image/*"></label>
-                    <label>Page doll <input id="pageDollFile" type="file" accept="image/*"></label>
-                    <label>Favicon <input id="faviconFile" type="file" accept="image/*"></label>
-                    <label>Gallery frame <input id="galleryFrameFile" type="file" accept="image/*"></label>
-                    <label>Nav icon <input id="navIconFile" type="file" accept="image/*"></label>
-                  </div>
-                  <button class="btn primary" onclick="saveAppearanceSettings()">Save Assets</button>
+                  <p class="small">Manage the permanent site artwork and branding. Live palette controls are handled by Theme Studio.</p>
+                  <label class="small">Default banner image</label>
+                  <input id="defaultBannerFile" type="file" accept="image/*">
+                  <label class="small">Default page doll image</label>
+                  <input id="defaultDollFile" type="file" accept="image/*">
+                  <label class="small">Website background image / pattern</label>
+                  <input id="backgroundFile" type="file" accept="image/*">
+                  <label class="small">Header icon / logo symbol</label>
+                  <input id="navIconInput" placeholder="✧, ♡, ☆, or paste an icon">
+                  <label class="small">Favicon image</label>
+                  <input id="faviconFile" type="file" accept="image/*">
+                  <p class="small">Favicons work best as square images, like 64×64 or 128×128.</p>
+                  <label class="small">Custom gallery image border / frame</label>
+                  <input id="galleryBorderFile" type="file" accept="image/*">
+                  <p class="small">Best resolution: upload a transparent PNG frame around 1024×1024 px or 1200×1200 px. Keep the center transparent so the artwork shows through. Square frames work best because gallery thumbnails are square.</p>
+                  <label class="small"><input id="galleryBorderEnabled" type="checkbox"> Enable custom gallery borders</label>
+                  <div class="button-row"><button class="btn" onclick="clearDefaultImages()">Clear Images</button></div>
                 </section>
                 <section id="settings-social" class="settings-panel hidden">
-                  <h3>Social Links</h3>
+                  <h3>Social / Contact Links</h3>
+                  <p class="small">These show on the homepage banner contact card.</p>
                   <div id="socialAdminList" class="social-admin-list"></div>
                   <div class="form-grid">
-                    <input id="socialLabel" placeholder="Label">
-                    <input id="socialUrl" placeholder="https://...">
+                    <input id="socialLabel" placeholder="Label, e.g. Discord">
+                    <input id="socialIcon" placeholder="Icon text or Font Awesome class, e.g. fa-brands fa-discord">
+                    <input id="socialUrl" placeholder="Link or username">
                   </div>
-                  <button class="btn primary" onclick="addSocialLink()">Add Social Link</button>
+                  <button class="btn primary" onclick="addSocialLink()">Add Link</button>
                 </section>
+
                 <section id="settings-pricing" class="settings-panel hidden">
                   <h3>Pricing Page</h3>
-                  <div id="pricingAdminList" class="social-admin-list"></div>
+                  <p class="small">Create categories like <strong>2D Art</strong>, then add options like <strong>Headshot — $</strong> or <strong>Fullbody — $$</strong>.</p>
+                  <div id="pricingAdminList" class="pricing-admin-list"></div>
+
+                  <h4>Add pricing category</h4>
                   <div class="form-grid">
-                    <input id="pricingTitle" placeholder="Service or package">
-                    <input id="pricingPrice" placeholder="$0">
-                    <textarea id="pricingDescription" placeholder="Description"></textarea>
+                    <input id="priceCategoryTitle" placeholder="Category, e.g. 2D Art">
+                    <textarea id="priceCategoryNote" placeholder="Optional note, e.g. Character art options"></textarea>
                   </div>
-                  <button class="btn primary" onclick="addPricingItem()">Add Pricing Item</button>
+                  <button type="button" class="btn primary" onclick="addPricingCategory()">Add Category</button>
+
+                  <hr class="soft-line">
+                  <h4>Add item to category</h4>
+                  <div class="form-grid">
+                    <select id="priceCategorySelect"></select>
+                    <input id="priceItemName" placeholder="Item, e.g. Headshot, Bust, Fullbody">
+                    <input id="priceItemAmount" placeholder="Price, e.g. $25 or $25+">
+                    <input id="priceItemImage" type="file" accept="image/*">
+                  </div>
+                  <button type="button" class="btn primary" onclick="addPricingItem()">Add Price Item</button>
                 </section>
                 <section id="settings-news" class="settings-panel hidden">
                   <h3>Latest News</h3>
-                  <input id="newsTitle" placeholder="News title">
-                  <textarea id="newsBody" placeholder="News text"></textarea>
-                  <button class="btn primary" onclick="saveNewsSettings()">Save Latest News</button>
+                  <p class="small">These appear on the homepage latest news card.</p>
+                  <div id="newsAdminList" class="social-admin-list"></div>
+                  <div class="form-grid">
+                    <input id="newsDate" placeholder="Date, e.g. 05/20">
+                    <input id="newsText" placeholder="News text, e.g. 3D commissions opening soon!">
+                  </div>
+                  <button class="btn primary" onclick="addNewsItem()">Add News</button>
                 </section>
+
                 <section id="settings-payments" class="settings-panel hidden">
                   <h3>Payments</h3>
-                  <p class="small">Configure the public payment instructions and links clients see.</p>
-                  <div class="form-grid">
-                    <input id="paymentLabel" placeholder="Payment label">
-                    <input id="paymentUrl" placeholder="https://paypal.me/...">
-                  </div>
-                  <div class="info-card">
-                    <p class="small">Example:</p>
+                  <p class="small">PayPal is used for payment requests. Enter only your PayPal.me username, not the whole link.</p>
+                  <label class="small">PayPal username</label>
+                  <input id="paymentPaypalUsername" placeholder="yourpaypalname">
+                  <label class="small">Currency</label>
+                  <select id="paymentCurrency">
+                    <option value="USD">USD ($)</option>
+                  </select>
+                  <div class="payment-preview-box">
+                    <p class="eyebrow">Preview</p>
+                    <p class="small">If a commission price is <strong>$85</strong>, clients will be sent to:</p>
                     <code>https://paypal.me/yourpaypalname/85</code>
                   </div>
                   <button type="button" class="btn primary" onclick="savePaymentSettings()">Save Payment Settings</button>

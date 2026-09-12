@@ -12,6 +12,8 @@
 
   let mobileBar = null;
   let pageSelect = null;
+  let initialized = false;
+  let observer = null;
   const media = window.matchMedia("(max-width: 760px)");
 
   function currentPage() {
@@ -131,15 +133,30 @@
 
   function observePageChanges() {
     const content = document.querySelector(".admin-content");
-    if (!content) return;
-    const observer = new MutationObserver(syncSelect);
+    if (!content || observer) return;
+    observer = new MutationObserver(syncSelect);
     observer.observe(content, { subtree: true, attributes: true, attributeFilter: ["class"] });
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  function initialize() {
+    if (initialized) return;
+    initialized = true;
     retireStaleAppearanceControls();
     buildMobileBar();
     observePageChanges();
     media.addEventListener?.("change", setMobileState);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialize, { once: true });
+  } else {
+    initialize();
+  }
+
+  window.addEventListener("admin-runtime-ready", () => {
+    if (!document.getElementById("adminMobileNav")) buildMobileBar();
+    retireStaleAppearanceControls();
+    syncSelect();
+    setMobileState();
   });
 })();

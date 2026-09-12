@@ -25,16 +25,13 @@ async function refreshProgressSafely() {
 }
 
 function queueRealtimeRefresh(reason = "change") {
-  console.log("Realtime refresh queued:", reason);
   clearTimeout(realtimeRefreshTimer);
   realtimeRefreshTimer = setTimeout(async () => {
     try {
       if (document.getElementById("queueGrid")) await renderQueue?.();
       await refreshProgressSafely();
       if (document.getElementById("homeQueuePreview")) await renderHomeQueuePreview?.();
-      if (document.getElementById("adminDashboard")) {
-        await updateAdminOverview?.();
-      }
+      if (document.getElementById("adminDashboard")) await updateAdminOverview?.();
     } catch (error) {
       console.error("Realtime refresh failed:", error);
     }
@@ -55,15 +52,12 @@ function setupRealtime() {
   realtimeChannel = supabaseClient
     .channel(`site-realtime-${Date.now()}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "commissions" }, payload => {
-      console.log("Realtime commissions event:", payload);
       queueRealtimeRefresh("commissions");
     })
     .on("postgres_changes", { event: "*", schema: "public", table: "progress_updates" }, payload => {
-      console.log("Realtime progress event:", payload);
       queueRealtimeRefresh("progress_updates");
     })
     .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, payload => {
-      console.log("Realtime chat event:", payload);
       const commissionId = payload?.new?.commission_id || payload?.old?.commission_id;
       if (commissionId) {
         renderClientChat?.(commissionId);
@@ -79,37 +73,40 @@ function setupRealtime() {
 
 window.setupRealtime = setupRealtime;
 
-// Start realtime after the normal app initialization finishes.
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     setupRealtime();
   }, 1200);
 });
 
-setInterval(async () => {
-  // Public page auto-sync. Keep this gentle so forms/chat do not flicker.
-  renderQueue?.();
-  renderHomeQueuePreview?.();
-  renderCommissionInfo?.();
+async function runFallbackSync() {
+  if (document.hidden) return;
 
-  renderGallery?.();
-  renderFeaturedGallery?.();
-
-  renderPricingPage?.();
-  renderTosPage?.();
-  renderSocialLinks?.();
-  applySupabaseHomepageSettings?.();
-
-  // Progress pages are special because rebuilding the whole page also rebuilds chat.
-  // This only refreshes chat while typing and avoids the long close/reappear glitch.
-  await refreshProgressSafely?.();
-
-  // Admin chat boxes only update their message lists, not the full commission cards.
-  if (isAdmin) {
-    expandedAdminIds.forEach(id => renderAdminChat?.(id));
+  // Admin only needs its own expanded chat panels as a realtime fallback.
+  if (document.getElementById("adminDashboard")) {
+    if (window.expandedAdminIds) {
+      for (const id of window.expandedAdminIds) await renderAdminChat?.(id);
+    }
+    return;
   }
 
-  // Do NOT auto-render admin forms here.
-  // Do NOT rebuild chat containers while typing.
-}, 3000);
+  // Public pages refresh only sections that actually exist on the current page.
+  if (document.getElementById("queueGrid")) await renderQueue?.();
+  if (document.getElementById("homeQueuePreview")) await renderHomeQueuePreview?.();
+  if (document.getElementById("commissionInfo")) await renderCommissionInfo?.();
+  if (document.getElementById("galleryGrid")) await renderGallery?.();
+  if (document.getElementById("featuredGallery")) await renderFeaturedGallery?.();
+  if (document.getElementById("pricingPage")) await renderPricingPage?.();
+  if (document.getElementById("tosPage")) await renderTosPage?.();
+  if (document.querySelector(".social-links")) await renderSocialLinks?.();
+  if (document.getElementById("homeHero")) await applySupabaseHomepageSettings?.();
+  await refreshProgressSafely();
+}
 
+setInterval(() => {
+  runFallbackSync().catch(error => console.error("Fallback sync failed:", error));
+}, 12000);
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) runFallbackSync().catch(() => {});
+});

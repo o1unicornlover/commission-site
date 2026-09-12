@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v21";
+const ADMIN_CACHE = "commission-admin-v22";
 const ADMIN_SHELL = [
   "./admin.html",
   "./style.css",
@@ -7,6 +7,8 @@ const ADMIN_SHELL = [
   "./supabase-config.js",
   "./admin-manifest.webmanifest",
   "./admin-icon.svg",
+  "./admin-icon-192.svg",
+  "./admin-icon-512.svg",
   "./js/constants.js",
   "./js/utils.js",
   "./js/legacy-app.js",

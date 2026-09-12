@@ -6,6 +6,8 @@
   let audioCtx = null;
   let notificationChannel = null;
   let notificationsEnabled = localStorage.getItem("adminMessageNotifications") === "true";
+  let soundEnabled = localStorage.getItem("adminMessageSound") !== "false";
+  let desktopNotificationsEnabled = localStorage.getItem("adminDesktopNotifications") !== "false";
   let inboxRefreshTimer = null;
   const READ_KEY = "adminConversationReadTimes";
 
@@ -16,6 +18,22 @@
 
   function saveReadTimes(value) {
     localStorage.setItem(READ_KEY, JSON.stringify(value || {}));
+  }
+
+  function saveAlertPreferences() {
+    localStorage.setItem("adminMessageNotifications", String(notificationsEnabled));
+    localStorage.setItem("adminMessageSound", String(soundEnabled));
+    localStorage.setItem("adminDesktopNotifications", String(desktopNotificationsEnabled));
+    window.dispatchEvent(new CustomEvent("admin-alert-preferences-changed", { detail: getAlertPreferences() }));
+  }
+
+  function getAlertPreferences() {
+    return {
+      enabled: notificationsEnabled,
+      sound: soundEnabled,
+      desktop: desktopNotificationsEnabled,
+      permission: ("Notification" in window) ? Notification.permission : "unsupported"
+    };
   }
 
   function messageTime(row) {
@@ -52,8 +70,8 @@
     if (audioCtx?.state === "suspended") audioCtx.resume().catch(() => {});
   }
 
-  function chime() {
-    if (!notificationsEnabled) return;
+  function chime(force = false) {
+    if (!force && (!notificationsEnabled || !soundEnabled)) return;
     ensureAudio();
     if (!audioCtx) return;
     const now = audioCtx.currentTime;
@@ -114,7 +132,7 @@
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
+      .replace(/\"/g, "&quot;")
       .replace(/'/g, "&#039;");
   }
 
@@ -231,9 +249,9 @@
     if (document.getElementById("adminPage-inbox")?.classList.contains("active")) await renderAdminInbox();
     if (!notificationsEnabled) return;
 
-    chime();
+    if (soundEnabled) chime();
     const body = String(row?.message || "New client message").slice(0, 150);
-    if ("Notification" in window && Notification.permission === "granted") {
+    if (desktopNotificationsEnabled && "Notification" in window && Notification.permission === "granted") {
       try {
         const registration = await navigator.serviceWorker?.ready;
         if (registration?.showNotification) {
@@ -253,19 +271,36 @@
 
   async function enableNotifications() {
     ensureAudio();
+    notificationsEnabled = true;
     if (!("Notification" in window)) {
-      notificationsEnabled = true;
-      localStorage.setItem("adminMessageNotifications", "true");
+      desktopNotificationsEnabled = false;
+      saveAlertPreferences();
       await syncBadge();
       return alert("Chime alerts are enabled. This browser does not support desktop notifications.");
     }
 
     let permission = Notification.permission;
-    if (permission === "default") permission = await Notification.requestPermission();
-    notificationsEnabled = permission !== "denied";
-    localStorage.setItem("adminMessageNotifications", String(notificationsEnabled));
+    if (desktopNotificationsEnabled && permission === "default") permission = await Notification.requestPermission();
+    if (permission === "denied") desktopNotificationsEnabled = false;
+    saveAlertPreferences();
     await syncBadge();
-    if (notificationsEnabled) chime();
+    if (soundEnabled) chime();
+  }
+
+  async function setAlertPreferences(next = {}) {
+    if (typeof next.enabled === "boolean") notificationsEnabled = next.enabled;
+    if (typeof next.sound === "boolean") soundEnabled = next.sound;
+    if (typeof next.desktop === "boolean") desktopNotificationsEnabled = next.desktop;
+
+    if (notificationsEnabled && desktopNotificationsEnabled && "Notification" in window && Notification.permission === "default") {
+      const permission = await Notification.requestPermission();
+      if (permission === "denied") desktopNotificationsEnabled = false;
+    }
+
+    if (notificationsEnabled && soundEnabled) ensureAudio();
+    saveAlertPreferences();
+    await syncBadge();
+    return getAlertPreferences();
   }
 
   function injectControls() {
@@ -281,7 +316,7 @@
       if (!notificationsEnabled) await enableNotifications();
       else {
         notificationsEnabled = false;
-        localStorage.setItem("adminMessageNotifications", "false");
+        saveAlertPreferences();
         await syncBadge();
       }
     });
@@ -300,7 +335,7 @@
 
   function armAfterUserGesture() {
     const once = () => {
-      if (notificationsEnabled) ensureAudio();
+      if (notificationsEnabled && soundEnabled) ensureAudio();
       window.removeEventListener("pointerdown", once);
       window.removeEventListener("keydown", once);
     };
@@ -315,6 +350,12 @@
       if (document.getElementById("adminPage-inbox")?.classList.contains("active")) await renderAdminInbox();
     }, 10000);
   }
+
+  window.adminAlertPreferences = {
+    get: getAlertPreferences,
+    set: setAlertPreferences,
+    testChime: () => chime(true)
+  };
 
   document.addEventListener("DOMContentLoaded", () => {
     addManifest();

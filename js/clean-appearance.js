@@ -102,6 +102,44 @@
 
   function retireThemeControls() {
     document.querySelectorAll('[data-settings-tab="holiday"], #settings-holiday').forEach(el => el.remove());
+
+    const settingsIntro = document.querySelector("#adminPage-settings > .small");
+    if (settingsIntro && /holiday/i.test(settingsIntro.textContent || "")) {
+      settingsIntro.textContent = "Customize the public homepage, branding assets, live palette, social links, pricing, news, terms, and payments.";
+    }
+
+    const appearanceTab = document.querySelector('[data-settings-tab="appearance"]');
+    if (appearanceTab) appearanceTab.textContent = "Assets & Branding";
+
+    const appearancePanel = document.getElementById("settings-appearance");
+    if (!appearancePanel) return;
+
+    const heading = appearancePanel.querySelector("h3");
+    if (heading) heading.textContent = "Assets & Branding";
+
+    // The permanent Theme Studio owns the live style.css palette. Strip the retired
+    // dark/default color editor while preserving banner, page-doll, background,
+    // favicon, nav icon, gallery-frame, and clear-image controls.
+    const legacyColorInput = appearancePanel.querySelector("#appearanceBg");
+    const legacyColorGrid = legacyColorInput?.closest(".color-grid");
+    if (legacyColorGrid) {
+      const colorHeading = Array.from(appearancePanel.querySelectorAll("h4"))
+        .find(el => /default site colors/i.test(el.textContent || ""));
+      const colorDescription = colorHeading?.nextElementSibling?.matches("p.small")
+        ? colorHeading.nextElementSibling
+        : null;
+      const divider = colorHeading?.previousElementSibling?.matches("hr.soft-line")
+        ? colorHeading.previousElementSibling
+        : null;
+
+      legacyColorGrid.remove();
+      colorDescription?.remove();
+      colorHeading?.remove();
+      divider?.remove();
+    }
+
+    appearancePanel.querySelectorAll('button[onclick*="saveDefaultAppearance"]').forEach(button => button.remove());
+
     const manualTheme = document.getElementById("manualTheme");
     if (manualTheme) manualTheme.closest("label")?.remove();
   }

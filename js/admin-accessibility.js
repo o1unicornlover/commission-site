@@ -1,11 +1,13 @@
 /* Admin accessibility + status announcements. Uses the existing visual system and does not add a theme layer. */
 (function initAdminAccessibility() {
   const onAdmin = /(^|\/)admin\.html$/i.test(location.pathname) || location.pathname.endsWith('/admin.html');
-  if (!onAdmin) return;
+  if (!onAdmin || window.__adminAccessibilityReady) return;
+  window.__adminAccessibilityReady = true;
 
   let lastUnread = null;
   let lastPage = '';
   let queued = false;
+  let observer = null;
 
   function ensureLiveRegion() {
     let region = document.getElementById('adminLiveRegion');
@@ -121,18 +123,31 @@
     requestAnimationFrame(syncAll);
   }
 
-  const observer = new MutationObserver(queueSync);
-
-  document.addEventListener('DOMContentLoaded', () => {
-    syncAll();
-    observer.observe(document.body, {
+  function startObserver() {
+    if (observer) return;
+    const root = document.getElementById('adminDashboard') || document.body;
+    if (!root) return;
+    observer = new MutationObserver(queueSync);
+    observer.observe(root, {
       subtree: true,
       childList: true,
       characterData: true,
       attributes: true,
       attributeFilter: ['class', 'disabled']
     });
-  });
+  }
+
+  function initialize() {
+    if (!document.body) return;
+    syncAll();
+    startObserver();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize, { once: true });
+  } else {
+    initialize();
+  }
 
   window.addEventListener('online', () => announce('Back online. Admin data can sync again.'));
   window.addEventListener('offline', () => announce('You are offline. Cached admin tools remain available, but Supabase changes will not sync until the connection returns.'));

@@ -14,6 +14,7 @@
     let appHealthLoaded = false;
     let pwaUpdatesLoaded = false;
     let appearanceGuardLoaded = false;
+    let adminRoutingLoaded = false;
 
     function loadAdminAppShell() {
       if (adminAppLoaded || document.querySelector('script[data-admin-app-shell]')) return;
@@ -83,6 +84,22 @@
       document.body.appendChild(script);
     }
 
+    function loadAdminRouting() {
+      if (adminRoutingLoaded || document.querySelector('script[data-admin-routing]')) return;
+      adminRoutingLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "./js/admin-routing.js?v=admin-routing2";
+      script.async = false;
+      script.dataset.adminRouting = "true";
+      script.onerror = () => {
+        adminRoutingLoaded = false;
+        script.remove();
+        console.warn("Admin routing module failed to load");
+      };
+      document.body.appendChild(script);
+    }
+
     function loadAdminAppHealth() {
       if (appHealthLoaded || document.querySelector('script[data-admin-app-health]')) return;
       appHealthLoaded = true;
@@ -120,6 +137,7 @@
       loadAdminMobileNav();
       loadAdminLiveSync();
       loadAdminAppearanceGuard();
+      loadAdminRouting();
       loadAdminAppHealth();
     }
 

@@ -16,6 +16,7 @@
     let appearanceGuardLoaded = false;
     let adminRoutingLoaded = false;
     let adminProductivityLoaded = false;
+    let adminDashboardLoaded = false;
 
     function loadAdminAppShell() {
       if (adminAppLoaded || document.querySelector('script[data-admin-app-shell]')) return;
@@ -117,6 +118,22 @@
       document.body.appendChild(script);
     }
 
+    function loadAdminDashboard() {
+      if (adminDashboardLoaded || document.querySelector('script[data-admin-dashboard-lite]')) return;
+      adminDashboardLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "./js/admin-dashboard-lite.js?v=admin-dashboard1";
+      script.async = false;
+      script.dataset.adminDashboardLite = "true";
+      script.onerror = () => {
+        adminDashboardLoaded = false;
+        script.remove();
+        console.warn("Admin dashboard overview failed to load");
+      };
+      document.body.appendChild(script);
+    }
+
     function loadAdminAppHealth() {
       if (appHealthLoaded || document.querySelector('script[data-admin-app-health]')) return;
       appHealthLoaded = true;
@@ -156,6 +173,7 @@
       loadAdminAppearanceGuard();
       loadAdminRouting();
       loadAdminProductivity();
+      loadAdminDashboard();
       loadAdminAppHealth();
     }
 

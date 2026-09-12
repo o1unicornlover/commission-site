@@ -1,8 +1,8 @@
-const ADMIN_CACHE = "commission-admin-v18";
+const ADMIN_CACHE = "commission-admin-v19";
 const ADMIN_SHELL = [
   "./admin.html",
   "./style.css",
-  "./script.js",
+  "./admin-runtime.js",
   "./sb-api.js",
   "./supabase-config.js",
   "./admin-manifest.webmanifest",
@@ -13,7 +13,6 @@ const ADMIN_SHELL = [
   "./js/clean-appearance.js",
   "./js/site-customization.js",
   "./js/runtime-stability.js",
-  "./js/client-progress-tools.js",
   "./js/admin-app.js",
   "./js/admin-dashboard.js",
   "./js/admin-routing.js",

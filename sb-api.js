@@ -17,6 +17,8 @@
     let adminRoutingLoaded = false;
     let adminProductivityLoaded = false;
     let adminDashboardLoaded = false;
+    let inboxWorkspaceLoaded = false;
+    let inboxToolsLoaded = false;
 
     function loadAdminAppShell() {
       if (adminAppLoaded || document.querySelector('script[data-admin-app-shell]')) return;
@@ -134,6 +136,39 @@
       document.body.appendChild(script);
     }
 
+    function loadAdminInboxWorkspace() {
+      if (inboxWorkspaceLoaded || document.querySelector('script[data-admin-inbox-workspace]')) return;
+      inboxWorkspaceLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "./js/admin-inbox-workspace.js?v=admin-inbox-workspace2";
+      script.async = false;
+      script.dataset.adminInboxWorkspace = "true";
+      script.onload = loadAdminInboxTools;
+      script.onerror = () => {
+        inboxWorkspaceLoaded = false;
+        script.remove();
+        console.warn("Admin inline inbox workspace failed to load");
+      };
+      document.body.appendChild(script);
+    }
+
+    function loadAdminInboxTools() {
+      if (inboxToolsLoaded || document.querySelector('script[data-admin-inbox-tools]')) return;
+      inboxToolsLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "./js/admin-inbox-tools.js?v=admin-inbox-tools2";
+      script.async = false;
+      script.dataset.adminInboxTools = "true";
+      script.onerror = () => {
+        inboxToolsLoaded = false;
+        script.remove();
+        console.warn("Admin inbox tools failed to load");
+      };
+      document.body.appendChild(script);
+    }
+
     function loadAdminAppHealth() {
       if (appHealthLoaded || document.querySelector('script[data-admin-app-health]')) return;
       appHealthLoaded = true;
@@ -174,6 +209,7 @@
       loadAdminRouting();
       loadAdminProductivity();
       loadAdminDashboard();
+      loadAdminInboxWorkspace();
       loadAdminAppHealth();
     }
 

@@ -1,13 +1,27 @@
-const ADMIN_CACHE = "commission-admin-v26";
+const ADMIN_CACHE = "commission-admin-v27";
 const ADMIN_SHELL = [
   "./admin.html",
   "./style.css",
   "./admin-runtime.js",
-  "./supabase-config.js",
   "./admin-manifest.webmanifest",
   "./admin-icon.svg",
   "./admin-icon-192.svg",
-  "./admin-icon-512.svg"
+  "./admin-icon-512.svg",
+  "./js/constants.js",
+  "./js/utils.js",
+  "./js/legacy-app.js",
+  "./js/admin-app.js",
+  "./js/admin-mobile.js",
+  "./js/autosync.js",
+  "./js/clean-appearance.js",
+  "./js/admin-routing.js",
+  "./js/admin-productivity.js",
+  "./js/admin-dashboard-lite.js",
+  "./js/admin-inbox-workspace.js",
+  "./js/admin-inbox-tools.js",
+  "./js/admin-app-health.js",
+  "./js/admin-pwa-updates.js",
+  "./js/admin-accessibility.js"
 ];
 
 self.addEventListener("install", event => {
@@ -40,7 +54,7 @@ self.addEventListener("fetch", event => {
 
   event.respondWith(
     fetch(event.request).catch(async () => {
-      const hit = await caches.match(event.request);
+      const hit = await caches.match(event.request, { ignoreSearch: true });
       return hit || Response.error();
     })
   );

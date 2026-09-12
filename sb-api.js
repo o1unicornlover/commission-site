@@ -10,6 +10,7 @@
   if (onAdmin) {
     let liveSyncLoaded = false;
     let adminAppLoaded = false;
+    let mobileNavLoaded = false;
 
     function loadAdminAppShell() {
       if (adminAppLoaded || document.querySelector('script[data-admin-app-shell]')) return;
@@ -23,6 +24,22 @@
         adminAppLoaded = false;
         script.remove();
         console.warn("Admin inbox/alert module failed to load");
+      };
+      document.body.appendChild(script);
+    }
+
+    function loadAdminMobileNav() {
+      if (mobileNavLoaded || document.querySelector('script[data-admin-mobile-nav]')) return;
+      mobileNavLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "./js/admin-mobile.js?v=admin-mobile2";
+      script.async = false;
+      script.dataset.adminMobileNav = "true";
+      script.onerror = () => {
+        mobileNavLoaded = false;
+        script.remove();
+        console.warn("Admin mobile navigation failed to load");
       };
       document.body.appendChild(script);
     }
@@ -47,15 +64,20 @@
       document.body.appendChild(script);
     }
 
+    function loadUnlockedAdminLayers() {
+      loadAdminMobileNav();
+      loadAdminLiveSync();
+    }
+
     // admin-app.js is intentionally lightweight before unlock: it wires the
     // install/inbox/notification shell, but its data reads safely no-op until
     // admin-runtime.js has loaded the API layer. Keep the heavier feature stack
     // out of startup while responsiveness is being rebuilt module by module.
     loadAdminAppShell();
 
-    window.addEventListener("admin-runtime-ready", loadAdminLiveSync, { once: true });
+    window.addEventListener("admin-runtime-ready", loadUnlockedAdminLayers, { once: true });
     if (document.documentElement.dataset.adminBoot === "ready") {
-      queueMicrotask(loadAdminLiveSync);
+      queueMicrotask(loadUnlockedAdminLayers);
     }
     return;
   }

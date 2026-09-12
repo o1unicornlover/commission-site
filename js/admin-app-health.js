@@ -19,10 +19,24 @@
     return navigator.onLine ? 'Online' : 'Offline';
   }
 
+  function alertPreferences() {
+    return window.adminAlertPreferences?.get?.() || {
+      enabled: localStorage.getItem('adminMessageNotifications') === 'true',
+      sound: localStorage.getItem('adminMessageSound') !== 'false',
+      desktop: localStorage.getItem('adminDesktopNotifications') !== 'false'
+    };
+  }
+
+  function preferenceLabel(name, enabled) {
+    if (name === 'sound') return enabled ? '🔊 Chime on' : '🔇 Chime off';
+    return enabled ? '🖥 Desktop alerts on' : '🖥 Desktop alerts off';
+  }
+
   function ensurePanel() {
     const dashboard = document.getElementById('adminPage-dash');
     if (!dashboard || document.getElementById('adminAppHealth')) return;
 
+    const prefs = alertPreferences();
     const panel = document.createElement('section');
     panel.id = 'adminAppHealth';
     panel.className = 'panel compact-panel';
@@ -39,8 +53,13 @@
         <span class="pill" id="adminHealthNotifications">${notificationState()}</span>
       </div>
       <p class="small" id="adminHealthNote">Message alerts work best while this admin app is open. A future push-backend step is still needed for reliable alerts while the app is fully closed.</p>
-      <div class="button-row">
+      <div class="button-row" aria-label="Message alert preferences">
+        <button type="button" class="btn" id="adminSoundPreference" aria-pressed="${prefs.sound ? 'true' : 'false'}">${preferenceLabel('sound', prefs.sound)}</button>
+        <button type="button" class="btn" id="adminDesktopPreference" aria-pressed="${prefs.desktop ? 'true' : 'false'}">${preferenceLabel('desktop', prefs.desktop)}</button>
         <button type="button" class="btn" id="adminTestChime">Test chime</button>
+      </div>
+      <p class="small">Sound and desktop alerts are saved separately on this admin device. Unread inbox badges continue working even when either alert is muted.</p>
+      <div class="button-row">
         <button type="button" class="btn" id="adminHealthInbox">Open Inbox</button>
         <button type="button" class="btn" id="adminHealthRefresh">Refresh app data</button>
       </div>`;
@@ -50,6 +69,16 @@
     else dashboard.appendChild(panel);
 
     document.getElementById('adminTestChime')?.addEventListener('click', playTestChime);
+    document.getElementById('adminSoundPreference')?.addEventListener('click', async () => {
+      const current = alertPreferences();
+      await window.adminAlertPreferences?.set?.({ sound: !current.sound, enabled: true });
+      updateStatus();
+    });
+    document.getElementById('adminDesktopPreference')?.addEventListener('click', async () => {
+      const current = alertPreferences();
+      await window.adminAlertPreferences?.set?.({ desktop: !current.desktop, enabled: true });
+      updateStatus();
+    });
     document.getElementById('adminHealthInbox')?.addEventListener('click', () => {
       const button = document.querySelector('[data-admin-page="inbox"]');
       if (button) button.click();
@@ -72,6 +101,10 @@
   }
 
   function playTestChime() {
+    if (window.adminAlertPreferences?.testChime) {
+      window.adminAlertPreferences.testChime();
+      return;
+    }
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return alert('Audio chimes are unavailable in this browser.');
     const ctx = new AudioContext();
@@ -95,13 +128,27 @@
     const connection = document.getElementById('adminHealthConnection');
     const install = document.getElementById('adminHealthInstall');
     const notifications = document.getElementById('adminHealthNotifications');
+    const sound = document.getElementById('adminSoundPreference');
+    const desktop = document.getElementById('adminDesktopPreference');
+    const prefs = alertPreferences();
     if (connection) connection.textContent = connectionState();
     if (install) install.textContent = pwaState();
     if (notifications) notifications.textContent = notificationState();
+    if (sound) {
+      sound.textContent = preferenceLabel('sound', prefs.sound);
+      sound.setAttribute('aria-pressed', String(Boolean(prefs.sound)));
+    }
+    if (desktop) {
+      desktop.textContent = preferenceLabel('desktop', prefs.desktop);
+      desktop.setAttribute('aria-pressed', String(Boolean(prefs.desktop)));
+      desktop.disabled = ("Notification" in window) && Notification.permission === 'denied' && !prefs.desktop;
+      desktop.title = desktop.disabled ? 'Desktop notifications are blocked in this browser.' : '';
+    }
   }
 
   window.addEventListener('online', updateStatus);
   window.addEventListener('offline', updateStatus);
+  window.addEventListener('admin-alert-preferences-changed', updateStatus);
   document.addEventListener('visibilitychange', updateStatus);
   navigator.serviceWorker?.addEventListener('controllerchange', updateStatus);
 

@@ -13,6 +13,7 @@
     let mobileNavLoaded = false;
     let appHealthLoaded = false;
     let pwaUpdatesLoaded = false;
+    let appearanceGuardLoaded = false;
 
     function loadAdminAppShell() {
       if (adminAppLoaded || document.querySelector('script[data-admin-app-shell]')) return;
@@ -66,6 +67,22 @@
       document.body.appendChild(script);
     }
 
+    function loadAdminAppearanceGuard() {
+      if (appearanceGuardLoaded || document.querySelector('script[data-admin-appearance-guard]')) return;
+      appearanceGuardLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "./js/clean-appearance.js?v=admin-appearance2";
+      script.async = false;
+      script.dataset.adminAppearanceGuard = "true";
+      script.onerror = () => {
+        appearanceGuardLoaded = false;
+        script.remove();
+        console.warn("Admin single-appearance guard failed to load");
+      };
+      document.body.appendChild(script);
+    }
+
     function loadAdminAppHealth() {
       if (appHealthLoaded || document.querySelector('script[data-admin-app-health]')) return;
       appHealthLoaded = true;
@@ -102,6 +119,7 @@
     function loadUnlockedAdminLayers() {
       loadAdminMobileNav();
       loadAdminLiveSync();
+      loadAdminAppearanceGuard();
       loadAdminAppHealth();
     }
 

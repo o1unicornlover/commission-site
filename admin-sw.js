@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v16";
+const ADMIN_CACHE = "commission-admin-v17";
 const ADMIN_SHELL = [
   "./admin.html",
   "./style.css",

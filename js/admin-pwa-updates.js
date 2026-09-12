@@ -61,8 +61,15 @@
   }
 
   const observer = new MutationObserver(ensureButton);
-  document.addEventListener('DOMContentLoaded', () => {
+
+  function start() {
     ensureButton();
-    observer.observe(document.body, { childList: true, subtree: true });
-  });
+    if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else {
+    start();
+  }
 })();

@@ -1,9 +1,11 @@
 /* Admin app routing + legacy-control cleanup. Keeps the single style.css visual system intact. */
 (function initAdminRouting() {
   const onAdmin = /(^|\/)admin\.html$/i.test(location.pathname) || location.pathname.endsWith("/admin.html");
-  if (!onAdmin) return;
+  if (!onAdmin || window.__adminRoutingReady) return;
+  window.__adminRoutingReady = true;
 
   let routeTimer = null;
+  let uiObserver = null;
 
   function retireLegacyThemeUI() {
     document.querySelectorAll('[data-settings-tab="holiday"], #settings-holiday').forEach(el => el.remove());
@@ -49,7 +51,8 @@
     let attempts = 0;
     const tryOpen = () => {
       attempts += 1;
-      const card = document.querySelector(`[data-inbox-commission="${CSS.escape(id)}"]`);
+      const escapedId = window.CSS?.escape ? CSS.escape(id) : id.replace(/["\\]/g, "\\$&");
+      const card = document.querySelector(`[data-inbox-commission="${escapedId}"]`);
       const openButton = card?.querySelector("[data-open-inbox-commission]");
       if (openButton) {
         if (options.updateHash !== false) history.replaceState(null, "", `#message-${encodeURIComponent(id)}`);
@@ -86,11 +89,12 @@
   }
 
   function watchAdminUI() {
-    const observer = new MutationObserver(() => {
+    if (uiObserver || !document.body) return;
+    uiObserver = new MutationObserver(() => {
       retireLegacyThemeUI();
       addCommissionQuickLinks();
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    uiObserver.observe(document.body, { childList: true, subtree: true });
   }
 
   function routeFromHash() {
@@ -98,12 +102,18 @@
     if (id) setTimeout(() => openInboxConversation(id, { updateHash: false }), 700);
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  function startRouting() {
     retireLegacyThemeUI();
     addCommissionQuickLinks();
     watchAdminUI();
     routeFromHash();
-  });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startRouting, { once: true });
+  } else {
+    startRouting();
+  }
 
   window.addEventListener("hashchange", routeFromHash);
 })();

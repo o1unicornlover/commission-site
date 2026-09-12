@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v24";
+const ADMIN_CACHE = "commission-admin-v25";
 const ADMIN_SHELL = [
   "./admin.html",
   "./style.css",
@@ -9,6 +9,16 @@ const ADMIN_SHELL = [
   "./admin-icon.svg",
   "./admin-icon-192.svg",
   "./admin-icon-512.svg",
+  "./api/site-api.js",
+  "./api/slots-api.js",
+  "./api/socials-api.js",
+  "./api/gallery-api.js",
+  "./api/tos-api.js",
+  "./api/uploads-api.js",
+  "./api/pricing-api.js",
+  "./api/commissions-api.js",
+  "./api/progress-api.js",
+  "./api/chat-api.js",
   "./js/constants.js",
   "./js/utils.js",
   "./js/legacy-app.js",

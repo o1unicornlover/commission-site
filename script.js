@@ -3,7 +3,7 @@
   Loader for the gradually modularized frontend.
 */
 (function loadAppScripts() {
-  const version = "stage2-clean19";
+  const version = "stage2-clean20";
   [
     "./js/constants.js",
     "./js/utils.js",
@@ -18,6 +18,7 @@
     "./js/admin-inbox-workspace.js",
     "./js/admin-inbox-tools.js",
     "./js/admin-app-health.js",
+    "./js/admin-pwa-updates.js",
     "./js/admin-mobile.js",
     "./js/admin-accessibility.js",
     "./js/autosync.js"

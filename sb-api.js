@@ -19,6 +19,7 @@
     let adminDashboardLoaded = false;
     let inboxWorkspaceLoaded = false;
     let inboxToolsLoaded = false;
+    let adminAccessibilityLoaded = false;
 
     function loadAdminAppShell() {
       if (adminAppLoaded || document.querySelector('script[data-admin-app-shell]')) return;
@@ -202,6 +203,22 @@
       document.body.appendChild(script);
     }
 
+    function loadAdminAccessibility() {
+      if (adminAccessibilityLoaded || document.querySelector('script[data-admin-accessibility]')) return;
+      adminAccessibilityLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "./js/admin-accessibility.js?v=admin-accessibility2";
+      script.async = false;
+      script.dataset.adminAccessibility = "true";
+      script.onerror = () => {
+        adminAccessibilityLoaded = false;
+        script.remove();
+        console.warn("Admin accessibility/status module failed to load");
+      };
+      document.body.appendChild(script);
+    }
+
     function loadUnlockedAdminLayers() {
       loadAdminMobileNav();
       loadAdminLiveSync();
@@ -211,6 +228,7 @@
       loadAdminDashboard();
       loadAdminInboxWorkspace();
       loadAdminAppHealth();
+      loadAdminAccessibility();
     }
 
     // admin-app.js is intentionally lightweight before unlock: it wires the

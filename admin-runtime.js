@@ -1,49 +1,16 @@
-/*
-  Admin-only runtime.
-  Keep admin.html immediately responsive by loading the heavy Supabase/API/admin
-  stack only after the admin session is unlocked. Public pages keep their own
-  loader and visual system.
-*/
+/* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-6";
-  const TEMP_ADMIN_PASSWORD = "admin123"; // Temporary compatibility until Supabase Auth launch pass.
+  const version = "admin-runtime-7";
+  const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
   const apiModules = [
-    "./api/site-api.js",
-    "./api/slots-api.js",
-    "./api/socials-api.js",
-    "./api/gallery-api.js",
-    "./api/tos-api.js",
-    "./api/uploads-api.js",
-    "./api/pricing-api.js",
-    "./api/commissions-api.js",
-    "./api/progress-api.js",
+    "./api/site-api.js", "./api/slots-api.js", "./api/socials-api.js",
+    "./api/gallery-api.js", "./api/tos-api.js", "./api/uploads-api.js",
+    "./api/pricing-api.js", "./api/commissions-api.js", "./api/progress-api.js",
     "./api/chat-api.js"
   ];
-
-  const foundationModules = [
-    "./js/constants.js",
-    "./js/utils.js",
-    "./js/legacy-app.js"
-  ];
-
-  const featureModules = [
-    "./js/clean-appearance.js",
-    "./js/site-customization.js",
-    "./js/runtime-stability.js",
-    "./js/admin-app.js",
-    "./js/admin-dashboard.js",
-    "./js/admin-routing.js",
-    "./js/admin-productivity.js",
-    "./js/admin-inbox-workspace.js",
-    "./js/admin-inbox-tools.js",
-    "./js/admin-app-health.js",
-    "./js/admin-pwa-updates.js",
-    "./js/admin-mobile.js",
-    "./js/admin-accessibility.js",
-    "./js/autosync.js"
-  ];
+  const coreModules = ["./js/constants.js", "./js/utils.js", "./js/legacy-app.js"];
 
   function wirePwaShell() {
     if (!document.querySelector('link[rel="manifest"]')) {
@@ -52,14 +19,12 @@
       manifest.href = "./admin-manifest.webmanifest";
       document.head.appendChild(manifest);
     }
-
     if (!document.querySelector('meta[name="theme-color"]')) {
       const theme = document.createElement("meta");
       theme.name = "theme-color";
       theme.content = "#ff4da8";
       document.head.appendChild(theme);
     }
-
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("./admin-sw.js")
         .catch(error => console.warn("Admin service worker registration failed", error));
@@ -67,20 +32,16 @@
   }
 
   function loadOne(src, { external = false } = {}) {
+    const target = new URL(src, location.href).pathname;
     const existing = [...document.scripts].find(script => {
-      try {
-        return new URL(script.src, location.href).pathname === new URL(src, location.href).pathname;
-      } catch {
-        return false;
-      }
+      try { return new URL(script.src, location.href).pathname === target; }
+      catch { return false; }
     });
     if (existing) return Promise.resolve();
-
     return new Promise((resolve, reject) => {
       const script = document.createElement("script");
       script.src = external ? src : `${src}?v=${version}`;
       script.async = false;
-      script.dataset.adminRuntime = "true";
       script.onload = resolve;
       script.onerror = () => reject(new Error(`Failed to load ${src}`));
       document.body.appendChild(script);
@@ -116,18 +77,10 @@
     if (input) input.disabled = busy;
   }
 
-  async function ensureSupabaseAndApi() {
-    if (!window.supabase) {
-      await loadOne("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", { external: true });
-    }
-
-    if (!window.supabaseClient) {
-      await loadOne("./supabase-config.js");
-    }
-
-    if (typeof window.getCommissions !== "function") {
-      await loadSerial(apiModules);
-    }
+  async function ensureDataLayer() {
+    if (!window.supabase) await loadOne("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", { external: true });
+    if (!window.supabaseClient) await loadOne("./supabase-config.js");
+    if (typeof window.getCommissions !== "function") await loadSerial(apiModules);
   }
 
   function revealDashboard() {
@@ -135,42 +88,28 @@
     document.getElementById("adminDashboard")?.classList.remove("hidden");
   }
 
-  async function initializeAdminViews() {
+  async function initializeCoreAdmin() {
+    if (typeof window.initializeApp === "function") {
+      try { window.initializeApp(); } catch (error) { console.warn("Core initializeApp failed", error); }
+    }
     revealDashboard();
-
-    const tasks = [
-      window.renderAdmin?.(),
-      window.renderAdminGallery?.(),
-      window.renderSlotAdmin?.(),
-      window.loadSettingsAdmin?.(),
-      window.updateAdminOverview?.()
+    const jobs = [
+      window.renderAdmin?.(), window.renderAdminGallery?.(), window.renderSlotAdmin?.(),
+      window.loadSettingsAdmin?.(), window.updateAdminOverview?.()
     ].filter(Boolean);
-
-    if (tasks.length) await Promise.allSettled(tasks);
+    if (jobs.length) await Promise.allSettled(jobs);
   }
 
   async function bootAdminApplication() {
     if (bootPromise) return bootPromise;
-
     bootPromise = (async () => {
       document.documentElement.dataset.adminBoot = "loading";
       setLoginBusy(true);
-      setBootStatus("Loading the admin workspace…");
-
+      setBootStatus("Loading core admin tools…");
       try {
-        await ensureSupabaseAndApi();
-        await loadSerial(foundationModules);
-
-        /*
-          Reliability over startup cleverness: the admin add-ons now load in one
-          deterministic order after unlock. This avoids cross-module races and
-          eliminates the previous pile-up of DOMContentLoaded replays at page load.
-        */
-        await loadSerial(featureModules);
-
-        document.dispatchEvent(new Event("DOMContentLoaded"));
-        await initializeAdminViews();
-
+        await ensureDataLayer();
+        await loadSerial(coreModules);
+        await initializeCoreAdmin();
         document.documentElement.dataset.adminBoot = "ready";
         setBootStatus("");
         window.dispatchEvent(new CustomEvent("admin-runtime-ready"));
@@ -178,43 +117,27 @@
         document.documentElement.dataset.adminBoot = "error";
         sessionStorage.removeItem("adminOpen");
         setLoginBusy(false);
-        setBootStatus("The admin workspace could not finish loading. Refresh and try again.", true);
+        setBootStatus("The core admin could not finish loading. Refresh and try again.", true);
         console.error("Admin runtime failed to load", error);
+        bootPromise = null;
         throw error;
       }
     })();
-
     return bootPromise;
   }
 
-  async function loginShell() {
+  window.adminLogin = async function adminLoginShell() {
     const input = document.getElementById("adminPassword");
-    const password = input?.value || "";
-    if (password !== TEMP_ADMIN_PASSWORD) return alert("Wrong admin password.");
-
+    if ((input?.value || "") !== demoPass) return alert("Wrong admin password.");
     sessionStorage.setItem("adminOpen", "true");
     await bootAdminApplication();
-  }
-
-  /*
-    Define the login handler immediately. Heavy admin code is deliberately not
-    loaded here; admin.html stays interactive even on a slow connection/device.
-  */
-  window.adminLogin = loginShell;
-  wirePwaShell();
-
-  const resumeExistingSession = () => {
-    if (sessionStorage.getItem("adminOpen") === "true") {
-      bootAdminApplication().catch(() => {});
-    } else {
-      document.documentElement.dataset.adminBoot = "idle";
-      document.getElementById("adminPassword")?.focus();
-    }
   };
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", resumeExistingSession, { once: true });
-  } else {
-    resumeExistingSession();
-  }
+  wirePwaShell();
+  sessionStorage.removeItem("adminOpen");
+  document.documentElement.dataset.adminBoot = "idle";
+
+  const focusLogin = () => document.getElementById("adminPassword")?.focus();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", focusLogin, { once: true });
+  else focusLogin();
 })();

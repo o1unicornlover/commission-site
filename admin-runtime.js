@@ -1,15 +1,33 @@
 /*
-  Dedicated admin runtime.
-  Keeps the installed admin app and desktop admin dashboard on the same UI,
-  while avoiding public-only page helpers from the general site loader.
+  Admin-only runtime.
+  Keep admin.html immediately responsive by loading the heavy Supabase/API/admin
+  stack only after the admin session is unlocked. Public pages keep their own
+  loader and visual system.
 */
-(function loadAdminScripts() {
-  const version = "admin-runtime-5";
+(function initAdminRuntime() {
+  const version = "admin-runtime-6";
+  const TEMP_ADMIN_PASSWORD = "admin123"; // Temporary compatibility until Supabase Auth launch pass.
+  let bootPromise = null;
+
+  const apiModules = [
+    "./api/site-api.js",
+    "./api/slots-api.js",
+    "./api/socials-api.js",
+    "./api/gallery-api.js",
+    "./api/tos-api.js",
+    "./api/uploads-api.js",
+    "./api/pricing-api.js",
+    "./api/commissions-api.js",
+    "./api/progress-api.js",
+    "./api/chat-api.js"
+  ];
+
   const foundationModules = [
     "./js/constants.js",
     "./js/utils.js",
     "./js/legacy-app.js"
   ];
+
   const featureModules = [
     "./js/clean-appearance.js",
     "./js/site-customization.js",
@@ -23,7 +41,8 @@
     "./js/admin-app-health.js",
     "./js/admin-pwa-updates.js",
     "./js/admin-mobile.js",
-    "./js/admin-accessibility.js"
+    "./js/admin-accessibility.js",
+    "./js/autosync.js"
   ];
 
   function wirePwaShell() {
@@ -47,11 +66,21 @@
     }
   }
 
-  function loadOne(src) {
+  function loadOne(src, { external = false } = {}) {
+    const existing = [...document.scripts].find(script => {
+      try {
+        return new URL(script.src, location.href).pathname === new URL(src, location.href).pathname;
+      } catch {
+        return false;
+      }
+    });
+    if (existing) return Promise.resolve();
+
     return new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = `${src}?v=${version}`;
+      script.src = external ? src : `${src}?v=${version}`;
       script.async = false;
+      script.dataset.adminRuntime = "true";
       script.onload = resolve;
       script.onerror = () => reject(new Error(`Failed to load ${src}`));
       document.body.appendChild(script);
@@ -62,70 +91,130 @@
     for (const src of sources) await loadOne(src);
   }
 
-  function adminUnlocked() {
-    const dashboard = document.getElementById("adminDashboard");
-    return Boolean(dashboard && !dashboard.classList.contains("hidden"));
+  function setBootStatus(message, failed = false) {
+    const login = document.getElementById("adminLogin");
+    if (!login) return;
+    let status = document.getElementById("adminBootStatus");
+    if (!status) {
+      status = document.createElement("p");
+      status.id = "adminBootStatus";
+      status.className = "small";
+      status.setAttribute("role", "status");
+      login.appendChild(status);
+    }
+    status.textContent = message || "";
+    status.dataset.state = failed ? "error" : "loading";
   }
 
-  function gateRead(name, emptyValue) {
-    const original = window[name];
-    if (typeof original !== "function" || original.__adminLoginGate) return;
-
-    const wrapped = function (...args) {
-      if (!adminUnlocked()) return Promise.resolve(emptyValue);
-      return original.apply(this, args);
-    };
-    wrapped.__adminLoginGate = true;
-    wrapped.__adminOriginal = original;
-    window[name] = wrapped;
+  function setLoginBusy(busy) {
+    const button = document.querySelector('#adminLogin button[onclick*="adminLogin"]');
+    const input = document.getElementById("adminPassword");
+    if (button) {
+      button.disabled = busy;
+      button.textContent = busy ? "Opening studio…" : "Enter";
+    }
+    if (input) input.disabled = busy;
   }
 
-  function gateHeavyAdminReads() {
-    /*
-      Several optional admin widgets initialize together and each used to start
-      its own commission/chat refresh while the login screen was still visible.
-      On larger histories that created a burst of duplicate Supabase requests
-      before the user could even press Enter. Keep those reads dormant until
-      the existing admin dashboard is actually unlocked; after login the exact
-      same API functions and data behavior are used.
-    */
-    gateRead("getCommissions", []);
-    gateRead("getChatMessages", []);
-    gateRead("getSlots", []);
-  }
+  async function ensureSupabaseAndApi() {
+    if (!window.supabase) {
+      await loadOne("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", { external: true });
+    }
 
-  async function boot() {
-    document.documentElement.dataset.adminBoot = "loading";
-    try {
-      /*
-        Load the dependency foundation in order, then fetch independent admin
-        feature modules together. They attach their DOMContentLoaded handlers
-        before the single replay below, so the dashboard initializes once while
-        avoiding a long serial waterfall.
-      */
-      await loadSerial(foundationModules);
-      gateHeavyAdminReads();
-      await Promise.all(featureModules.map(loadOne));
-      await loadOne("./js/autosync.js");
+    if (!window.supabaseClient) {
+      await loadOne("./supabase-config.js");
+    }
 
-      if (document.readyState !== "loading") {
-        document.dispatchEvent(new Event("DOMContentLoaded"));
-      }
-
-      document.documentElement.dataset.adminBoot = "ready";
-      window.dispatchEvent(new CustomEvent("admin-runtime-ready"));
-    } catch (error) {
-      document.documentElement.dataset.adminBoot = "error";
-      console.error("Admin runtime failed to load", error);
+    if (typeof window.getCommissions !== "function") {
+      await loadSerial(apiModules);
     }
   }
 
-  /* Manifest + service worker must not depend on the heavier admin modules. */
+  function revealDashboard() {
+    document.getElementById("adminLogin")?.classList.add("hidden");
+    document.getElementById("adminDashboard")?.classList.remove("hidden");
+  }
+
+  async function initializeAdminViews() {
+    revealDashboard();
+
+    const tasks = [
+      window.renderAdmin?.(),
+      window.renderAdminGallery?.(),
+      window.renderSlotAdmin?.(),
+      window.loadSettingsAdmin?.(),
+      window.updateAdminOverview?.()
+    ].filter(Boolean);
+
+    if (tasks.length) await Promise.allSettled(tasks);
+  }
+
+  async function bootAdminApplication() {
+    if (bootPromise) return bootPromise;
+
+    bootPromise = (async () => {
+      document.documentElement.dataset.adminBoot = "loading";
+      setLoginBusy(true);
+      setBootStatus("Loading the admin workspace…");
+
+      try {
+        await ensureSupabaseAndApi();
+        await loadSerial(foundationModules);
+
+        /*
+          Reliability over startup cleverness: the admin add-ons now load in one
+          deterministic order after unlock. This avoids cross-module races and
+          eliminates the previous pile-up of DOMContentLoaded replays at page load.
+        */
+        await loadSerial(featureModules);
+
+        document.dispatchEvent(new Event("DOMContentLoaded"));
+        await initializeAdminViews();
+
+        document.documentElement.dataset.adminBoot = "ready";
+        setBootStatus("");
+        window.dispatchEvent(new CustomEvent("admin-runtime-ready"));
+      } catch (error) {
+        document.documentElement.dataset.adminBoot = "error";
+        sessionStorage.removeItem("adminOpen");
+        setLoginBusy(false);
+        setBootStatus("The admin workspace could not finish loading. Refresh and try again.", true);
+        console.error("Admin runtime failed to load", error);
+        throw error;
+      }
+    })();
+
+    return bootPromise;
+  }
+
+  async function loginShell() {
+    const input = document.getElementById("adminPassword");
+    const password = input?.value || "";
+    if (password !== TEMP_ADMIN_PASSWORD) return alert("Wrong admin password.");
+
+    sessionStorage.setItem("adminOpen", "true");
+    await bootAdminApplication();
+  }
+
+  /*
+    Define the login handler immediately. Heavy admin code is deliberately not
+    loaded here; admin.html stays interactive even on a slow connection/device.
+  */
+  window.adminLogin = loginShell;
   wirePwaShell();
 
+  const resumeExistingSession = () => {
+    if (sessionStorage.getItem("adminOpen") === "true") {
+      bootAdminApplication().catch(() => {});
+    } else {
+      document.documentElement.dataset.adminBoot = "idle";
+      document.getElementById("adminPassword")?.focus();
+    }
+  };
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot, { once: true });
+    document.addEventListener("DOMContentLoaded", resumeExistingSession, { once: true });
   } else {
-    boot();
+    resumeExistingSession();
   }
 })();

@@ -182,6 +182,19 @@
     });
   }
 
+  function setupPublicInteractions() {
+    const passwordInput = document.getElementById("clientPassword");
+    passwordInput?.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        window.checkPassword?.();
+      }
+    });
+
+    const galleryCard = document.querySelector("#galleryModal .image-modal-card");
+    galleryCard?.addEventListener("click", event => event.stopPropagation());
+  }
+
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && closeVisibleDialog()) {
       event.preventDefault();
@@ -196,6 +209,7 @@
     setupDialog(document.getElementById("passwordModal"), "Private client access");
     setupDialog(document.getElementById("galleryModal"), "Gallery preview");
     setInitialLoadingCopy();
+    setupPublicInteractions();
     wrapDialogFunctions();
   });
 })();

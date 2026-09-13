@@ -4,6 +4,13 @@
   if (onAdmin) return;
 
   let lastDialogTrigger = null;
+  let bodyOverflowBeforeDialog = "";
+  const loadingTargets = new Map([
+    ["queueGrid", "Loading active commissions…"],
+    ["pricingGrid", "Loading pricing…"],
+    ["galleryGrid", "Loading gallery…"],
+    ["progressArea", "Loading your commission…"]
+  ]);
 
   function ensureStatusRegion() {
     let region = document.getElementById("publicStatus");
@@ -72,6 +79,20 @@
     setTimeout(() => target?.focus({ preventScroll: true }), 30);
   }
 
+  function lockDialogScroll() {
+    if (!document.body.dataset.publicDialogLocked) {
+      bodyOverflowBeforeDialog = document.body.style.overflow;
+      document.body.dataset.publicDialogLocked = "true";
+    }
+    document.body.style.overflow = "hidden";
+  }
+
+  function unlockDialogScroll() {
+    if (!document.body.dataset.publicDialogLocked) return;
+    document.body.style.overflow = bodyOverflowBeforeDialog;
+    delete document.body.dataset.publicDialogLocked;
+  }
+
   function restoreDialogFocus() {
     const target = lastDialogTrigger;
     lastDialogTrigger = null;
@@ -86,6 +107,7 @@
         const result = originalOpen.apply(this, args);
         const modal = document.getElementById("passwordModal");
         setupDialog(modal, "Private client access");
+        lockDialogScroll();
         focusFirst(modal);
         announce("Private progress access opened.");
         return result;
@@ -98,6 +120,7 @@
       const originalClose = window.closeModal;
       const wrappedClose = function(...args) {
         const result = originalClose.apply(this, args);
+        unlockDialogScroll();
         restoreDialogFocus();
         announce("Private progress access closed.");
         return result;
@@ -113,6 +136,7 @@
         const result = await originalGalleryOpen.apply(this, args);
         const modal = document.getElementById("galleryModal");
         setupDialog(modal, "Gallery preview");
+        lockDialogScroll();
         focusFirst(modal);
         announce("Gallery preview opened.");
         return result;
@@ -125,6 +149,7 @@
       const originalGalleryClose = window.closeGalleryPreview;
       const wrappedGalleryClose = function(...args) {
         const result = originalGalleryClose.apply(this, args);
+        unlockDialogScroll();
         restoreDialogFocus();
         announce("Gallery preview closed.");
         return result;
@@ -167,18 +192,53 @@
     }
   }
 
+  function setupLoadingState(node, text) {
+    if (!node || node.dataset.publicLoadingReady) return;
+    node.dataset.publicLoadingReady = "true";
+    node.setAttribute("aria-busy", "true");
+
+    if (!node.textContent.trim() && !node.children.length) {
+      node.innerHTML = `<p class="small" data-public-loading aria-live="polite">${text}</p>`;
+    }
+
+    const observer = new MutationObserver(() => {
+      const loading = node.querySelector("[data-public-loading]");
+      const hasRealContent = [...node.children].some(child => child !== loading && !child.hasAttribute("data-public-loading"));
+      if (!hasRealContent && loading) return;
+      node.removeAttribute("aria-busy");
+      loading?.remove();
+      observer.disconnect();
+    });
+    observer.observe(node, { childList: true, subtree: false });
+  }
+
   function setInitialLoadingCopy() {
-    const targets = [
-      ["queueGrid", "Loading active commissions…"],
-      ["pricingGrid", "Loading pricing…"],
-      ["galleryGrid", "Loading gallery…"],
-      ["progressArea", "Loading your commission…"]
-    ];
-    targets.forEach(([id, text]) => {
-      const node = document.getElementById(id);
-      if (node && !node.textContent.trim() && !node.children.length) {
-        node.innerHTML = `<p class="small" aria-live="polite">${text}</p>`;
-      }
+    loadingTargets.forEach((text, id) => setupLoadingState(document.getElementById(id), text));
+  }
+
+  function labelGalleryButtons() {
+    document.querySelectorAll(".gallery-image-btn").forEach((button, index) => {
+      if (button.getAttribute("aria-label")) return;
+      const image = button.querySelector("img");
+      const alt = image?.getAttribute("alt")?.trim();
+      button.setAttribute("aria-label", alt ? `Open ${alt}` : `Open gallery artwork ${index + 1}`);
+    });
+  }
+
+  function setupGalleryLabels() {
+    const grid = document.getElementById("galleryGrid");
+    if (!grid) return;
+    labelGalleryButtons();
+    const observer = new MutationObserver(labelGalleryButtons);
+    observer.observe(grid, { childList: true, subtree: true });
+  }
+
+  function setupBackdropClose(modal, closeFn) {
+    if (!modal || modal.dataset.publicBackdropReady) return;
+    modal.dataset.publicBackdropReady = "true";
+    modal.addEventListener("click", event => {
+      if (event.target !== modal) return;
+      closeFn?.();
     });
   }
 
@@ -191,8 +251,8 @@
       }
     });
 
-    const galleryCard = document.querySelector("#galleryModal .image-modal-card");
-    galleryCard?.addEventListener("click", event => event.stopPropagation());
+    setupBackdropClose(document.getElementById("passwordModal"), () => window.closeModal?.());
+    setupBackdropClose(document.getElementById("galleryModal"), () => window.closeGalleryPreview?.());
   }
 
   document.addEventListener("keydown", event => {
@@ -209,6 +269,7 @@
     setupDialog(document.getElementById("passwordModal"), "Private client access");
     setupDialog(document.getElementById("galleryModal"), "Gallery preview");
     setInitialLoadingCopy();
+    setupGalleryLabels();
     setupPublicInteractions();
     wrapDialogFunctions();
   });

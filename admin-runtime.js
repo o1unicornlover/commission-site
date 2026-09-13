@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-7";
+  const version = "admin-runtime-8";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -10,7 +10,41 @@
     "./api/pricing-api.js", "./api/commissions-api.js", "./api/progress-api.js",
     "./api/chat-api.js"
   ];
-  const coreModules = ["./js/constants.js", "./js/utils.js", "./js/legacy-app.js"];
+  const coreModules = [
+    "./js/constants.js",
+    "./js/utils.js",
+    "./js/legacy-app.js",
+    "./js/admin-dashboard-core.js"
+  ];
+
+  function standaloneAdminMode() {
+    return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+  }
+
+  function isolateInstalledAdmin() {
+    if (!standaloneAdminMode()) return;
+    document.documentElement.dataset.adminStandalone = "true";
+    document.querySelectorAll(".admin-header nav a").forEach(link => {
+      if (!/admin\.html(?:$|[?#])/i.test(link.getAttribute("href") || "")) link.hidden = true;
+    });
+  }
+
+  async function registerAdminServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    const desiredScope = new URL("./admin.html", location.href).href;
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(registration => {
+        const workerUrl = registration.active?.scriptURL || registration.waiting?.scriptURL || registration.installing?.scriptURL || "";
+        const isAdminWorker = /\/admin-sw\.js(?:$|[?#])/.test(workerUrl);
+        if (isAdminWorker && registration.scope !== desiredScope) return registration.unregister();
+        return Promise.resolve(false);
+      }));
+      await navigator.serviceWorker.register("./admin-sw.js", { scope: "./admin.html" });
+    } catch (error) {
+      console.warn("Admin service worker registration failed", error);
+    }
+  }
 
   function wirePwaShell() {
     if (!document.querySelector('link[rel="manifest"]')) {
@@ -25,10 +59,9 @@
       theme.content = "#ff4da8";
       document.head.appendChild(theme);
     }
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./admin-sw.js")
-        .catch(error => console.warn("Admin service worker registration failed", error));
-    }
+    isolateInstalledAdmin();
+    registerAdminServiceWorker();
+    setTimeout(registerAdminServiceWorker, 1800);
   }
 
   function loadOne(src, { external = false } = {}) {
@@ -93,9 +126,10 @@
       try { window.initializeApp(); } catch (error) { console.warn("Core initializeApp failed", error); }
     }
     revealDashboard();
+    window.installAdminDashboardNavigationRefresh?.();
     const jobs = [
       window.renderAdmin?.(), window.renderAdminGallery?.(), window.renderSlotAdmin?.(),
-      window.loadSettingsAdmin?.(), window.updateAdminOverview?.()
+      window.loadSettingsAdmin?.(), window.updateAdminOverview?.(), window.refreshAdminDashboardCore?.()
     ].filter(Boolean);
     if (jobs.length) await Promise.allSettled(jobs);
   }

@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v28";
+const ADMIN_CACHE = "commission-admin-v29";
 const ADMIN_SHELL = [
   "./admin.html",
   "./style.css",
@@ -25,6 +25,9 @@ const ADMIN_SHELL = [
   "./js/admin-accessibility.js"
 ];
 
+const ADMIN_PATH = new URL("./admin.html", self.location.href).pathname;
+const ADMIN_ASSET_PATHS = new Set(ADMIN_SHELL.map(path => new URL(path, self.location.href).pathname));
+
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(ADMIN_CACHE)
@@ -46,7 +49,13 @@ self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (event.request.mode === "navigate") {
+  // Even an older broad-scope registration must never turn the public website
+  // into the admin app or serve admin.html as a fallback for public navigation.
+  const isAdminNavigation = event.request.mode === "navigate" && url.pathname === ADMIN_PATH;
+  const isAdminAsset = ADMIN_ASSET_PATHS.has(url.pathname);
+  if (!isAdminNavigation && !isAdminAsset) return;
+
+  if (isAdminNavigation) {
     event.respondWith(
       fetch(event.request).catch(() => caches.match("./admin.html"))
     );

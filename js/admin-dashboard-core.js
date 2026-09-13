@@ -56,7 +56,6 @@
       queueMicrotask(refreshDashboardCore);
       queueMicrotask(() => window.refreshAdminDashboard?.(true));
     }
-    if (name === "inbox") queueMicrotask(() => window.renderAdminInbox?.());
   }
 
   function activateSettingsTab(name) {
@@ -78,7 +77,6 @@
       const pageButton = event.target.closest("[data-admin-page]");
       if (pageButton) {
         event.preventDefault();
-        event.stopImmediatePropagation();
         activateAdminPage(pageButton.dataset.adminPage);
         return;
       }
@@ -88,7 +86,6 @@
         const destination = jumpButton.dataset.adminJump || jumpButton.dataset.quickPage || jumpButton.dataset.mobileJump;
         if (!destination) return;
         event.preventDefault();
-        event.stopImmediatePropagation();
         activateAdminPage(destination);
         return;
       }
@@ -96,7 +93,6 @@
       const settingsButton = event.target.closest("[data-settings-tab]");
       if (settingsButton) {
         event.preventDefault();
-        event.stopImmediatePropagation();
         activateSettingsTab(settingsButton.dataset.settingsTab);
       }
     }, true);
@@ -193,9 +189,12 @@
     installTrackerSlotSync();
     addCommissionTypeSuggestions().catch(error => console.warn("Commission type suggestions failed", error));
     refreshDashboardCore();
-    window.addEventListener("focus", () => {
-      if (document.getElementById("adminPage-dash")?.classList.contains("active")) refreshDashboardCore();
-    });
+    if (!window.__adminDashboardFocusRefreshInstalled) {
+      window.__adminDashboardFocusRefreshInstalled = true;
+      window.addEventListener("focus", () => {
+        if (document.getElementById("adminPage-dash")?.classList.contains("active")) refreshDashboardCore();
+      });
+    }
   }
 
   window.refreshAdminDashboardCore = refreshDashboardCore;

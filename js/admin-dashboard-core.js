@@ -1,4 +1,4 @@
-/* Core admin resilience: navigation, dashboard counts, and tracker-to-slot sync. */
+/* Core admin resilience: dashboard counts and tracker-to-slot sync. Navigation lives in admin-controls-core.js. */
 (function initAdminDashboardCore() {
   if (window.__adminDashboardCoreReady) return;
   window.__adminDashboardCoreReady = true;
@@ -41,61 +41,6 @@
     } finally {
       refreshBusy = false;
     }
-  }
-
-  function activateAdminPage(name) {
-    if (!name) return;
-    document.querySelectorAll(".admin-page").forEach(page => page.classList.remove("active"));
-    const target = document.getElementById(`adminPage-${name}`);
-    if (!target) return;
-    target.classList.add("active");
-    document.querySelectorAll(".admin-nav-btn").forEach(button => {
-      button.classList.toggle("active", button.dataset.adminPage === name);
-    });
-    if (name === "dash") {
-      queueMicrotask(refreshDashboardCore);
-      queueMicrotask(() => window.refreshAdminDashboard?.(true));
-    }
-  }
-
-  function activateSettingsTab(name) {
-    if (!name) return;
-    document.querySelectorAll(".settings-tab").forEach(button => {
-      button.classList.toggle("active", button.dataset.settingsTab === name);
-    });
-    document.querySelectorAll(".settings-panel").forEach(panel => panel.classList.add("hidden"));
-    document.getElementById(`settings-${name}`)?.classList.remove("hidden");
-  }
-
-  function installReliableNavigation() {
-    window.showAdminPage = activateAdminPage;
-    window.showSettingsTab = activateSettingsTab;
-    if (window.__adminReliableNavigationInstalled) return;
-    window.__adminReliableNavigationInstalled = true;
-
-    document.addEventListener("click", event => {
-      const pageButton = event.target.closest("[data-admin-page]");
-      if (pageButton) {
-        event.preventDefault();
-        activateAdminPage(pageButton.dataset.adminPage);
-        return;
-      }
-
-      const jumpButton = event.target.closest("[data-admin-jump], [data-quick-page], [data-mobile-jump]");
-      if (jumpButton) {
-        const destination = jumpButton.dataset.adminJump || jumpButton.dataset.quickPage || jumpButton.dataset.mobileJump;
-        if (!destination) return;
-        event.preventDefault();
-        activateAdminPage(destination);
-        return;
-      }
-
-      const settingsButton = event.target.closest("[data-settings-tab]");
-      if (settingsButton) {
-        event.preventDefault();
-        activateSettingsTab(settingsButton.dataset.settingsTab);
-      }
-    }, true);
   }
 
   function canonicalType(value) {
@@ -184,25 +129,32 @@
     };
   }
 
+  function installDashboardRefreshHooks() {
+    if (window.__adminDashboardRefreshHooksInstalled) return;
+    window.__adminDashboardRefreshHooksInstalled = true;
+
+    window.addEventListener("admin-page-change", event => {
+      if (event.detail?.page === "dash") refreshDashboardCore();
+    });
+    window.addEventListener("focus", () => {
+      if (document.getElementById("adminPage-dash")?.classList.contains("active")) refreshDashboardCore();
+    });
+  }
+
   function start() {
-    installReliableNavigation();
     installTrackerSlotSync();
+    installDashboardRefreshHooks();
     addCommissionTypeSuggestions().catch(error => console.warn("Commission type suggestions failed", error));
     refreshDashboardCore();
-    if (!window.__adminDashboardFocusRefreshInstalled) {
-      window.__adminDashboardFocusRefreshInstalled = true;
-      window.addEventListener("focus", () => {
-        if (document.getElementById("adminPage-dash")?.classList.contains("active")) refreshDashboardCore();
-      });
-    }
   }
 
   window.refreshAdminDashboardCore = refreshDashboardCore;
-  window.installAdminDashboardNavigationRefresh = installReliableNavigation;
+  // Kept as a compatibility hook for admin-runtime; it no longer installs navigation.
+  window.installAdminDashboardNavigationRefresh = installDashboardRefreshHooks;
   window.consumeMatchingSlot = consumeMatchingSlot;
   window.refreshCommissionTypeSuggestions = addCommissionTypeSuggestions;
   window.addEventListener("admin-runtime-ready", start, { once: true });
 
-  // admin-dashboard-core.js is loaded after the legacy admin functions, so install now too.
+  // Loaded after the legacy admin functions, so initialize data hooks immediately too.
   start();
 })();

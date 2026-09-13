@@ -1,4 +1,5 @@
-const ADMIN_CACHE = "commission-admin-v35";
+const ADMIN_CACHE = "commission-admin-v36";
+const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html",
   "./style.css",
@@ -41,7 +42,11 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== ADMIN_CACHE).map(key => caches.delete(key))))
+      .then(keys => Promise.all(
+        keys
+          .filter(key => key.startsWith(ADMIN_CACHE_PREFIX) && key !== ADMIN_CACHE)
+          .map(key => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
   );
 });

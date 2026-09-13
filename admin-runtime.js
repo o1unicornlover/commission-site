@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-8";
+  const version = "admin-runtime-9";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -14,7 +14,8 @@
     "./js/constants.js",
     "./js/utils.js",
     "./js/legacy-app.js",
-    "./js/admin-dashboard-core.js"
+    "./js/admin-dashboard-core.js",
+    "./js/admin-controls-core.js"
   ];
 
   function standaloneAdminMode() {

@@ -7,13 +7,14 @@
   dashboard, notification, routing, and mobile-admin code to every visitor.
 */
 (function loadAppScripts() {
-  const version = "stage2-clean25";
+  const version = "stage2-clean26";
   [
     "./js/constants.js",
     "./js/utils.js",
     "./js/legacy-app.js",
     "./js/clean-appearance.js",
     "./js/site-customization.js",
+    "./js/fixed-visual-system.js",
     "./js/runtime-stability.js",
     "./js/client-progress-tools.js",
     "./js/autosync.js"

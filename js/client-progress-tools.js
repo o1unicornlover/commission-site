@@ -6,6 +6,7 @@
   const DRAFT_PREFIX = 'clientProgressDraft:';
   let observer = null;
   let activeTextarea = null;
+  let activeMessages = null;
 
   function commissionId() {
     return new URLSearchParams(location.search).get('id') || 'unknown';
@@ -41,10 +42,48 @@
     });
   }
 
+  function ensureConnectionNote(textarea) {
+    const parent = textarea?.parentElement;
+    if (!parent) return null;
+    let note = parent.querySelector('[data-client-connection-note]');
+    if (!note) {
+      note = document.createElement('p');
+      note.className = 'small';
+      note.dataset.clientConnectionNote = 'true';
+      note.setAttribute('role', 'status');
+      note.setAttribute('aria-live', 'polite');
+      textarea.insertAdjacentElement('beforebegin', note);
+    }
+    return note;
+  }
+
+  function updateConnectionState() {
+    const textarea = document.getElementById('clientChatInput');
+    const button = textarea?.parentElement?.querySelector('button[onclick*="sendChatMessage"]');
+    const note = ensureConnectionNote(textarea);
+    if (!textarea || !note) return;
+
+    const online = navigator.onLine !== false;
+    note.textContent = online
+      ? 'Messages sync with the artist automatically.'
+      : 'You are offline. Your draft is saved on this device and can be sent when you reconnect.';
+    note.dataset.state = online ? 'online' : 'offline';
+    textarea.setAttribute('aria-describedby', note.id || '');
+    if (!note.id) {
+      note.id = 'clientChatConnectionState';
+      textarea.setAttribute('aria-describedby', note.id);
+    }
+    if (button) {
+      button.disabled = !online;
+      button.title = online ? '' : 'Reconnect to send this message';
+    }
+  }
+
   function decorateComposer() {
     const textarea = document.getElementById('clientChatInput');
     if (!textarea) return;
     restoreDraft(textarea);
+    updateConnectionState();
     if (activeTextarea === textarea) return;
     activeTextarea = textarea;
 
@@ -54,19 +93,31 @@
     const button = textarea.parentElement?.querySelector('button[onclick*="sendChatMessage"]');
     if (button) button.setAttribute('aria-label', 'Send message to artist');
 
-    textarea.addEventListener('keydown', async event => {
+    textarea.addEventListener('keydown', event => {
       if (!(event.ctrlKey || event.metaKey) || event.key !== 'Enter') return;
       event.preventDefault();
-      if (!textarea.value.trim()) return;
+      if (!textarea.value.trim() || navigator.onLine === false) return;
       button?.click();
     });
+  }
+
+  function nearBottom(node) {
+    if (!node) return true;
+    return node.scrollHeight - node.scrollTop - node.clientHeight < 90;
   }
 
   function watchSuccessfulSend() {
     const messages = document.getElementById('clientChatMessages');
     if (!messages || messages.dataset.clientToolsWatched === 'true') return;
     messages.dataset.clientToolsWatched = 'true';
+    activeMessages = messages;
     let previous = messages.textContent || '';
+    let shouldFollow = true;
+
+    messages.addEventListener('scroll', () => {
+      shouldFollow = nearBottom(messages);
+    }, { passive: true });
+
     const messageObserver = new MutationObserver(() => {
       const current = messages.textContent || '';
       if (current !== previous) {
@@ -76,9 +127,12 @@
           localStorage.removeItem(draftKey());
           announce('Conversation updated');
         }
+        if (shouldFollow) requestAnimationFrame(() => { messages.scrollTop = messages.scrollHeight; });
       }
     });
     messageObserver.observe(messages, { childList: true, subtree: true, characterData: true });
+
+    if (nearBottom(messages)) requestAnimationFrame(() => { messages.scrollTop = messages.scrollHeight; });
   }
 
   function decorate() {
@@ -92,10 +146,24 @@
     observer.observe(document.getElementById('progressArea') || document.body, { childList: true, subtree: true });
   }
 
+  function handleOnline() {
+    updateConnectionState();
+    announce('Back online. You can send your saved draft now.');
+  }
+
+  function handleOffline() {
+    updateConnectionState();
+    announce('You are offline. Your message draft will stay saved on this device.');
+  }
+
+  window.addEventListener('online', handleOnline);
+  window.addEventListener('offline', handleOffline);
+
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       decorate();
       startObserver();
+      updateConnectionState();
     }, 700);
   });
 })();

@@ -2,26 +2,19 @@
   Single visual-system guard.
   Retires the old seasonal/theme runtime without deleting any stored user data.
   The live site always uses the one style.css design, while uploaded banner,
-  page-doll, favicon, gallery-frame, nav-icon, and homepage text remain supported.
+  page-doll, background, favicon, gallery-frame, nav-icon, and homepage text remain supported.
 */
 
 (function enforceSingleAppearanceSystem() {
   function removeRetiredThemeArtifacts() {
-    if (document.body) {
-      document.body.removeAttribute("data-theme");
-    }
+    if (document.body) document.body.removeAttribute("data-theme");
 
-    const particles = document.getElementById("themeParticles");
-    if (particles) particles.remove();
+    document.getElementById("themeParticles")?.remove();
 
-    document.documentElement.style.removeProperty("--theme-bg");
-    document.documentElement.style.removeProperty("--theme-panel");
-    document.documentElement.style.removeProperty("--theme-panel2");
-    document.documentElement.style.removeProperty("--theme-text");
-    document.documentElement.style.removeProperty("--theme-muted");
-    document.documentElement.style.removeProperty("--theme-accent");
-    document.documentElement.style.removeProperty("--theme-accent2");
-    document.documentElement.style.removeProperty("--theme-border");
+    [
+      "--theme-bg", "--theme-panel", "--theme-panel2", "--theme-text",
+      "--theme-muted", "--theme-accent", "--theme-accent2", "--theme-border"
+    ].forEach(property => document.documentElement.style.removeProperty(property));
   }
 
   window.getActiveTheme = function getActiveThemeClean() {
@@ -100,12 +93,38 @@
     if (typeof renderTosPage === "function") renderTosPage();
   };
 
+  function ensureBrandingSaveButton(appearancePanel) {
+    if (!appearancePanel || typeof window.saveDefaultAppearance !== "function") return;
+
+    let button = appearancePanel.querySelector('[data-save-branding-assets]');
+    if (!button) {
+      button = appearancePanel.querySelector('button[onclick*="saveDefaultAppearance"]');
+    }
+
+    if (!button) {
+      button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn primary";
+      button.dataset.saveBrandingAssets = "true";
+      button.addEventListener("click", () => window.saveDefaultAppearance());
+
+      const clearButton = appearancePanel.querySelector('button[onclick*="clearDefaultImages"]');
+      const row = clearButton?.closest(".button-row");
+      if (row) row.prepend(button);
+      else appearancePanel.appendChild(button);
+    } else {
+      button.dataset.saveBrandingAssets = "true";
+    }
+
+    button.textContent = "Save branding assets";
+  }
+
   function retireThemeControls() {
     document.querySelectorAll('[data-settings-tab="holiday"], #settings-holiday').forEach(el => el.remove());
 
     const settingsIntro = document.querySelector("#adminPage-settings > .small");
-    if (settingsIntro && /holiday/i.test(settingsIntro.textContent || "")) {
-      settingsIntro.textContent = "Customize the public homepage, branding assets, live palette, social links, pricing, news, terms, and payments.";
+    if (settingsIntro) {
+      settingsIntro.textContent = "Manage homepage content, uploaded brand assets, social links, pricing, news, terms, and payments. The live visual style stays locked to style.css.";
     }
 
     const appearanceTab = document.querySelector('[data-settings-tab="appearance"]');
@@ -117,9 +136,11 @@
     const heading = appearancePanel.querySelector("h3");
     if (heading) heading.textContent = "Assets & Branding";
 
-    // The permanent Theme Studio owns the live style.css palette. Strip the retired
-    // dark/default color editor while preserving banner, page-doll, background,
-    // favicon, nav icon, gallery-frame, and clear-image controls.
+    const intro = appearancePanel.querySelector("h3 + p.small");
+    if (intro) {
+      intro.textContent = "Manage permanent artwork and branding assets. Colors and component styling stay controlled by the single style.css visual system.";
+    }
+
     const legacyColorInput = appearancePanel.querySelector("#appearanceBg");
     const legacyColorGrid = legacyColorInput?.closest(".color-grid");
     if (legacyColorGrid) {
@@ -138,10 +159,10 @@
       divider?.remove();
     }
 
-    appearancePanel.querySelectorAll('button[onclick*="saveDefaultAppearance"]').forEach(button => button.remove());
-
     const manualTheme = document.getElementById("manualTheme");
     if (manualTheme) manualTheme.closest("label")?.remove();
+
+    ensureBrandingSaveButton(appearancePanel);
   }
 
   function initializeAppearanceGuard() {
@@ -157,4 +178,9 @@
   } else {
     initializeAppearanceGuard();
   }
+
+  window.addEventListener("admin-runtime-ready", () => {
+    retireThemeControls();
+    removeRetiredThemeArtifacts();
+  });
 })();

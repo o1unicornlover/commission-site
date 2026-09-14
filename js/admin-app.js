@@ -47,6 +47,13 @@
     return Number.isFinite(t) ? t : 0;
   }
 
+  function latestMessage(rows = []) {
+    return rows.reduce((latest, row) => {
+      if (!latest) return row;
+      return messageTime(row) >= messageTime(latest) ? row : latest;
+    }, null);
+  }
+
   function addManifest() {
     if (!document.querySelector('link[rel="manifest"]')) {
       const link = document.createElement("link");
@@ -122,7 +129,7 @@
       const rows = await Promise.all((commissions || []).map(async commission => {
         const messages = await window.getChatMessages(commission.id);
         const clientMessages = (messages || []).filter(m => m.sender === "client");
-        const latest = clientMessages[clientMessages.length - 1] || null;
+        const latest = latestMessage(clientMessages);
         const lastRead = Number(readTimes[String(commission.id)] || 0);
         const unreadCount = clientMessages.filter(m => messageTime(m) > lastRead).length;
         return { commission, messages, latest, unreadCount };
@@ -174,7 +181,7 @@
 
   async function markConversationRead(commissionId) {
     const messages = await window.getChatMessages?.(commissionId) || [];
-    const latestClient = messages.filter(m => m.sender === "client").at(-1);
+    const latestClient = latestMessage(messages.filter(m => m.sender === "client"));
     if (latestClient) {
       const times = getReadTimes();
       times[String(commissionId)] = messageTime(latestClient) || Date.now();

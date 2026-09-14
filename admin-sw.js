@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v47";
+const ADMIN_CACHE = "commission-admin-v48";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html",

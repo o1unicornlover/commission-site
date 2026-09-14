@@ -134,7 +134,7 @@
   function renderMessages(messages) {
     const box = document.getElementById('adminInboxThreadMessages');
     if (!box) return;
-    const rows = Array.isArray(messages) ? messages : [];
+    const rows = Array.isArray(messages) ? [...messages].sort((a, b) => messageTime(a) - messageTime(b)) : [];
     box.innerHTML = rows.map(message => {
       const admin = String(message.sender || '').toLowerCase() === 'admin';
       const when = message.created_at ? new Date(message.created_at).toLocaleString() : '';

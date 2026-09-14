@@ -13,7 +13,6 @@
   let mobileBar = null;
   let pageSelect = null;
   let initialized = false;
-  let observer = null;
   const media = window.matchMedia("(max-width: 760px)");
 
   function currentPage() {
@@ -21,9 +20,8 @@
     return active?.id.replace("adminPage-", "") || "dash";
   }
 
-  function syncSelect() {
+  function syncSelect(page = currentPage()) {
     if (!pageSelect) return;
-    const page = currentPage();
     if ([...pageSelect.options].some(option => option.value === page)) pageSelect.value = page;
   }
 
@@ -106,36 +104,13 @@
 
     pageSelect.addEventListener("change", () => {
       const destination = pageSelect.value;
-      if (destination === "inbox" && typeof window.openAdminInbox === "function") {
-        window.openAdminInbox();
-      } else if (typeof window.showAdminPage === "function") {
-        window.showAdminPage(destination);
-      }
-      syncSelect();
-      window.scrollTo({ top: Math.max(0, dashboard.offsetTop - 76), behavior: "smooth" });
-    });
-
-    mobileBar.querySelectorAll("[data-mobile-jump]").forEach(button => {
-      button.addEventListener("click", () => {
-        const destination = button.dataset.mobileJump;
-        if (destination === "inbox" && typeof window.openAdminInbox === "function") {
-          window.openAdminInbox();
-        } else if (typeof window.showAdminPage === "function") {
-          window.showAdminPage(destination);
-        }
-        syncSelect();
-      });
+      window.showAdminPage?.(destination, "mobile-select");
+      const dashboardTop = Math.max(0, dashboard.offsetTop - 76);
+      window.scrollTo({ top: dashboardTop, behavior: "smooth" });
     });
 
     setMobileState();
     syncSelect();
-  }
-
-  function observePageChanges() {
-    const content = document.querySelector(".admin-content");
-    if (!content || observer) return;
-    observer = new MutationObserver(syncSelect);
-    observer.observe(content, { subtree: true, attributes: true, attributeFilter: ["class"] });
   }
 
   function initialize() {
@@ -143,9 +118,12 @@
     initialized = true;
     retireStaleAppearanceControls();
     buildMobileBar();
-    observePageChanges();
     media.addEventListener?.("change", setMobileState);
   }
+
+  window.addEventListener("admin-page-change", event => {
+    syncSelect(event.detail?.page || currentPage());
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initialize, { once: true });

@@ -23,6 +23,13 @@
     return Number.isFinite(time) ? time : 0;
   }
 
+  function latestMessage(rows = []) {
+    return rows.reduce((latest, row) => {
+      if (!latest) return row;
+      return messageTime(row) >= messageTime(latest) ? row : latest;
+    }, null);
+  }
+
   function loadDrafts() {
     try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}') || {}; }
     catch { return {}; }
@@ -50,7 +57,7 @@
   }
 
   function saveReadTime(commissionId, messages) {
-    const latestClient = (messages || []).filter(message => String(message.sender || '').toLowerCase() === 'client').at(-1);
+    const latestClient = latestMessage((messages || []).filter(message => String(message.sender || '').toLowerCase() === 'client'));
     if (!latestClient) return false;
     let readTimes = {};
     try { readTimes = JSON.parse(localStorage.getItem(READ_KEY) || '{}') || {}; }

@@ -98,6 +98,8 @@
         button.textContent = old;
       }
     });
+
+    window.dispatchEvent(new CustomEvent('admin-app-health-ready'));
   }
 
   function playTestChime() {
@@ -146,21 +148,24 @@
     }
   }
 
+  function ensureAndUpdate() {
+    ensurePanel();
+    updateStatus();
+  }
+
   window.addEventListener('online', updateStatus);
   window.addEventListener('offline', updateStatus);
   window.addEventListener('admin-alert-preferences-changed', updateStatus);
+  window.addEventListener('admin-runtime-ready', ensureAndUpdate);
+  window.addEventListener('admin-dashboard-core-refreshed', ensureAndUpdate);
+  window.addEventListener('admin-page-change', event => {
+    if (event.detail?.page === 'dash') ensureAndUpdate();
+  });
   document.addEventListener('visibilitychange', updateStatus);
   navigator.serviceWorker?.addEventListener('controllerchange', updateStatus);
 
-  const observer = new MutationObserver(() => {
-    ensurePanel();
-    updateStatus();
-  });
-
   function start() {
-    ensurePanel();
-    updateStatus();
-    if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+    ensureAndUpdate();
   }
 
   if (document.readyState === 'loading') {

@@ -230,11 +230,18 @@
       status.dataset.sendState = 'busy';
       status.textContent = 'Sending…';
     }
-    const sent = await window.createChatMessage?.({
-      commission_id: commissionId,
-      sender: 'admin',
-      message
-    });
+
+    let sent = null;
+    try {
+      sent = await window.createChatMessage?.({
+        commission_id: commissionId,
+        sender: 'admin',
+        message
+      });
+    } catch (error) {
+      console.warn('Admin Inbox reply failed', error);
+    }
+
     if (activeCommissionId !== commissionId) return;
     if (button) button.disabled = false;
     if (input) input.disabled = false;

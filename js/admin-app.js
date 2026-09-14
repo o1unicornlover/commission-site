@@ -64,8 +64,19 @@
 
   async function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
-    try { await navigator.serviceWorker.register("./admin-sw.js"); }
-    catch (error) { console.warn("Admin service worker registration failed", error); }
+    const desiredScope = new URL("./admin.html", location.href).href;
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(registration => {
+        const workerUrl = registration.active?.scriptURL || registration.waiting?.scriptURL || registration.installing?.scriptURL || "";
+        const isAdminWorker = /\/admin-sw\.js(?:$|[?#])/.test(workerUrl);
+        if (isAdminWorker && registration.scope !== desiredScope) return registration.unregister();
+        return Promise.resolve(false);
+      }));
+      await navigator.serviceWorker.register("./admin-sw.js", { scope: "./admin.html" });
+    } catch (error) {
+      console.warn("Admin service worker registration failed", error);
+    }
   }
 
   function ensureAudio() {
@@ -239,10 +250,6 @@
     button.className = "admin-nav-btn";
     button.dataset.adminPage = "inbox";
     button.textContent = "Inbox";
-    button.addEventListener("click", () => {
-      window.showAdminPage?.("inbox");
-      renderAdminInbox();
-    });
 
     const commissionsButton = sidebar.querySelector('[data-admin-page="commissions"]');
     commissionsButton?.insertAdjacentElement("afterend", button);
@@ -389,6 +396,11 @@
     set: setAlertPreferences,
     testChime: () => chime(true)
   };
+  window.renderAdminInbox = renderAdminInbox;
+
+  window.addEventListener("admin-page-change", event => {
+    if (event.detail?.page === "inbox") renderAdminInbox(true).catch(error => console.warn("Inbox render failed", error));
+  });
 
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) refreshInboxFallback();

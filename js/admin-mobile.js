@@ -12,6 +12,7 @@
 
   let mobileBar = null;
   let pageSelect = null;
+  let inboxBadgeObserver = null;
   let initialized = false;
   const media = window.matchMedia("(max-width: 760px)");
 
@@ -23,6 +24,30 @@
   function syncSelect(page = currentPage()) {
     if (!pageSelect) return;
     if ([...pageSelect.options].some(option => option.value === page)) pageSelect.value = page;
+  }
+
+  function unreadInboxCount() {
+    const label = document.querySelector('[data-admin-page="inbox"]')?.textContent || "";
+    const match = label.match(/\((\d+)\)/);
+    return match ? Number(match[1]) || 0 : 0;
+  }
+
+  function syncInboxBadge() {
+    const unread = unreadInboxCount();
+    const label = unread ? `Inbox (${unread})` : "Inbox";
+    const quickButton = mobileBar?.querySelector('[data-mobile-jump="inbox"]');
+    if (quickButton) quickButton.textContent = label;
+    const option = pageSelect?.querySelector('option[value="inbox"]');
+    if (option) option.textContent = label;
+  }
+
+  function watchInboxBadge() {
+    inboxBadgeObserver?.disconnect();
+    inboxBadgeObserver = null;
+    const source = document.querySelector('[data-admin-page="inbox"]');
+    if (!source || !("MutationObserver" in window)) return;
+    inboxBadgeObserver = new MutationObserver(syncInboxBadge);
+    inboxBadgeObserver.observe(source, { childList: true, characterData: true, subtree: true });
   }
 
   function setMobileState() {
@@ -75,6 +100,8 @@
 
     setMobileState();
     syncSelect();
+    syncInboxBadge();
+    watchInboxBadge();
   }
 
   function initialize() {
@@ -86,6 +113,7 @@
 
   window.addEventListener("admin-page-change", event => {
     syncSelect(event.detail?.page || currentPage());
+    syncInboxBadge();
   });
 
   if (document.readyState === "loading") {
@@ -97,6 +125,8 @@
   window.addEventListener("admin-runtime-ready", () => {
     if (!document.getElementById("adminMobileNav")) buildMobileBar();
     syncSelect();
+    syncInboxBadge();
+    watchInboxBadge();
     setMobileState();
   });
 })();

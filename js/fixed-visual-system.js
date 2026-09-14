@@ -23,8 +23,19 @@
     "--lime-soft": "#f4ffc7"
   };
 
+  // Variables written by the retired Theme Studio. None are part of the live
+  // style.css system anymore, so remove inline values instead of allowing old
+  // saved palettes to linger in the DOM or briefly flash during initialization.
+  const RETIRED_THEME_VARS = [
+    "--bg", "--panel", "--panel2", "--text", "--muted", "--accent", "--accent2",
+    "--danger", "--site-line-color", "--theme-border", "--theme-panel-soft",
+    "--theme-card-soft", "--theme-button-soft", "--theme-body-gradient",
+    "--theme-hero-gradient"
+  ];
+
   function enforceFixedPalette() {
     const root = document.documentElement;
+    RETIRED_THEME_VARS.forEach(name => root.style.removeProperty(name));
     Object.entries(FIXED_VARS).forEach(([name, value]) => root.style.setProperty(name, value));
     document.body?.removeAttribute("data-theme");
     document.getElementById("themeParticles")?.remove();
@@ -49,7 +60,19 @@
     window[name] = wrapped;
   }
 
+  function disableRetiredThemePainter() {
+    if (typeof window.applyThemeVariables !== "function" || window.applyThemeVariables.__fixedVisualNoop) return;
+    const retiredPainter = window.applyThemeVariables;
+    const noThemePaint = function noThemePaint() {
+      enforceFixedPalette();
+    };
+    noThemePaint.__fixedVisualNoop = true;
+    noThemePaint.__retiredThemePainter = retiredPainter;
+    window.applyThemeVariables = noThemePaint;
+  }
+
   function install() {
+    disableRetiredThemePainter();
     wrapAppearanceFunction("applySiteSettings");
     wrapAppearanceFunction("applySupabaseHomepageSettings");
     enforceFixedPalette();
@@ -62,7 +85,7 @@
   }
   window.addEventListener("load", install, { once: true });
 
-  // A delayed pass catches UI inserted by site-customization.js without keeping
+  // A delayed pass catches legacy customization initialization without keeping
   // a permanent MutationObserver alive on public pages.
   setTimeout(install, 500);
 })();

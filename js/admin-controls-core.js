@@ -6,7 +6,7 @@
   function loadAdminEnhancement(src, marker) {
     if (document.querySelector(`script[data-${marker}]`)) return;
     const script = document.createElement('script');
-    script.src = `${src}?v=admin-core11`;
+    script.src = `${src}?v=admin-core12`;
     script.async = false;
     script.dataset[marker] = 'true';
     script.onerror = () => {
@@ -14,6 +14,11 @@
       script.remove();
     };
     document.body.appendChild(script);
+  }
+
+  function retireInlineNavigationHandlers(root = document) {
+    root.querySelectorAll('[data-admin-page][onclick], [data-admin-jump][onclick], [data-quick-page][onclick], [data-mobile-jump][onclick], [data-settings-tab][onclick]')
+      .forEach(node => node.removeAttribute('onclick'));
   }
 
   function emitPageChange(name, source = 'navigation') {
@@ -92,6 +97,9 @@
   window.addEventListener('admin-settings-change', event => {
     if (event.detail?.tab === 'appearance') queueMicrotask(() => window.refreshAdminCharacterCarousel?.());
   });
+
+  retireInlineNavigationHandlers();
+  window.addEventListener('admin-runtime-ready', () => retireInlineNavigationHandlers(), { once: true });
 
   // Carousel management is deliberately separate from the retired Theme Studio.
   // It only edits carousel URLs/timing and never touches live palette values.

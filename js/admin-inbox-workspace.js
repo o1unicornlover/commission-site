@@ -182,8 +182,13 @@
       : `Commission ${nextCommissionId}`;
 
     const reply = document.getElementById('adminInboxReply');
+    const sendButton = document.getElementById('adminInboxSendReply');
     const status = document.getElementById('adminInboxReplyStatus');
-    if (reply) reply.value = draftFor(nextCommissionId);
+    if (reply) {
+      reply.disabled = false;
+      reply.value = draftFor(nextCommissionId);
+    }
+    if (sendButton) sendButton.disabled = false;
     if (status) {
       status.dataset.sendState = '';
       status.textContent = '';

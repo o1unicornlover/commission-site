@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="style.css?v=ui30" />
+  <link rel="stylesheet" href="style.css?v=ui31" />
 </head>
 <body>
   <header class="site-header admin-header">
@@ -29,12 +29,12 @@
 
       <div id="adminDashboard" class="hidden">
         <aside class="admin-sidebar">
-          <button class="admin-nav-btn active" data-admin-page="dash" onclick="showAdminPage('dash')">Dashboard</button>
-          <button class="admin-nav-btn" data-admin-page="commissions" onclick="showAdminPage('commissions')">Commissions</button>
-          <button class="admin-nav-btn" data-admin-page="slots" onclick="showAdminPage('slots')">Slots</button>
-          <button class="admin-nav-btn" data-admin-page="gallery" onclick="showAdminPage('gallery')">Gallery</button>
-          <button class="admin-nav-btn" data-admin-page="archives" onclick="showAdminPage('archives')">Archives</button>
-          <button class="admin-nav-btn" data-admin-page="settings" onclick="showAdminPage('settings')">Site Settings</button>
+          <button class="admin-nav-btn active" data-admin-page="dash">Dashboard</button>
+          <button class="admin-nav-btn" data-admin-page="commissions">Commissions</button>
+          <button class="admin-nav-btn" data-admin-page="slots">Slots</button>
+          <button class="admin-nav-btn" data-admin-page="gallery">Gallery</button>
+          <button class="admin-nav-btn" data-admin-page="archives">Archives</button>
+          <button class="admin-nav-btn" data-admin-page="settings">Site Settings</button>
         </aside>
 
         <div class="admin-content">
@@ -49,9 +49,9 @@
             <div class="panel compact-panel">
               <h3>Quick Actions</h3>
               <div class="button-row">
-                <button class="btn primary" data-admin-jump="commissions" onclick="showAdminPage('commissions')">New Commission</button>
-                <button class="btn" data-admin-jump="gallery" onclick="showAdminPage('gallery')">Add Gallery Art</button>
-                <button class="btn" data-admin-jump="settings" onclick="showAdminPage('settings')">Customize Site</button>
+                <button class="btn primary" data-admin-jump="commissions">New Commission</button>
+                <button class="btn" data-admin-jump="gallery">Add Gallery Art</button>
+                <button class="btn" data-admin-jump="settings">Customize Site</button>
               </div>
             </div>
           </section>
@@ -103,13 +103,13 @@
             <p class="small">Customize homepage content, branding assets, social links, pricing, news, terms, and payments.</p>
             <div class="settings-layout">
               <aside class="settings-menu">
-                <button type="button" class="settings-tab active" data-settings-tab="general" onclick="showSettingsTab('general')">General</button>
-                <button type="button" class="settings-tab" data-settings-tab="appearance" onclick="showSettingsTab('appearance')">Assets &amp; Branding</button>
-                <button type="button" class="settings-tab" data-settings-tab="social" onclick="showSettingsTab('social')">Social Links</button>
-                <button type="button" class="settings-tab" data-settings-tab="pricing" onclick="showSettingsTab('pricing')">Pricing Page</button>
-                <button type="button" class="settings-tab" data-settings-tab="news" onclick="showSettingsTab('news')">Latest News</button>
-                <button type="button" class="settings-tab" data-settings-tab="tos" onclick="showSettingsTab('tos')">TOS Editor</button>
-                <button type="button" class="settings-tab" data-settings-tab="payments" onclick="showSettingsTab('payments')">Payments</button>
+                <button type="button" class="settings-tab active" data-settings-tab="general">General</button>
+                <button type="button" class="settings-tab" data-settings-tab="appearance">Assets &amp; Branding</button>
+                <button type="button" class="settings-tab" data-settings-tab="social">Social Links</button>
+                <button type="button" class="settings-tab" data-settings-tab="pricing">Pricing Page</button>
+                <button type="button" class="settings-tab" data-settings-tab="news">Latest News</button>
+                <button type="button" class="settings-tab" data-settings-tab="tos">TOS Editor</button>
+                <button type="button" class="settings-tab" data-settings-tab="payments">Payments</button>
               </aside>
               <div class="settings-content">
                 <section id="settings-general" class="settings-panel">
@@ -121,7 +121,7 @@
                 </section>
                 <section id="settings-appearance" class="settings-panel hidden">
                   <h3>Assets &amp; Branding</h3>
-                  <p class="small">Manage the permanent site artwork and branding. Live palette controls are handled by Theme Studio.</p>
+                  <p class="small">Manage permanent site artwork and branding. The live pink, cyan, lime, black, and off-white palette is fixed in <code>style.css</code>.</p>
                   <label class="small">Default banner image</label>
                   <input id="defaultBannerFile" type="file" accept="image/*">
                   <label class="small">Default page doll image</label>
@@ -221,6 +221,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="./sb-api.js?v=20"></script>
-<script src="admin-runtime.js?v=2"></script>
+<script src="admin-runtime.js?v=3"></script>
 </body>
 </html>

@@ -12,18 +12,16 @@
   function clickPage(page) {
     const button = document.querySelector(`[data-admin-page="${CSS.escape(page)}"]`);
     if (button) button.click();
-    else window.showAdminPage?.(page);
+    else window.showAdminPage?.(page, 'productivity');
   }
 
   function installPageMemory() {
     if (window.__adminPageMemoryInstalled) return;
-    const original = window.showAdminPage;
-    if (typeof original !== 'function') return;
     window.__adminPageMemoryInstalled = true;
-    window.showAdminPage = function rememberedAdminPage(page, ...args) {
+    window.addEventListener('admin-page-change', event => {
+      const page = event.detail?.page;
       if (page) localStorage.setItem(LAST_PAGE_KEY, String(page));
-      return original.call(this, page, ...args);
-    };
+    });
   }
 
   function restoreLastPage() {
@@ -48,9 +46,6 @@
       <button type="button" class="btn" data-quick-page="commissions">✦ Commissions</button>
       <button type="button" class="btn" data-quick-page="settings">⚙ Settings</button>
     `;
-    bar.querySelectorAll('[data-quick-page]').forEach(button => {
-      button.addEventListener('click', () => clickPage(button.dataset.quickPage));
-    });
     content.prepend(bar);
   }
 

@@ -132,6 +132,13 @@
     return c?.display_name || c?.client_name || 'Private Client';
   }
 
+  function renderThreadNotice(message) {
+    const box = document.getElementById('adminInboxThreadMessages');
+    if (!box) return;
+    box.innerHTML = `<p class="small">${esc(message)}</p>`;
+    box.scrollTop = 0;
+  }
+
   function renderMessages(messages) {
     const box = document.getElementById('adminInboxThreadMessages');
     if (!box) return;
@@ -151,15 +158,26 @@
 
   async function refreshThread({ markRead = true } = {}) {
     const commissionId = activeCommissionId;
-    if (!commissionId) return;
+    if (!commissionId) return false;
     const requestId = ++refreshRequestId;
-    const messages = await window.getChatMessages?.(commissionId) || [];
-    if (activeCommissionId !== commissionId || requestId !== refreshRequestId) return;
+    const alreadyRendered = !!document.querySelector('#adminInboxThreadMessages .chat-message');
+    let messages = [];
+    try {
+      messages = await window.getChatMessages?.(commissionId) || [];
+    } catch (error) {
+      console.warn('Admin Inbox refresh failed', error);
+      if (activeCommissionId === commissionId && requestId === refreshRequestId && !alreadyRendered) {
+        renderThreadNotice('Conversation could not be refreshed. Close and reopen this thread to try again.');
+      }
+      return false;
+    }
+    if (activeCommissionId !== commissionId || requestId !== refreshRequestId) return false;
     renderMessages(messages);
     const inboxVisible = document.getElementById('adminPage-inbox')?.classList.contains('active');
     if (markRead && inboxVisible && document.visibilityState === 'visible') {
       await markThreadRead(commissionId, messages);
     }
+    return true;
   }
 
   async function openThread(commissionId) {
@@ -174,6 +192,7 @@
     if (!workspace) return;
 
     workspace.classList.remove('hidden');
+    if (previousId !== nextCommissionId) renderThreadNotice('Loading conversation…');
     const c = await commissionFor(nextCommissionId);
     if (activeCommissionId !== nextCommissionId) return;
     const title = document.getElementById('adminInboxThreadTitle');

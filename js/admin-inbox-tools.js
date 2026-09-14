@@ -42,6 +42,18 @@
     return document.getElementById('adminPage-inbox')?.classList.contains('active');
   }
 
+  function messageTime(row) {
+    const time = new Date(row?.created_at || 0).getTime();
+    return Number.isFinite(time) ? time : 0;
+  }
+
+  function latestMessage(messages) {
+    return (Array.isArray(messages) ? messages : []).reduce((latest, message) => {
+      if (!latest) return message;
+      return messageTime(message) >= messageTime(latest) ? message : latest;
+    }, null);
+  }
+
   async function refreshReplyStates(force = false) {
     const cards = inboxCards();
     if (!cards.length || !window.getChatMessages) return replyStateCache;
@@ -54,8 +66,8 @@
       if (!id) return;
       try {
         const messages = await window.getChatMessages(id) || [];
-        const latest = messages.at(-1);
-        replyStateCache.set(id, latest?.sender === 'client');
+        const latest = latestMessage(messages);
+        replyStateCache.set(id, String(latest?.sender || '').toLowerCase() === 'client');
       } catch (error) {
         console.warn('Could not determine inbox reply state', id, error);
       }

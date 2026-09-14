@@ -14,6 +14,29 @@
   let lastFingerprint = "";
   let applying = false;
 
+  const FIXED_VARS = {
+    "--paper": "#fffdfc",
+    "--paper-2": "#fff7fb",
+    "--ink": "#19171d",
+    "--ink-soft": "#4f4a55",
+    "--line": "#19171d",
+    "--pink": "#ff4da8",
+    "--pink-soft": "#ffd7e9",
+    "--pink-pale": "#fff0f7",
+    "--cyan": "#79dfe9",
+    "--cyan-soft": "#dff9fb",
+    "--lime": "#dff36a",
+    "--lime-soft": "#f4ffc7"
+  };
+
+  const RETIRED_VARS = [
+    "--bg", "--panel", "--panel2", "--text", "--muted", "--accent", "--accent2",
+    "--danger", "--site-line-color", "--theme-bg", "--theme-panel", "--theme-panel2",
+    "--theme-text", "--theme-muted", "--theme-accent", "--theme-accent2", "--theme-border",
+    "--theme-panel-soft", "--theme-card-soft", "--theme-button-soft", "--theme-body-gradient",
+    "--theme-hero-gradient"
+  ];
+
   function fingerprint(settings = {}) {
     return JSON.stringify({
       title: settings.homepage_title || settings.title || "",
@@ -30,29 +53,11 @@
   }
 
   function enforceFixedPalette() {
-    const refresh = window.refreshSingleAppearanceSystem;
-    if (typeof refresh === "function") {
-      refresh();
-      return;
-    }
-
-    // Minimal fallback if the appearance guard has not initialized yet.
     const root = document.documentElement;
-    const fixed = {
-      "--paper": "#fffdfc",
-      "--paper-2": "#fff7fb",
-      "--ink": "#19171d",
-      "--ink-soft": "#4f4a55",
-      "--line": "#19171d",
-      "--pink": "#ff4da8",
-      "--pink-soft": "#ffd7e9",
-      "--pink-pale": "#fff0f7",
-      "--cyan": "#79dfe9",
-      "--cyan-soft": "#dff9fb",
-      "--lime": "#dff36a",
-      "--lime-soft": "#f4ffc7"
-    };
-    Object.entries(fixed).forEach(([property, value]) => root.style.setProperty(property, value));
+    RETIRED_VARS.forEach(property => root.style.removeProperty(property));
+    Object.entries(FIXED_VARS).forEach(([property, value]) => root.style.setProperty(property, value));
+    document.body?.removeAttribute("data-theme");
+    document.getElementById("themeParticles")?.remove();
   }
 
   async function stableApply() {
@@ -73,7 +78,7 @@
       }
 
       // Never inspect or apply theme_settings here. The single visual system is
-      // enforced independently of any retired seasonal/studio values in storage.
+      // enforced independently of retired seasonal/studio values in storage.
       enforceFixedPalette();
     } catch (error) {
       console.warn("Appearance stability refresh failed", error);

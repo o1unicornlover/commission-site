@@ -226,13 +226,13 @@
 
   function observeInbox() {
     if (observer) return;
-    const root = document.getElementById('adminPage-inbox') || document.getElementById('adminInboxList');
-    if (!root) return;
+    const list = document.getElementById('adminInboxList');
+    if (!list) return;
     observer = new MutationObserver(() => {
       replyStateFetchedAt = 0;
       queueDecorate();
     });
-    observer.observe(root, { childList: true, subtree: true, characterData: true });
+    observer.observe(list, { childList: true });
   }
 
   async function bootInboxTools() {

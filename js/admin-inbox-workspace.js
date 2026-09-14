@@ -8,6 +8,7 @@
   let activeCommissionId = '';
   let threadChannel = null;
   let initialized = false;
+  let refreshRequestId = 0;
 
   function esc(value) {
     return String(value ?? '')
@@ -151,8 +152,9 @@
   async function refreshThread({ markRead = true } = {}) {
     const commissionId = activeCommissionId;
     if (!commissionId) return;
+    const requestId = ++refreshRequestId;
     const messages = await window.getChatMessages?.(commissionId) || [];
-    if (activeCommissionId !== commissionId) return;
+    if (activeCommissionId !== commissionId || requestId !== refreshRequestId) return;
     renderMessages(messages);
     const inboxVisible = document.getElementById('adminPage-inbox')?.classList.contains('active');
     if (markRead && inboxVisible && document.visibilityState === 'visible') {
@@ -207,6 +209,7 @@
     const input = document.getElementById('adminInboxReply');
     if (activeCommissionId && input) saveDraft(activeCommissionId, input.value);
     activeCommissionId = '';
+    refreshRequestId += 1;
     document.getElementById('adminInboxWorkspace')?.classList.add('hidden');
     if (location.hash.startsWith('#message-')) history.replaceState(null, '', `${location.pathname}${location.search}`);
   }

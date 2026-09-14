@@ -1,37 +1,11 @@
-/* Admin app routing + legacy-control cleanup. Keeps the single style.css visual system intact. */
+/* Admin app routing + commission message shortcuts. Keeps the single style.css visual system intact. */
 (function initAdminRouting() {
   const onAdmin = /(^|\/)admin\.html$/i.test(location.pathname) || location.pathname.endsWith("/admin.html");
   if (!onAdmin || window.__adminRoutingReady) return;
   window.__adminRoutingReady = true;
 
   let routeTimer = null;
-  let uiObserver = null;
-
-  function retireLegacyThemeUI() {
-    document.querySelectorAll('[data-settings-tab="holiday"], #settings-holiday').forEach(el => el.remove());
-
-    const appearanceTab = document.querySelector('[data-settings-tab="appearance"]');
-    if (appearanceTab && appearanceTab.textContent.trim() !== "Assets & Branding") {
-      appearanceTab.textContent = "Assets & Branding";
-    }
-
-    const appearancePanel = document.getElementById("settings-appearance");
-    if (appearancePanel) {
-      const heading = appearancePanel.querySelector("h3");
-      if (heading) heading.textContent = "Assets & Branding";
-      appearancePanel.querySelectorAll("h4").forEach(h => {
-        if (/default site colors/i.test(h.textContent || "")) h.remove();
-      });
-      appearancePanel.querySelectorAll("p.small").forEach(p => {
-        if (/holiday theme|normal site colors/i.test(p.textContent || "")) p.remove();
-      });
-      const oldColorGrid = appearancePanel.querySelector(".color-grid");
-      if (oldColorGrid) oldColorGrid.remove();
-    }
-
-    const settingsIntro = document.querySelector("#adminPage-settings > p.small");
-    if (settingsIntro) settingsIntro.textContent = "Manage homepage content, branding assets, character carousel, social links, pricing, news, TOS, and payments.";
-  }
+  let commissionListObserver = null;
 
   function decodeMessageHash() {
     if (!location.hash.startsWith("#message-")) return "";
@@ -41,10 +15,7 @@
 
   async function openInboxConversation(commissionId, options = {}) {
     const id = String(commissionId || "").trim();
-    const inboxButton = document.querySelector('[data-admin-page="inbox"]');
-    if (inboxButton) inboxButton.click();
-    else window.showAdminPage?.("inbox");
-
+    window.showAdminPage?.("inbox", "message-route");
     if (!id) return;
 
     clearTimeout(routeTimer);
@@ -88,13 +59,11 @@
     });
   }
 
-  function watchAdminUI() {
-    if (uiObserver || !document.body) return;
-    uiObserver = new MutationObserver(() => {
-      retireLegacyThemeUI();
-      addCommissionQuickLinks();
-    });
-    uiObserver.observe(document.body, { childList: true, subtree: true });
+  function observeCommissionList() {
+    const list = document.getElementById("adminList");
+    if (!list || commissionListObserver) return;
+    commissionListObserver = new MutationObserver(addCommissionQuickLinks);
+    commissionListObserver.observe(list, { childList: true, subtree: true });
   }
 
   function routeFromHash() {
@@ -103,9 +72,8 @@
   }
 
   function startRouting() {
-    retireLegacyThemeUI();
     addCommissionQuickLinks();
-    watchAdminUI();
+    observeCommissionList();
     routeFromHash();
   }
 
@@ -115,5 +83,12 @@
     startRouting();
   }
 
+  window.addEventListener("admin-runtime-ready", () => {
+    addCommissionQuickLinks();
+    observeCommissionList();
+  });
+  window.addEventListener("admin-page-change", event => {
+    if (event.detail?.page === "commissions") queueMicrotask(addCommissionQuickLinks);
+  });
   window.addEventListener("hashchange", routeFromHash);
 })();

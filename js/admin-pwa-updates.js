@@ -129,8 +129,6 @@
       const registration = await ensureNarrowAdminRegistration();
       await registration?.update?.();
 
-      // Use a one-time query value so browser HTTP caches cannot hand the repair
-      // reload an older admin.html. The service worker ignores the query for scope.
       const url = new URL(location.href);
       url.searchParams.set('app-repair', String(Date.now()));
       location.replace(url.toString());
@@ -142,12 +140,15 @@
     }
   }
 
-  const observer = new MutationObserver(ensureButton);
-
   function start() {
     ensureButton();
-    if (document.body) observer.observe(document.body, { childList: true, subtree: true });
   }
+
+  window.addEventListener('admin-app-health-ready', ensureButton);
+  window.addEventListener('admin-runtime-ready', ensureButton);
+  window.addEventListener('admin-page-change', event => {
+    if (event.detail?.page === 'dash') ensureButton();
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', start, { once: true });

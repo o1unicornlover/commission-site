@@ -6,11 +6,32 @@
   let checking = false;
   let repairing = false;
 
+  const desiredScope = new URL('./admin.html', location.href).href;
+  const adminWorkerPattern = /\/admin-sw\.js(?:$|[?#])/;
+
   function statusButton(id, text, resetText, delay = 2200) {
     const button = document.getElementById(id);
     if (!button) return;
     button.textContent = text;
     if (resetText) setTimeout(() => { button.textContent = resetText; }, delay);
+  }
+
+  async function getAdminRegistrations() {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    return registrations.filter(registration => {
+      const workerUrl = registration.active?.scriptURL || registration.waiting?.scriptURL || registration.installing?.scriptURL || '';
+      return adminWorkerPattern.test(workerUrl);
+    });
+  }
+
+  async function ensureNarrowAdminRegistration() {
+    const registrations = await getAdminRegistrations();
+    const broad = registrations.filter(registration => registration.scope !== desiredScope);
+    if (broad.length) await Promise.all(broad.map(registration => registration.unregister()));
+
+    let narrow = registrations.find(registration => registration.scope === desiredScope && !broad.includes(registration));
+    if (!narrow) narrow = await navigator.serviceWorker.register('./admin-sw.js', { scope: './admin.html' });
+    return narrow;
   }
 
   function ensureButton() {
@@ -35,7 +56,7 @@
       repair.className = 'btn';
       repair.id = 'adminRepairApp';
       repair.textContent = 'Repair cached app';
-      repair.title = 'Clears only cached admin app files, then reloads the latest version. Your Supabase data and saved site settings are not deleted.';
+      repair.title = 'Clears only cached admin app files, repairs admin-only app scope, then reloads the latest version. Your Supabase data and saved site settings are not deleted.';
       repair.addEventListener('click', repairCachedApp);
       row.appendChild(repair);
     }
@@ -44,7 +65,7 @@
       const note = document.createElement('p');
       note.id = 'adminRepairNote';
       note.className = 'small';
-      note.textContent = 'If admin controls ever look stale or stop responding after an update, Repair cached app reloads only the admin shell. It does not delete commissions, messages, uploads, or site settings.';
+      note.textContent = 'If admin controls ever look stale or stop responding after an update, Repair cached app reloads only the admin shell and restores admin-only app scope. It does not delete commissions, messages, uploads, or site settings.';
       row.insertAdjacentElement('afterend', note);
     }
   }
@@ -64,7 +85,7 @@
     }
 
     try {
-      const registration = await navigator.serviceWorker.getRegistration();
+      const registration = await ensureNarrowAdminRegistration();
       if (!registration) {
         statusButton('adminCheckUpdate', 'App worker not ready', 'Check for app update');
         return;
@@ -105,7 +126,7 @@
       const adminKeys = keys.filter(key => key.startsWith('commission-admin-'));
       await Promise.all(adminKeys.map(key => caches.delete(key)));
 
-      const registration = await navigator.serviceWorker.getRegistration();
+      const registration = await ensureNarrowAdminRegistration();
       await registration?.update?.();
 
       // Use a one-time query value so browser HTTP caches cannot hand the repair

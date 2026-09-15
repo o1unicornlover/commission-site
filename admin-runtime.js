@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-9";
+  const version = "admin-runtime-10";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -15,7 +15,19 @@
     "./js/utils.js",
     "./js/legacy-app.js",
     "./js/admin-dashboard-core.js",
-    "./js/admin-controls-core.js"
+    "./js/admin-controls-core.js",
+    "./js/admin-app.js",
+    "./js/admin-mobile.js",
+    "./js/autosync.js",
+    "./js/clean-appearance.js",
+    "./js/admin-routing.js",
+    "./js/admin-productivity.js",
+    "./js/admin-dashboard-lite.js",
+    "./js/admin-inbox-workspace.js",
+    "./js/admin-inbox-tools.js",
+    "./js/admin-app-health.js",
+    "./js/admin-pwa-updates.js",
+    "./js/admin-accessibility.js"
   ];
 
   function standaloneAdminMode() {

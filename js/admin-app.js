@@ -16,6 +16,7 @@
   let inboxRowsPromise = null;
   let domShellReady = false;
   const READ_KEY = "adminConversationReadTimes";
+  const PENDING_ROUTE_KEY = "adminPendingMessageRoute";
   const INBOX_CACHE_MS = 15000;
   const INBOX_POLL_MS = 30000;
   const REALTIME_RETRY_MS = 5000;
@@ -58,5 +59,21 @@
   document.addEventListener("visibilitychange",()=>{if(!document.hidden){ subscribeToClientMessages(); refreshInboxFallback(); }});
   window.addEventListener("online",()=>{ invalidateInboxRows(); subscribeToClientMessages(); refreshInboxFallback().catch(error=>console.warn("Inbox reconnect refresh failed",error)); });
   window.addEventListener("offline",()=>{ clearTimeout(notificationRetryTimer); notificationRetryTimer=null; resetRealtimeChannel(); });
+
+  // admin-app is loaded before login, while admin-routing is loaded after the
+  // full workspace boots. Capture notification clicks here so a service-worker
+  // message received on the login screen cannot disappear before routing exists.
+  navigator.serviceWorker?.addEventListener("message", event => {
+    if (event.data?.type !== "open-inbox-commission") return;
+    const id = String(event.data?.commissionId || "").trim();
+    if (!id) return;
+    if (typeof window.openAdminInboxConversation === "function") {
+      window.openAdminInboxConversation(id);
+      return;
+    }
+    sessionStorage.setItem(PENDING_ROUTE_KEY, id);
+    history.replaceState(null, "", `#message-${encodeURIComponent(id)}`);
+  });
+
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",initializeDomShell,{once:true}); else initializeDomShell();
 })();

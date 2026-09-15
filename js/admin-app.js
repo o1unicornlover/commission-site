@@ -13,6 +13,7 @@
   let inboxRowsCache = [];
   let inboxRowsCachedAt = 0;
   let inboxRowsPromise = null;
+  let domShellReady = false;
   const READ_KEY = "adminConversationReadTimes";
   const INBOX_CACHE_MS = 15000;
   const INBOX_POLL_MS = 30000;
@@ -80,10 +81,21 @@
   async function refreshInboxFallback(){ if(document.hidden||inboxRefreshBusy)return; inboxRefreshBusy=true; try{ const inboxActive=document.getElementById("adminPage-inbox")?.classList.contains("active"); if(inboxActive)await renderAdminInbox(true); else await syncBadge(null,true); }finally{inboxRefreshBusy=false;} }
   function startInboxPolling(){ clearInterval(inboxRefreshTimer); inboxRefreshTimer=setInterval(refreshInboxFallback,INBOX_POLL_MS); }
   async function activateMessageDataLayer(){ subscribeToClientMessages(); await syncBadge(null,true); startInboxPolling(); }
+  function initializeDomShell(){
+    if(domShellReady)return;
+    domShellReady=true;
+    addManifest();
+    registerServiceWorker();
+    injectControls();
+    injectInbox();
+    armAfterUserGesture();
+    setTimeout(()=>{ activateMessageDataLayer().catch(error=>console.warn("Admin message data layer activation failed",error)); },900);
+  }
 
   window.adminAlertPreferences={get:getAlertPreferences,set:setAlertPreferences,testChime:()=>chime(true)}; window.renderAdminInbox=renderAdminInbox;
   window.addEventListener("admin-page-change",event=>{if(event.detail?.page==="inbox")renderAdminInbox(true).catch(error=>console.warn("Inbox render failed",error));});
   window.addEventListener("admin-runtime-ready",()=>{ activateMessageDataLayer().catch(error=>console.warn("Admin message data layer activation failed",error)); });
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshInboxFallback();});
-  document.addEventListener("DOMContentLoaded",()=>{ addManifest(); registerServiceWorker(); injectControls(); injectInbox(); armAfterUserGesture(); setTimeout(()=>{ activateMessageDataLayer().catch(error=>console.warn("Admin message data layer activation failed",error)); },900); });
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",initializeDomShell,{once:true});
+  else initializeDomShell();
 })();

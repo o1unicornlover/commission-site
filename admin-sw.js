@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v60";
+const ADMIN_CACHE = "commission-admin-v61";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html",
@@ -8,6 +8,18 @@ const ADMIN_SHELL = [
   "./admin-icon.svg",
   "./admin-icon-192.svg",
   "./admin-icon-512.svg",
+  "./supabase-config.js",
+  "./sb-api.js",
+  "./api/site-api.js",
+  "./api/slots-api.js",
+  "./api/socials-api.js",
+  "./api/gallery-api.js",
+  "./api/tos-api.js",
+  "./api/uploads-api.js",
+  "./api/pricing-api.js",
+  "./api/commissions-api.js",
+  "./api/progress-api.js",
+  "./api/chat-api.js",
   "./js/constants.js",
   "./js/utils.js",
   "./js/legacy-app.js",

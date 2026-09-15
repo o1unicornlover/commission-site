@@ -5,6 +5,7 @@
 
   let audioCtx = null;
   let notificationChannel = null;
+  let notificationRetryTimer = null;
   let notificationsEnabled = localStorage.getItem("adminMessageNotifications") === "true";
   let soundEnabled = localStorage.getItem("adminMessageSound") !== "false";
   let desktopNotificationsEnabled = localStorage.getItem("adminDesktopNotifications") !== "false";
@@ -17,6 +18,7 @@
   const READ_KEY = "adminConversationReadTimes";
   const INBOX_CACHE_MS = 15000;
   const INBOX_POLL_MS = 30000;
+  const REALTIME_RETRY_MS = 5000;
 
   function getReadTimes() { try { return JSON.parse(localStorage.getItem(READ_KEY) || "{}"); } catch { return {}; } }
   function saveReadTimes(value) { localStorage.setItem(READ_KEY, JSON.stringify(value || {})); }
@@ -41,7 +43,9 @@
   async function enableNotifications(){ ensureAudio(); notificationsEnabled=true; if(!("Notification" in window)){ desktopNotificationsEnabled=false; saveAlertPreferences(); await syncBadge(); return alert("Chime alerts are enabled. This browser does not support desktop notifications."); } let permission=Notification.permission; if(desktopNotificationsEnabled&&permission==="default") permission=await Notification.requestPermission(); if(permission==="denied")desktopNotificationsEnabled=false; saveAlertPreferences(); await syncBadge(); if(soundEnabled)chime(); }
   async function setAlertPreferences(next={}){ if(typeof next.enabled==="boolean")notificationsEnabled=next.enabled; if(typeof next.sound==="boolean")soundEnabled=next.sound; if(typeof next.desktop==="boolean")desktopNotificationsEnabled=next.desktop; if(notificationsEnabled&&desktopNotificationsEnabled&&"Notification" in window&&Notification.permission==="default"){ const permission=await Notification.requestPermission(); if(permission==="denied")desktopNotificationsEnabled=false; } if(notificationsEnabled&&soundEnabled)ensureAudio(); saveAlertPreferences(); await syncBadge(); return getAlertPreferences(); }
   function injectControls(){ if(document.getElementById("adminNotificationToggle"))return; const header=document.querySelector(".admin-header nav")||document.querySelector(".admin-header"); if(!header)return; const button=document.createElement("button"); button.type="button"; button.id="adminNotificationToggle"; button.className="btn"; button.style.padding="8px 12px"; button.addEventListener("click",async()=>{ if(!notificationsEnabled)await enableNotifications(); else{notificationsEnabled=false;saveAlertPreferences();await syncBadge();} }); header.appendChild(button); }
-  function subscribeToClientMessages(){ if(!window.supabaseClient||notificationChannel)return false; notificationChannel=supabaseClient.channel(`admin-message-alerts-${Date.now()}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"chat_messages"},payload=>{showMessageNotification(payload?.new||{});}).subscribe(status=>console.log("Admin message alerts:",status)); return true; }
+  function scheduleRealtimeRetry(){ if(notificationRetryTimer||!navigator.onLine)return; notificationRetryTimer=setTimeout(()=>{ notificationRetryTimer=null; subscribeToClientMessages(); },REALTIME_RETRY_MS); }
+  function resetRealtimeChannel(){ const stale=notificationChannel; notificationChannel=null; if(stale&&window.supabaseClient?.removeChannel) window.supabaseClient.removeChannel(stale).catch(()=>{}); }
+  function subscribeToClientMessages(){ if(!window.supabaseClient||notificationChannel||!navigator.onLine)return false; clearTimeout(notificationRetryTimer); notificationRetryTimer=null; notificationChannel=supabaseClient.channel(`admin-message-alerts-${Date.now()}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"chat_messages"},payload=>{showMessageNotification(payload?.new||{});}).subscribe(status=>{ console.log("Admin message alerts:",status); if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){ resetRealtimeChannel(); scheduleRealtimeRetry(); } }); return true; }
   function armAfterUserGesture(){ const once=()=>{ if(notificationsEnabled&&soundEnabled)ensureAudio(); window.removeEventListener("pointerdown",once); window.removeEventListener("keydown",once); }; window.addEventListener("pointerdown",once,{once:true}); window.addEventListener("keydown",once,{once:true}); }
   async function refreshInboxFallback(){ if(document.hidden||inboxRefreshBusy||!navigator.onLine)return; inboxRefreshBusy=true; try{ invalidateInboxRows(); const inboxActive=document.getElementById("adminPage-inbox")?.classList.contains("active"); if(inboxActive)await renderAdminInbox(true); else await syncBadge(null,true); }finally{inboxRefreshBusy=false;} }
   function startInboxPolling(){ clearInterval(inboxRefreshTimer); inboxRefreshTimer=setInterval(refreshInboxFallback,INBOX_POLL_MS); }
@@ -51,7 +55,8 @@
   window.adminAlertPreferences={get:getAlertPreferences,set:setAlertPreferences,testChime:()=>chime(true)}; window.renderAdminInbox=renderAdminInbox;
   window.addEventListener("admin-page-change",event=>{if(event.detail?.page==="inbox")renderAdminInbox(true).catch(error=>console.warn("Inbox render failed",error));});
   window.addEventListener("admin-runtime-ready",()=>{ activateMessageDataLayer().catch(error=>console.warn("Admin message data layer activation failed",error)); });
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshInboxFallback();});
-  window.addEventListener("online",()=>{ invalidateInboxRows(); refreshInboxFallback().catch(error=>console.warn("Inbox reconnect refresh failed",error)); });
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden){ subscribeToClientMessages(); refreshInboxFallback(); }});
+  window.addEventListener("online",()=>{ invalidateInboxRows(); subscribeToClientMessages(); refreshInboxFallback().catch(error=>console.warn("Inbox reconnect refresh failed",error)); });
+  window.addEventListener("offline",()=>{ clearTimeout(notificationRetryTimer); notificationRetryTimer=null; resetRealtimeChannel(); });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",initializeDomShell,{once:true}); else initializeDomShell();
 })();

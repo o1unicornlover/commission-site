@@ -43,9 +43,9 @@
 
   function normalizePublicNav() {
     const filename = (location.pathname.split("/").pop() || "index.html").toLowerCase();
-    const activeFile = ["index.html", "pricing.html", "queue.html", "gallery.html", "tos.html"].includes(filename)
-      ? filename
-      : "";
+    const activeFile = filename === "progress.html"
+      ? "queue.html"
+      : (["index.html", "pricing.html", "queue.html", "gallery.html", "tos.html"].includes(filename) ? filename : "");
 
     document.querySelectorAll(".site-header nav a").forEach(link => {
       link.removeAttribute("aria-current");

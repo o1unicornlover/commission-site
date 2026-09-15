@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-12";
+  const version = "admin-runtime-13";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -206,11 +206,23 @@
     await bootAdminApplication();
   };
 
+  function prepareLogin() {
+    const input = document.getElementById("adminPassword");
+    if (!input) return;
+    input.setAttribute("autocomplete", "current-password");
+    input.setAttribute("enterkeyhint", "go");
+    input.addEventListener("keydown", event => {
+      if (event.key !== "Enter" || event.repeat || input.disabled) return;
+      event.preventDefault();
+      window.adminLogin();
+    });
+    input.focus();
+  }
+
   wirePwaShell();
   sessionStorage.removeItem("adminOpen");
   document.documentElement.dataset.adminBoot = "idle";
 
-  const focusLogin = () => document.getElementById("adminPassword")?.focus();
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", focusLogin, { once: true });
-  else focusLogin();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", prepareLogin, { once: true });
+  else prepareLogin();
 })();

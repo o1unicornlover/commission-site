@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-10";
+  const version = "admin-runtime-11";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -15,7 +15,9 @@
     "./js/utils.js",
     "./js/legacy-app.js",
     "./js/admin-dashboard-core.js",
-    "./js/admin-controls-core.js",
+    "./js/admin-controls-core.js"
+  ];
+  const enhancementModules = [
     "./js/admin-app.js",
     "./js/admin-mobile.js",
     "./js/autosync.js",
@@ -98,6 +100,19 @@
     for (const src of sources) await loadOne(src);
   }
 
+  async function loadEnhancementsBestEffort() {
+    const failures = [];
+    for (const src of enhancementModules) {
+      try {
+        await loadOne(src);
+      } catch (error) {
+        failures.push(src);
+        console.warn(`Optional admin enhancement failed to load: ${src}`, error);
+      }
+    }
+    return failures;
+  }
+
   function setBootStatus(message, failed = false) {
     const login = document.getElementById("adminLogin");
     if (!login) return;
@@ -157,9 +172,14 @@
         await ensureDataLayer();
         await loadSerial(coreModules);
         await initializeCoreAdmin();
-        document.documentElement.dataset.adminBoot = "ready";
+
+        setBootStatus("Loading workspace tools…");
+        const enhancementFailures = await loadEnhancementsBestEffort();
+        document.documentElement.dataset.adminBoot = enhancementFailures.length ? "ready-partial" : "ready";
         setBootStatus("");
-        window.dispatchEvent(new CustomEvent("admin-runtime-ready"));
+        window.dispatchEvent(new CustomEvent("admin-runtime-ready", {
+          detail: { enhancementFailures: [...enhancementFailures] }
+        }));
       } catch (error) {
         document.documentElement.dataset.adminBoot = "error";
         sessionStorage.removeItem("adminOpen");

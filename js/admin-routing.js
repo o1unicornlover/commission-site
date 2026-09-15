@@ -91,4 +91,14 @@
     if (event.detail?.page === "commissions") queueMicrotask(addCommissionQuickLinks);
   });
   window.addEventListener("hashchange", routeFromHash);
+
+  // When the installed PWA is already open, admin-sw.js focuses that window
+  // and posts the commission id instead of opening a second copy. Route that
+  // message through the same inbox flow used by notification deep links.
+  navigator.serviceWorker?.addEventListener("message", event => {
+    if (event.data?.type !== "open-inbox-commission") return;
+    const id = String(event.data?.commissionId || "").trim();
+    if (id) openInboxConversation(id);
+    else window.showAdminPage?.("inbox", "notification-route");
+  });
 })();

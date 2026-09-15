@@ -7,11 +7,18 @@
   let routeTimer = null;
   let commissionListObserver = null;
   let pendingCommissionRoute = "";
+  const PENDING_ROUTE_KEY = "adminPendingMessageRoute";
 
   function decodeMessageHash() {
     if (!location.hash.startsWith("#message-")) return "";
     try { return decodeURIComponent(location.hash.slice("#message-".length)); }
     catch { return location.hash.slice("#message-".length); }
+  }
+
+  function consumePreloginRoute() {
+    const id = String(sessionStorage.getItem(PENDING_ROUTE_KEY) || "").trim();
+    if (id) sessionStorage.removeItem(PENDING_ROUTE_KEY);
+    return id;
   }
 
   async function openInboxConversation(commissionId, options = {}) {
@@ -87,7 +94,11 @@
   function startRouting() {
     addCommissionQuickLinks();
     observeCommissionList();
-    routeFromHash();
+    const preloginId = consumePreloginRoute();
+    if (preloginId) {
+      pendingCommissionRoute = preloginId;
+      setTimeout(() => openInboxConversation(preloginId), 100);
+    } else routeFromHash();
   }
 
   if (document.readyState === "loading") {

@@ -6,6 +6,7 @@
 
   let routeTimer = null;
   let commissionListObserver = null;
+  let pendingCommissionRoute = "";
 
   function decodeMessageHash() {
     if (!location.hash.startsWith("#message-")) return "";
@@ -26,13 +27,22 @@
       const card = document.querySelector(`[data-inbox-commission="${escapedId}"]`);
       const openButton = card?.querySelector("[data-open-inbox-commission]");
       if (openButton) {
+        pendingCommissionRoute = "";
         if (options.updateHash !== false) history.replaceState(null, "", `#message-${encodeURIComponent(id)}`);
         openButton.click();
         return;
       }
       if (attempts < 25) routeTimer = setTimeout(tryOpen, 120);
+      else pendingCommissionRoute = id;
     };
     tryOpen();
+  }
+
+  function flushPendingCommissionRoute() {
+    if (!pendingCommissionRoute) return;
+    const id = pendingCommissionRoute;
+    pendingCommissionRoute = "";
+    openInboxConversation(id);
   }
 
   window.openAdminInboxConversation = openInboxConversation;
@@ -68,7 +78,10 @@
 
   function routeFromHash() {
     const id = decodeMessageHash();
-    if (id) setTimeout(() => openInboxConversation(id, { updateHash: false }), 700);
+    if (id) {
+      pendingCommissionRoute = id;
+      setTimeout(() => openInboxConversation(id, { updateHash: false }), 700);
+    }
   }
 
   function startRouting() {
@@ -86,19 +99,24 @@
   window.addEventListener("admin-runtime-ready", () => {
     addCommissionQuickLinks();
     observeCommissionList();
+    flushPendingCommissionRoute();
   });
   window.addEventListener("admin-page-change", event => {
     if (event.detail?.page === "commissions") queueMicrotask(addCommissionQuickLinks);
+    if (event.detail?.page === "inbox") queueMicrotask(flushPendingCommissionRoute);
   });
   window.addEventListener("hashchange", routeFromHash);
 
   // When the installed PWA is already open, admin-sw.js focuses that window
-  // and posts the commission id instead of opening a second copy. Route that
-  // message through the same inbox flow used by notification deep links.
+  // and posts the commission id instead of opening a second copy. Keep the
+  // target queued if the inbox/runtime is still booting, then replay it when
+  // the admin workspace becomes ready.
   navigator.serviceWorker?.addEventListener("message", event => {
     if (event.data?.type !== "open-inbox-commission") return;
     const id = String(event.data?.commissionId || "").trim();
-    if (id) openInboxConversation(id);
-    else window.showAdminPage?.("inbox", "notification-route");
+    if (id) {
+      pendingCommissionRoute = id;
+      openInboxConversation(id);
+    } else window.showAdminPage?.("inbox", "notification-route");
   });
 })();

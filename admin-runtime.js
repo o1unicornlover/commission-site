@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-11";
+  const version = "admin-runtime-12";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -18,7 +18,6 @@
     "./js/admin-controls-core.js"
   ];
   const enhancementModules = [
-    "./js/admin-app.js",
     "./js/admin-mobile.js",
     "./js/autosync.js",
     "./js/clean-appearance.js",
@@ -77,6 +76,13 @@
     isolateInstalledAdmin();
     registerAdminServiceWorker();
     setTimeout(registerAdminServiceWorker, 1800);
+
+    // admin-app owns DOM-ready PWA shell setup (Inbox injection, badges,
+    // notification controls and message polling). Load it while the document
+    // is still parsing so its DOMContentLoaded hook cannot be missed after login.
+    loadOne("./js/admin-app.js").catch(error => {
+      console.warn("Admin PWA shell failed to load", error);
+    });
   }
 
   function loadOne(src, { external = false } = {}) {

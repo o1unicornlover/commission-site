@@ -73,11 +73,21 @@ function setupRealtime() {
 
 window.setupRealtime = setupRealtime;
 
-document.addEventListener("DOMContentLoaded", () => {
+function scheduleRealtimeSetup() {
   setTimeout(() => {
     setupRealtime();
   }, 1200);
-});
+}
+
+// Public pages normally load this module while the document is still parsing.
+// The admin runtime intentionally loads it after unlock, which can happen after
+// DOMContentLoaded has already fired, so support both boot timings without
+// creating a second realtime owner.
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", scheduleRealtimeSetup, { once: true });
+} else {
+  scheduleRealtimeSetup();
+}
 
 async function runFallbackSync() {
   if (document.hidden) return;

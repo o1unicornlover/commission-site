@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-13";
+  const version = "admin-runtime-14";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -76,10 +76,6 @@
     isolateInstalledAdmin();
     registerAdminServiceWorker();
     setTimeout(registerAdminServiceWorker, 1800);
-
-    // admin-app owns DOM-ready PWA shell setup (Inbox injection, badges,
-    // notification controls and message polling). Load it while the document
-    // is still parsing so its DOMContentLoaded hook cannot be missed after login.
     loadOne("./js/admin-app.js").catch(error => {
       console.warn("Admin PWA shell failed to load", error);
     });
@@ -109,9 +105,8 @@
   async function loadEnhancementsBestEffort() {
     const failures = [];
     for (const src of enhancementModules) {
-      try {
-        await loadOne(src);
-      } catch (error) {
+      try { await loadOne(src); }
+      catch (error) {
         failures.push(src);
         console.warn(`Optional admin enhancement failed to load: ${src}`, error);
       }
@@ -178,14 +173,11 @@
         await ensureDataLayer();
         await loadSerial(coreModules);
         await initializeCoreAdmin();
-
         setBootStatus("Loading workspace tools…");
         const enhancementFailures = await loadEnhancementsBestEffort();
         document.documentElement.dataset.adminBoot = enhancementFailures.length ? "ready-partial" : "ready";
         setBootStatus("");
-        window.dispatchEvent(new CustomEvent("admin-runtime-ready", {
-          detail: { enhancementFailures: [...enhancementFailures] }
-        }));
+        window.dispatchEvent(new CustomEvent("admin-runtime-ready", { detail: { enhancementFailures: [...enhancementFailures] } }));
       } catch (error) {
         document.documentElement.dataset.adminBoot = "error";
         sessionStorage.removeItem("adminOpen");
@@ -219,10 +211,22 @@
     input.focus();
   }
 
+  async function restoreOrPrepareLogin() {
+    if (sessionStorage.getItem("adminOpen") === "true") {
+      setBootStatus("Restoring studio…");
+      try {
+        await bootAdminApplication();
+        return;
+      } catch (_) {
+        // bootAdminApplication clears the stale flag and exposes retry UI.
+      }
+    }
+    prepareLogin();
+  }
+
   wirePwaShell();
-  sessionStorage.removeItem("adminOpen");
   document.documentElement.dataset.adminBoot = "idle";
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", prepareLogin, { once: true });
-  else prepareLogin();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", restoreOrPrepareLogin, { once: true });
+  else restoreOrPrepareLogin();
 })();

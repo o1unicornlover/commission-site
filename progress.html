@@ -29,7 +29,11 @@
         </div>
         <a class="btn" href="queue.html">← Back to Queue</a>
       </div>
-      <div id="progressArea"></div>
+      <div id="progressArea" aria-live="polite">
+        <div class="progress-card">
+          <p class="small">Loading private progress…</p>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -37,6 +41,7 @@
   <script src="supabase-config.js"></script>
   <script src="./sb-api.js?v=20"></script>
   <script src="script.js?v=clean32"></script>
+  <script src="./js/client-progress-access.js?v=1"></script>
   <script src="./js/public-ux.js?v=1"></script>
 </body>
 </html>

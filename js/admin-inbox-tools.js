@@ -38,6 +38,10 @@
     return replyStateCache.get(cardId(card)) === true;
   }
 
+  function cardMatchesSearch(card) {
+    return card?.dataset?.adminSearchMatch !== 'false';
+  }
+
   function inboxIsActive() {
     return document.getElementById('adminPage-inbox')?.classList.contains('active');
   }
@@ -124,6 +128,7 @@
   }
 
   function shouldShow(card, drafts) {
+    if (!cardMatchesSearch(card)) return false;
     if (activeFilter === 'unread') return cardHasUnread(card);
     if (activeFilter === 'reply') return cardNeedsReply(card);
     if (activeFilter === 'drafts') return cardHasDraft(card, drafts);
@@ -172,15 +177,18 @@
     const list = document.getElementById('adminInboxList');
     if (!list) return;
     let empty = document.getElementById('adminInboxFilterEmpty');
-    if (visibleCount > 0 || activeFilter === 'all') {
+    const searchActive = inboxCards().some(card => card.dataset.adminSearchMatch === 'false');
+    if (visibleCount > 0 || (activeFilter === 'all' && !searchActive)) {
       empty?.remove();
       return;
     }
-    const nextHtml = activeFilter === 'drafts'
-      ? '<h3>No saved drafts</h3><p class="small">Replies you start and leave unfinished will appear here.</p>'
-      : activeFilter === 'reply'
-        ? '<h3>No clients waiting</h3><p class="small">Every visible conversation has an artist reply as its latest message.</p>'
-        : '<h3>Inbox caught up</h3><p class="small">There are no unread client conversations right now.</p>';
+    const nextHtml = searchActive
+      ? '<h3>No matching conversations</h3><p class="small">Try another search or a different inbox filter.</p>'
+      : activeFilter === 'drafts'
+        ? '<h3>No saved drafts</h3><p class="small">Replies you start and leave unfinished will appear here.</p>'
+        : activeFilter === 'reply'
+          ? '<h3>No clients waiting</h3><p class="small">Every visible conversation has an artist reply as its latest message.</p>'
+          : '<h3>Inbox caught up</h3><p class="small">There are no unread client conversations right now.</p>';
     if (!empty) {
       empty = document.createElement('article');
       empty.id = 'adminInboxFilterEmpty';
@@ -256,6 +264,7 @@
     if (event.key === DRAFT_KEY) queueDecorate();
   });
   window.addEventListener('admin-inbox-read-state-changed', queueDecorate);
+  window.addEventListener('admin-inbox-search-changed', queueDecorate);
   window.addEventListener('focus', async () => {
     if (!inboxIsActive()) return;
     replyStateFetchedAt = 0;

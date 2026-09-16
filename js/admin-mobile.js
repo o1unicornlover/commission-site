@@ -15,6 +15,7 @@
   let inboxBadgeObserver = null;
   let initialized = false;
   const media = window.matchMedia("(max-width: 760px)");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   function currentPage() {
     const active = document.querySelector(".admin-page.active[id^='adminPage-']");
@@ -27,7 +28,8 @@
     mobileBar?.querySelectorAll("[data-mobile-jump]").forEach(button => {
       const active = button.dataset.mobileJump === page;
       button.classList.toggle("primary", active);
-      button.setAttribute("aria-current", active ? "page" : "false");
+      if (active) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
     });
   }
 
@@ -65,12 +67,21 @@
     if (sidebar) sidebar.hidden = media.matches;
   }
 
+  function focusDestination(destination) {
+    const page = document.getElementById(`adminPage-${destination}`);
+    const heading = page?.querySelector("h1, h2, h3");
+    if (!heading) return;
+    if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
+    heading.focus({ preventScroll: true });
+  }
+
   function navigate(destination) {
     window.showAdminPage?.(destination, "mobile-nav");
     syncSelect(destination);
     const content = document.querySelector(".admin-content");
     const top = Math.max(0, (content?.offsetTop || 0) - 72);
-    window.scrollTo({ top, behavior: "smooth" });
+    window.scrollTo({ top, behavior: reducedMotion.matches ? "auto" : "smooth" });
+    window.setTimeout(() => focusDestination(destination), reducedMotion.matches ? 0 : 180);
   }
 
   function buildMobileBar() {

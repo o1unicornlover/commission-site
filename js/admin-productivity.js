@@ -67,8 +67,11 @@
     const list = document.getElementById('adminInboxList');
     if (!list) return;
     list.querySelectorAll('[data-inbox-commission]').forEach(card => {
-      card.hidden = !matchesQuery(card, query);
+      const matches = matchesQuery(card, query);
+      card.dataset.adminSearchMatch = matches ? 'true' : 'false';
+      card.hidden = !matches;
     });
+    window.dispatchEvent(new CustomEvent('admin-inbox-search-changed', { detail: { query } }));
   }
 
   function applySearch(query) {

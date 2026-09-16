@@ -27,6 +27,23 @@
     }));
   }
 
+  function syncPageNavigationState(name) {
+    document.querySelectorAll('.admin-nav-btn').forEach(button => {
+      const active = button.dataset.adminPage === name;
+      button.classList.toggle('active', active);
+      if (active) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
+  }
+
+  function syncSettingsNavigationState(name) {
+    document.querySelectorAll('.settings-tab').forEach(button => {
+      const active = button.dataset.settingsTab === name;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-selected', String(active));
+    });
+  }
+
   function showPage(name, source = 'navigation') {
     if (!name) return false;
     const target = document.getElementById(`adminPage-${name}`);
@@ -34,9 +51,7 @@
 
     document.querySelectorAll('.admin-page').forEach(page => page.classList.remove('active'));
     target.classList.add('active');
-    document.querySelectorAll('.admin-nav-btn').forEach(button => {
-      button.classList.toggle('active', button.dataset.adminPage === name);
-    });
+    syncPageNavigationState(name);
 
     emitPageChange(name, source);
     return true;
@@ -47,9 +62,7 @@
     const target = document.getElementById(`settings-${name}`);
     if (!target) return false;
 
-    document.querySelectorAll('.settings-tab').forEach(button => {
-      button.classList.toggle('active', button.dataset.settingsTab === name);
-    });
+    syncSettingsNavigationState(name);
     document.querySelectorAll('.settings-panel').forEach(panel => panel.classList.add('hidden'));
     target.classList.remove('hidden');
 
@@ -99,7 +112,13 @@
   });
 
   retireInlineNavigationHandlers();
-  window.addEventListener('admin-runtime-ready', () => retireInlineNavigationHandlers(), { once: true });
+  syncPageNavigationState(document.querySelector('.admin-page.active[id^="adminPage-"]')?.id.replace('adminPage-', '') || 'dash');
+  syncSettingsNavigationState(document.querySelector('.settings-tab.active')?.dataset.settingsTab || 'general');
+  window.addEventListener('admin-runtime-ready', () => {
+    retireInlineNavigationHandlers();
+    syncPageNavigationState(document.querySelector('.admin-page.active[id^="adminPage-"]')?.id.replace('adminPage-', '') || 'dash');
+    syncSettingsNavigationState(document.querySelector('.settings-tab.active')?.dataset.settingsTab || 'general');
+  }, { once: true });
 
   // Carousel management is deliberately separate from the retired Theme Studio.
   // It only edits carousel URLs/timing and never touches live palette values.

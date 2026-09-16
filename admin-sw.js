@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v71";
+const ADMIN_CACHE = "commission-admin-v72";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html",
@@ -96,7 +96,7 @@ self.addEventListener("notificationclick", event => {
         existing.postMessage({ type: "open-inbox-commission", commissionId });
         return existing.focus();
       }
-      const suffix = commissionId ? `#message-${encodeURIComponent(commissionId)}` : "";
+      const suffix = commissionId ? `#message-${encodeURIComponent(commissionId)}` : "#inbox";
       return self.clients.openWindow(`./admin.html${suffix}`);
     })
   );

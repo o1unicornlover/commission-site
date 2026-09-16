@@ -1,7 +1,7 @@
 /* Mobile-first admin navigation. No extra visual theme layer. */
 (function initAdminMobileNavigation() {
   const ADMIN_PAGES = [
-    ["dash", "Dashboard"],
+    ["dash", "Home"],
     ["commissions", "Commissions"],
     ["inbox", "Inbox"],
     ["slots", "Slots"],
@@ -24,6 +24,11 @@
   function syncSelect(page = currentPage()) {
     if (!pageSelect) return;
     if ([...pageSelect.options].some(option => option.value === page)) pageSelect.value = page;
+    mobileBar?.querySelectorAll("[data-mobile-jump]").forEach(button => {
+      const active = button.dataset.mobileJump === page;
+      button.classList.toggle("primary", active);
+      button.setAttribute("aria-current", active ? "page" : "false");
+    });
   }
 
   function unreadInboxCount() {
@@ -36,7 +41,10 @@
     const unread = unreadInboxCount();
     const label = unread ? `Inbox (${unread})` : "Inbox";
     const quickButton = mobileBar?.querySelector('[data-mobile-jump="inbox"]');
-    if (quickButton) quickButton.textContent = label;
+    if (quickButton) {
+      quickButton.textContent = label;
+      quickButton.setAttribute("aria-label", unread ? `Inbox, ${unread} unread messages` : "Inbox");
+    }
     const option = pageSelect?.querySelector('option[value="inbox"]');
     if (option) option.textContent = label;
   }
@@ -57,27 +65,32 @@
     if (sidebar) sidebar.hidden = media.matches;
   }
 
+  function navigate(destination) {
+    window.showAdminPage?.(destination, "mobile-nav");
+    syncSelect(destination);
+    const content = document.querySelector(".admin-content");
+    const top = Math.max(0, (content?.offsetTop || 0) - 72);
+    window.scrollTo({ top, behavior: "smooth" });
+  }
+
   function buildMobileBar() {
     const dashboard = document.getElementById("adminDashboard");
     const content = dashboard?.querySelector(".admin-content");
     if (!dashboard || !content || document.getElementById("adminMobileNav")) return;
 
-    mobileBar = document.createElement("section");
+    mobileBar = document.createElement("nav");
     mobileBar.id = "adminMobileNav";
     mobileBar.className = "panel compact-panel";
     mobileBar.setAttribute("aria-label", "Admin section navigation");
     mobileBar.innerHTML = `
-      <p class="eyebrow">Admin app</p>
-      <div class="form-grid">
-        <label class="small">Section
-          <select id="adminMobilePageSelect" aria-label="Choose admin section"></select>
-        </label>
-      </div>
-      <div class="button-row">
-        <button type="button" class="btn" data-mobile-jump="dash">Dashboard</button>
+      <div class="button-row" aria-label="Primary admin sections">
+        <button type="button" class="btn" data-mobile-jump="dash">Home</button>
         <button type="button" class="btn" data-mobile-jump="inbox">Inbox</button>
         <button type="button" class="btn" data-mobile-jump="commissions">Commissions</button>
       </div>
+      <label class="small" for="adminMobilePageSelect">More
+        <select id="adminMobilePageSelect" aria-label="Choose another admin section"></select>
+      </label>
     `;
 
     dashboard.insertBefore(mobileBar, content);
@@ -91,12 +104,10 @@
       pageSelect.appendChild(option);
     });
 
-    pageSelect.addEventListener("change", () => {
-      const destination = pageSelect.value;
-      window.showAdminPage?.(destination, "mobile-select");
-      const dashboardTop = Math.max(0, dashboard.offsetTop - 76);
-      window.scrollTo({ top: dashboardTop, behavior: "smooth" });
+    mobileBar.querySelectorAll("[data-mobile-jump]").forEach(button => {
+      button.addEventListener("click", () => navigate(button.dataset.mobileJump));
     });
+    pageSelect.addEventListener("change", () => navigate(pageSelect.value));
 
     setMobileState();
     syncSelect();

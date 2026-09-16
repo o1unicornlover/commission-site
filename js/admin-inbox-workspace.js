@@ -139,11 +139,17 @@
     box.scrollTop = 0;
   }
 
-  function renderMessages(messages) {
+  function nearBottom(box) {
+    return !box || box.scrollHeight - box.scrollTop - box.clientHeight < 90;
+  }
+
+  function renderMessages(messages, { forceBottom = false } = {}) {
     const box = document.getElementById('adminInboxThreadMessages');
     if (!box) return;
+    const followLatest = forceBottom || nearBottom(box);
+    const previousTop = box.scrollTop;
     const rows = Array.isArray(messages) ? [...messages].sort((a, b) => messageTime(a) - messageTime(b)) : [];
-    box.innerHTML = rows.map(message => {
+    const html = rows.map(message => {
       const admin = String(message.sender || '').toLowerCase() === 'admin';
       const when = message.created_at ? new Date(message.created_at).toLocaleString() : '';
       return `
@@ -153,10 +159,18 @@
           ${when ? `<small>${esc(when)}</small>` : ''}
         </div>`;
     }).join('') || '<p class="small">No messages in this conversation yet.</p>';
-    box.scrollTop = box.scrollHeight;
+    if (box.dataset.lastHtml !== html) {
+      box.innerHTML = html;
+      box.dataset.lastHtml = html;
+    }
+    requestAnimationFrame(() => {
+      if (!box.isConnected) return;
+      if (followLatest) box.scrollTop = box.scrollHeight;
+      else box.scrollTop = Math.min(previousTop, Math.max(0, box.scrollHeight - box.clientHeight));
+    });
   }
 
-  async function refreshThread({ markRead = true } = {}) {
+  async function refreshThread({ markRead = true, forceBottom = false } = {}) {
     const commissionId = activeCommissionId;
     if (!commissionId) return false;
     const requestId = ++refreshRequestId;
@@ -172,7 +186,7 @@
       return false;
     }
     if (activeCommissionId !== commissionId || requestId !== refreshRequestId) return false;
-    renderMessages(messages);
+    renderMessages(messages, { forceBottom });
     const inboxVisible = document.getElementById('adminPage-inbox')?.classList.contains('active');
     if (markRead && inboxVisible && document.visibilityState === 'visible') {
       await markThreadRead(commissionId, messages);
@@ -215,7 +229,7 @@
       status.textContent = '';
     }
     updateDraftStatus();
-    await refreshThread();
+    await refreshThread({ forceBottom: previousId !== nextCommissionId });
     if (activeCommissionId !== nextCommissionId) return;
     history.replaceState(null, '', `#message-${encodeURIComponent(nextCommissionId)}`);
     workspace.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -283,7 +297,7 @@
       status.dataset.sendState = '';
       status.textContent = 'Sent.';
     }
-    await refreshThread();
+    await refreshThread({ forceBottom: true });
     if (activeCommissionId !== commissionId) return;
     input?.focus();
     setTimeout(() => { if (activeCommissionId === commissionId && status?.textContent === 'Sent.') status.textContent = ''; }, 1800);

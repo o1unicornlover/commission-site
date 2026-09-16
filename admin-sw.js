@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v72";
+const ADMIN_CACHE = "commission-admin-v73";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html",
@@ -93,8 +93,12 @@ self.addEventListener("notificationclick", event => {
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(clients => {
       const existing = clients.find(client => client.url.includes("admin.html"));
       if (existing) {
-        existing.postMessage({ type: "open-inbox-commission", commissionId });
-        return existing.focus();
+        if (commissionId) {
+          existing.postMessage({ type: "open-inbox-commission", commissionId });
+          return existing.focus();
+        }
+        return existing.navigate(new URL("./admin.html#inbox", self.location.href).href)
+          .then(client => client?.focus());
       }
       const suffix = commissionId ? `#message-${encodeURIComponent(commissionId)}` : "#inbox";
       return self.clients.openWindow(`./admin.html${suffix}`);

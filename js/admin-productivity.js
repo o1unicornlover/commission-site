@@ -133,10 +133,25 @@
     }
   }
 
+  function syncSearchToPage(page) {
+    const wrap = document.getElementById('adminSearchBar');
+    const input = document.getElementById('adminGlobalSearch');
+    if (!wrap) return;
+    const searchable = page === 'commissions' || page === 'inbox';
+    wrap.hidden = !searchable;
+    if (!searchable && lastAppliedQuery) {
+      lastAppliedQuery = '';
+      if (input) input.value = '';
+      applySearch('');
+    }
+  }
+
   function refreshDynamicTools() {
     injectQuickNav();
     injectSearch();
     addSearchHints();
+    const activePage = document.querySelector('.admin-page.active')?.id?.replace('adminPage-', '') || 'dash';
+    syncSearchToPage(activePage);
     if (lastAppliedQuery) applySearch(lastAppliedQuery);
   }
 
@@ -160,6 +175,7 @@
     refreshDynamicTools();
     installShortcuts();
     observeDynamicLists();
+    window.addEventListener('admin-page-change', event => syncSearchToPage(event.detail?.page || 'dash'));
     restoreLastPage();
   }
 

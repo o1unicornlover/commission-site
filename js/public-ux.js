@@ -9,6 +9,7 @@
     ["queueGrid", "Loading active commissions…"],
     ["pricingGrid", "Loading pricing…"],
     ["galleryGrid", "Loading gallery…"],
+    ["tosGrid", "Loading terms…"],
     ["progressArea", "Loading your commission…"]
   ]);
 
@@ -43,9 +44,10 @@
 
   function normalizePublicNav() {
     const filename = (location.pathname.split("/").pop() || "index.html").toLowerCase();
-    const activeFile = filename === "progress.html"
-      ? "queue.html"
-      : (["index.html", "pricing.html", "queue.html", "gallery.html", "tos.html"].includes(filename) ? filename : "");
+    // Private client progress is its own workspace, not the public Queue page.
+    const activeFile = ["index.html", "pricing.html", "queue.html", "gallery.html", "tos.html"].includes(filename)
+      ? filename
+      : "";
 
     document.querySelectorAll(".site-header nav a").forEach(link => {
       link.removeAttribute("aria-current");

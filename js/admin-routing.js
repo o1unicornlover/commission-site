@@ -27,15 +27,30 @@
     if (!id) return;
 
     clearTimeout(routeTimer);
+    if (options.updateHash !== false) history.replaceState(null, "", `#message-${encodeURIComponent(id)}`);
+
+    // The inline workspace is the canonical inbox reader. Prefer opening it
+    // directly so dashboard/PWA notification routes do not depend on a list
+    // card finishing its async render first.
+    if (typeof window.openAdminInboxThread === "function") {
+      pendingCommissionRoute = "";
+      await window.openAdminInboxThread(id);
+      return;
+    }
+
     let attempts = 0;
     const tryOpen = () => {
       attempts += 1;
+      if (typeof window.openAdminInboxThread === "function") {
+        pendingCommissionRoute = "";
+        window.openAdminInboxThread(id);
+        return;
+      }
       const escapedId = window.CSS?.escape ? CSS.escape(id) : id.replace(/["\\]/g, "\\$&");
       const card = document.querySelector(`[data-inbox-commission="${escapedId}"]`);
       const openButton = card?.querySelector("[data-open-inbox-commission]");
       if (openButton) {
         pendingCommissionRoute = "";
-        if (options.updateHash !== false) history.replaceState(null, "", `#message-${encodeURIComponent(id)}`);
         openButton.click();
         return;
       }

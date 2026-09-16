@@ -8,6 +8,11 @@
   let commissionListObserver = null;
   let pendingCommissionRoute = "";
   const PENDING_ROUTE_KEY = "adminPendingMessageRoute";
+  const PAGE_HASHES = new Map([
+    ["#home", "overview"],
+    ["#inbox", "inbox"],
+    ["#commissions", "commissions"]
+  ]);
 
   function decodeMessageHash() {
     if (!location.hash.startsWith("#message-")) return "";
@@ -29,9 +34,6 @@
     clearTimeout(routeTimer);
     if (options.updateHash !== false) history.replaceState(null, "", `#message-${encodeURIComponent(id)}`);
 
-    // The inline workspace is the canonical inbox reader. Prefer opening it
-    // directly so dashboard/PWA notification routes do not depend on a list
-    // card finishing its async render first.
     if (typeof window.openAdminInboxThread === "function") {
       pendingCommissionRoute = "";
       await window.openAdminInboxThread(id);
@@ -103,7 +105,10 @@
     if (id) {
       pendingCommissionRoute = id;
       setTimeout(() => openInboxConversation(id, { updateHash: false }), 700);
+      return;
     }
+    const page = PAGE_HASHES.get(location.hash.toLowerCase());
+    if (page) setTimeout(() => window.showAdminPage?.(page, "pwa-route"), 100);
   }
 
   function startRouting() {
@@ -126,6 +131,7 @@
     addCommissionQuickLinks();
     observeCommissionList();
     flushPendingCommissionRoute();
+    if (!pendingCommissionRoute) routeFromHash();
   });
   window.addEventListener("admin-page-change", event => {
     if (event.detail?.page === "commissions") queueMicrotask(addCommissionQuickLinks);
@@ -133,10 +139,6 @@
   });
   window.addEventListener("hashchange", routeFromHash);
 
-  // When the installed PWA is already open, admin-sw.js focuses that window
-  // and posts the commission id instead of opening a second copy. Keep the
-  // target queued if the inbox/runtime is still booting, then replay it when
-  // the admin workspace becomes ready.
   navigator.serviceWorker?.addEventListener("message", event => {
     if (event.data?.type !== "open-inbox-commission") return;
     const id = String(event.data?.commissionId || "").trim();

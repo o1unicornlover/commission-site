@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-15";
+  const version = "admin-runtime-16";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -26,6 +26,7 @@
     "./js/admin-dashboard-lite.js",
     "./js/admin-inbox-workspace.js",
     "./js/admin-inbox-tools.js",
+    "./js/admin-read-sync.js",
     "./js/admin-app-health.js",
     "./js/admin-pwa-updates.js",
     "./js/admin-accessibility.js"

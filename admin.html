@@ -136,7 +136,11 @@
                   <input id="galleryBorderFile" type="file" accept="image/*">
                   <p class="small">Best resolution: upload a transparent PNG frame around 1024×1024 px or 1200×1200 px. Keep the center transparent so the artwork shows through. Square frames work best because gallery thumbnails are square.</p>
                   <label class="small"><input id="galleryBorderEnabled" type="checkbox"> Enable custom gallery borders</label>
-                  <div class="button-row"><button class="btn" onclick="clearDefaultImages()">Clear Images</button></div>
+                  <div class="button-row">
+                    <button type="button" class="btn primary" onclick="saveDefaultAppearance()">Save Assets &amp; Branding</button>
+                    <button type="button" class="btn" onclick="clearDefaultImages()">Clear Images</button>
+                  </div>
+                  <p class="small">Saving updates only these permanent assets and branding controls; it does not change the site's fixed color system.</p>
                 </section>
                 <section id="settings-social" class="settings-panel hidden">
                   <h3>Social / Contact Links</h3>

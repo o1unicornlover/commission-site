@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-21";
+  const version = "admin-runtime-22";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -251,11 +251,14 @@
   }
 
   navigator.serviceWorker?.addEventListener?.("message", event => {
-    if (event.data?.type !== "open-inbox-commission" || event.data?.commissionId) return;
+    if (event.data?.type !== "open-inbox-commission") return;
+    const commissionId = String(event.data?.commissionId || "").trim();
     if (sessionStorage.getItem("adminOpen") !== "true") {
-      sessionStorage.setItem("adminPendingMessageRoute", "inbox");
+      sessionStorage.setItem("adminPendingMessageRoute", commissionId || "inbox");
       return;
     }
+    // Commission-specific routes are handled by admin-routing once the studio is open.
+    if (commissionId) return;
     window.showAdminPage?.("inbox");
     if (location.hash !== "#inbox") history.replaceState(null, "", "#inbox");
   });

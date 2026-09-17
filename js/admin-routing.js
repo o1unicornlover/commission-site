@@ -8,16 +8,16 @@
   let commissionListObserver = null;
   let titleObserver = null;
   let pendingCommissionRoute = '';
-  let activePage = 'overview';
+  let activePage = 'dash';
   const PENDING_ROUTE_KEY = 'adminPendingMessageRoute';
   const GENERIC_INBOX_ROUTE = 'inbox';
   const PAGE_HASHES = new Map([
-    ['#home', 'overview'], ['#inbox', 'inbox'], ['#commissions', 'commissions'], ['#slots', 'slots'],
+    ['#home', 'dash'], ['#inbox', 'inbox'], ['#commissions', 'commissions'], ['#slots', 'slots'],
     ['#gallery', 'gallery'], ['#archives', 'archives'], ['#settings', 'settings']
   ]);
   const HASH_BY_PAGE = new Map(Array.from(PAGE_HASHES, ([hash, page]) => [page, hash]));
   const TITLE_BY_PAGE = new Map([
-    ['overview', 'Home'], ['inbox', 'Inbox'], ['commissions', 'Commissions'], ['slots', 'Slots'],
+    ['dash', 'Home'], ['inbox', 'Inbox'], ['commissions', 'Commissions'], ['slots', 'Slots'],
     ['gallery', 'Gallery'], ['archives', 'Archives'], ['settings', 'Site Settings']
   ]);
 
@@ -144,7 +144,7 @@
     if (page) {
       syncDocumentTitle(page);
       setTimeout(() => window.showAdminPage?.(page, 'pwa-route'), 100);
-    } else syncDocumentTitle('overview');
+    } else syncDocumentTitle('dash');
   }
 
   function startRouting() {

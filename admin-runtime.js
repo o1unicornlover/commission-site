@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-18";
+  const version = "admin-runtime-19";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -44,6 +44,25 @@
     });
   }
 
+  function wireAdminLockControl() {
+    const header = document.querySelector(".admin-header");
+    if (!header || document.getElementById("adminLockButton")) return;
+    const button = document.createElement("button");
+    button.id = "adminLockButton";
+    button.type = "button";
+    button.className = "btn";
+    button.textContent = "Lock Studio";
+    button.hidden = sessionStorage.getItem("adminOpen") !== "true";
+    button.setAttribute("aria-label", "Lock the admin studio on this device");
+    button.addEventListener("click", () => window.adminLock());
+    header.appendChild(button);
+  }
+
+  window.adminLock = function adminLock() {
+    sessionStorage.removeItem("adminOpen");
+    location.replace("./admin.html");
+  };
+
   async function registerAdminServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     const desiredScope = new URL("./admin.html", location.href).href;
@@ -75,6 +94,7 @@
       document.head.appendChild(theme);
     }
     isolateInstalledAdmin();
+    wireAdminLockControl();
     registerAdminServiceWorker();
     setTimeout(registerAdminServiceWorker, 1800);
     loadOne("./js/admin-app.js").catch(error => {
@@ -85,8 +105,8 @@
   function loadOne(src, { external = false } = {}) {
     const target = new URL(src, location.href).pathname;
     const existing = [...document.scripts].find(script => {
-      try { return new URL(script.src, location.href).pathname === target; }
-      catch { return false; }
+      try { return new URL(script.src, location.href).pathname === target;
+      } catch { return false; }
     });
     if (existing) return Promise.resolve();
     return new Promise((resolve, reject) => {
@@ -149,6 +169,8 @@
   function revealDashboard() {
     document.getElementById("adminLogin")?.classList.add("hidden");
     document.getElementById("adminDashboard")?.classList.remove("hidden");
+    const lockButton = document.getElementById("adminLockButton");
+    if (lockButton) lockButton.hidden = false;
   }
 
   async function initializeCoreAdmin() {

@@ -6,7 +6,9 @@
 
   let routeTimer = null;
   let commissionListObserver = null;
+  let titleObserver = null;
   let pendingCommissionRoute = '';
+  let activePage = 'overview';
   const PENDING_ROUTE_KEY = 'adminPendingMessageRoute';
   const GENERIC_INBOX_ROUTE = 'inbox';
   const PAGE_HASHES = new Map([
@@ -24,8 +26,18 @@
   }
 
   function syncDocumentTitle(page) {
-    const section = TITLE_BY_PAGE.get(String(page || '')) || 'Admin';
-    document.title = `${unreadTitlePrefix()}${section} · Commission Studio`;
+    activePage = TITLE_BY_PAGE.has(String(page || '')) ? String(page) : activePage;
+    const section = TITLE_BY_PAGE.get(activePage) || 'Admin';
+    const nextTitle = `${unreadTitlePrefix()}${section} · Commission Studio`;
+    if (document.title !== nextTitle) document.title = nextTitle;
+  }
+
+  function preserveWorkspaceTitleAcrossUnreadRefresh() {
+    if (titleObserver || !document.querySelector('title')) return;
+    titleObserver = new MutationObserver(() => {
+      if (/^(?:\(\d+\)\s*)?Admin Dashboard$/.test(document.title)) syncDocumentTitle(activePage);
+    });
+    titleObserver.observe(document.querySelector('title'), { childList: true, characterData: true, subtree: true });
   }
 
   function decodeMessageHash() {
@@ -136,6 +148,7 @@
   }
 
   function startRouting() {
+    preserveWorkspaceTitleAcrossUnreadRefresh();
     addCommissionQuickLinks();
     observeCommissionList();
     const preloginRoute = consumePreloginRoute();
@@ -154,6 +167,7 @@
   else startRouting();
 
   window.addEventListener('admin-runtime-ready', () => {
+    preserveWorkspaceTitleAcrossUnreadRefresh();
     addCommissionQuickLinks();
     observeCommissionList();
     flushPendingCommissionRoute();

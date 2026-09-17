@@ -56,7 +56,7 @@
       repair.className = 'btn';
       repair.id = 'adminRepairApp';
       repair.textContent = 'Repair cached app';
-      repair.title = 'Clears only cached admin app files, repairs admin-only app scope, then reloads the latest version. Your Supabase data and saved site settings are not deleted.';
+      repair.title = 'Rebuilds only cached admin app files and admin-only app scope, then reloads the latest version. Your Supabase data and saved site settings are not deleted.';
       repair.addEventListener('click', repairCachedApp);
       row.appendChild(repair);
     }
@@ -65,7 +65,7 @@
       const note = document.createElement('p');
       note.id = 'adminRepairNote';
       note.className = 'small';
-      note.textContent = 'If admin controls ever look stale or stop responding after an update, Repair cached app reloads only the admin shell and restores admin-only app scope. It does not delete commissions, messages, uploads, or site settings.';
+      note.textContent = 'If admin controls ever look stale or stop responding after an update, Repair cached app rebuilds only the admin shell and restores admin-only app scope. It does not delete commissions, messages, uploads, or site settings.';
       row.insertAdjacentElement('afterend', note);
     }
   }
@@ -122,12 +122,24 @@
     }
 
     try {
+      const registrations = await getAdminRegistrations();
+      await Promise.all(registrations.map(registration => registration.unregister()));
+
       const keys = await caches.keys();
       const adminKeys = keys.filter(key => key.startsWith('commission-admin-'));
       await Promise.all(adminKeys.map(key => caches.delete(key)));
 
-      const registration = await ensureNarrowAdminRegistration();
-      await registration?.update?.();
+      const registration = await navigator.serviceWorker.register('./admin-sw.js', { scope: './admin.html' });
+      if (registration.installing) {
+        await new Promise(resolve => {
+          const worker = registration.installing;
+          const done = () => {
+            if (worker.state === 'activated' || worker.state === 'redundant') resolve();
+          };
+          worker.addEventListener('statechange', done);
+          done();
+        });
+      }
 
       const url = new URL(location.href);
       url.searchParams.set('app-repair', String(Date.now()));

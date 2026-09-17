@@ -18,6 +18,20 @@
     ["#settings", "settings"]
   ]);
   const HASH_BY_PAGE = new Map(Array.from(PAGE_HASHES, ([hash, page]) => [page, hash]));
+  const TITLE_BY_PAGE = new Map([
+    ["overview", "Home"],
+    ["inbox", "Inbox"],
+    ["commissions", "Commissions"],
+    ["slots", "Slots"],
+    ["gallery", "Gallery"],
+    ["archives", "Archives"],
+    ["settings", "Site Settings"]
+  ]);
+
+  function syncDocumentTitle(page) {
+    const section = TITLE_BY_PAGE.get(String(page || "")) || "Admin";
+    document.title = `${section} · Commission Studio`;
+  }
 
   function decodeMessageHash() {
     if (!location.hash.startsWith("#message-")) return "";
@@ -32,6 +46,7 @@
   }
 
   function syncSectionHash(page) {
+    syncDocumentTitle(page);
     const nextHash = HASH_BY_PAGE.get(String(page || ""));
     if (nextHash) {
       if (location.hash !== nextHash) history.replaceState(null, "", nextHash);
@@ -45,6 +60,7 @@
 
   async function openInboxConversation(commissionId, options = {}) {
     const id = String(commissionId || "").trim();
+    syncDocumentTitle("inbox");
     window.showAdminPage?.("inbox", "message-route");
     if (!id) return;
 
@@ -120,12 +136,16 @@
   function routeFromHash() {
     const id = decodeMessageHash();
     if (id) {
+      syncDocumentTitle("inbox");
       pendingCommissionRoute = id;
       setTimeout(() => openInboxConversation(id, { updateHash: false }), 700);
       return;
     }
     const page = PAGE_HASHES.get(location.hash.toLowerCase());
-    if (page) setTimeout(() => window.showAdminPage?.(page, "pwa-route"), 100);
+    if (page) {
+      syncDocumentTitle(page);
+      setTimeout(() => window.showAdminPage?.(page, "pwa-route"), 100);
+    } else syncDocumentTitle("overview");
   }
 
   function startRouting() {
@@ -133,6 +153,7 @@
     observeCommissionList();
     const preloginId = consumePreloginRoute();
     if (preloginId) {
+      syncDocumentTitle("inbox");
       pendingCommissionRoute = preloginId;
       setTimeout(() => openInboxConversation(preloginId), 100);
     } else routeFromHash();
@@ -152,6 +173,7 @@
   });
   window.addEventListener("admin-page-change", event => {
     const page = event.detail?.page;
+    syncDocumentTitle(page);
     if (page === "commissions") queueMicrotask(addCommissionQuickLinks);
     if (page === "inbox") queueMicrotask(flushPendingCommissionRoute);
     if (!pendingCommissionRoute && event.detail?.source !== "message-route") syncSectionHash(page);
@@ -164,6 +186,9 @@
     if (id) {
       pendingCommissionRoute = id;
       openInboxConversation(id);
-    } else window.showAdminPage?.("inbox", "notification-route");
+    } else {
+      syncDocumentTitle("inbox");
+      window.showAdminPage?.("inbox", "notification-route");
+    }
   });
 })();

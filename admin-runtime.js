@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-19";
+  const version = "admin-runtime-20";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -60,6 +60,9 @@
 
   window.adminLock = function adminLock() {
     sessionStorage.removeItem("adminOpen");
+    sessionStorage.removeItem("adminPendingMessageRoute");
+    navigator.clearAppBadge?.().catch(() => {});
+    document.title = "Commission Studio";
     location.replace("./admin.html");
   };
 
@@ -105,8 +108,8 @@
   function loadOne(src, { external = false } = {}) {
     const target = new URL(src, location.href).pathname;
     const existing = [...document.scripts].find(script => {
-      try { return new URL(script.src, location.href).pathname === target;
-      } catch { return false; }
+      try { return new URL(script.src, location.href).pathname === target; }
+      catch { return false; }
     });
     if (existing) return Promise.resolve();
     return new Promise((resolve, reject) => {

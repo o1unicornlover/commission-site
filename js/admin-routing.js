@@ -13,6 +13,7 @@
     ["#inbox", "inbox"],
     ["#commissions", "commissions"]
   ]);
+  const HASH_BY_PAGE = new Map(Array.from(PAGE_HASHES, ([hash, page]) => [page, hash]));
 
   function decodeMessageHash() {
     if (!location.hash.startsWith("#message-")) return "";
@@ -24,6 +25,18 @@
     const id = String(sessionStorage.getItem(PENDING_ROUTE_KEY) || "").trim();
     if (id) sessionStorage.removeItem(PENDING_ROUTE_KEY);
     return id;
+  }
+
+  function syncSectionHash(page) {
+    const nextHash = HASH_BY_PAGE.get(String(page || ""));
+    if (nextHash) {
+      if (location.hash !== nextHash) history.replaceState(null, "", nextHash);
+      return;
+    }
+    const currentHash = location.hash.toLowerCase();
+    if (PAGE_HASHES.has(currentHash) || currentHash.startsWith("#message-")) {
+      history.replaceState(null, "", `${location.pathname}${location.search}`);
+    }
   }
 
   async function openInboxConversation(commissionId, options = {}) {
@@ -134,8 +147,10 @@
     if (!pendingCommissionRoute) routeFromHash();
   });
   window.addEventListener("admin-page-change", event => {
-    if (event.detail?.page === "commissions") queueMicrotask(addCommissionQuickLinks);
-    if (event.detail?.page === "inbox") queueMicrotask(flushPendingCommissionRoute);
+    const page = event.detail?.page;
+    if (page === "commissions") queueMicrotask(addCommissionQuickLinks);
+    if (page === "inbox") queueMicrotask(flushPendingCommissionRoute);
+    if (!pendingCommissionRoute && event.detail?.source !== "message-route") syncSectionHash(page);
   });
   window.addEventListener("hashchange", routeFromHash);
 

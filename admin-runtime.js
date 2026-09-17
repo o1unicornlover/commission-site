@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-20";
+  const version = "admin-runtime-21";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -249,6 +249,16 @@
     }
     prepareLogin();
   }
+
+  navigator.serviceWorker?.addEventListener?.("message", event => {
+    if (event.data?.type !== "open-inbox-commission" || event.data?.commissionId) return;
+    if (sessionStorage.getItem("adminOpen") !== "true") {
+      sessionStorage.setItem("adminPendingMessageRoute", "inbox");
+      return;
+    }
+    window.showAdminPage?.("inbox");
+    if (location.hash !== "#inbox") history.replaceState(null, "", "#inbox");
+  });
 
   wirePwaShell();
   document.documentElement.dataset.adminBoot = "idle";

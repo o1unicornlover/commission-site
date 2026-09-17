@@ -21,6 +21,12 @@
     ['gallery', 'Gallery'], ['archives', 'Archives'], ['settings', 'Site Settings']
   ]);
 
+  function normalizeCommissionId(value) {
+    const id = String(value || '').trim();
+    if (!id || id.length > 128 || /[\u0000-\u001f\u007f]/.test(id)) return '';
+    return id;
+  }
+
   function unreadTitlePrefix() {
     return document.title.match(/^\(\d+\)\s*/)?.[0] || '';
   }
@@ -42,14 +48,15 @@
 
   function decodeMessageHash() {
     if (!location.hash.startsWith('#message-')) return '';
-    try { return decodeURIComponent(location.hash.slice('#message-'.length)); }
-    catch { return location.hash.slice('#message-'.length); }
+    try { return normalizeCommissionId(decodeURIComponent(location.hash.slice('#message-'.length))); }
+    catch { return normalizeCommissionId(location.hash.slice('#message-'.length)); }
   }
 
   function consumePreloginRoute() {
     const route = String(sessionStorage.getItem(PENDING_ROUTE_KEY) || '').trim();
     if (route) sessionStorage.removeItem(PENDING_ROUTE_KEY);
-    return route;
+    if (route === GENERIC_INBOX_ROUTE) return route;
+    return normalizeCommissionId(route);
   }
 
   function syncSectionHash(page) {
@@ -64,7 +71,7 @@
   }
 
   async function openInboxConversation(commissionId, options = {}) {
-    const id = String(commissionId || '').trim();
+    const id = normalizeCommissionId(commissionId);
     syncDocumentTitle('inbox');
     window.showAdminPage?.('inbox', 'message-route');
     if (!id) return;
@@ -111,7 +118,7 @@
     if (!list) return;
     list.querySelectorAll('[data-commission-id]').forEach(card => {
       if (card.querySelector('[data-quick-open-inbox]')) return;
-      const id = card.getAttribute('data-commission-id');
+      const id = normalizeCommissionId(card.getAttribute('data-commission-id'));
       if (!id) return;
       const actionRow = card.querySelector('.button-row');
       if (!actionRow) return;
@@ -184,7 +191,7 @@
 
   navigator.serviceWorker?.addEventListener('message', event => {
     if (event.data?.type !== 'open-inbox-commission') return;
-    const id = String(event.data?.commissionId || '').trim();
+    const id = normalizeCommissionId(event.data?.commissionId);
     if (id) {
       pendingCommissionRoute = id;
       openInboxConversation(id);

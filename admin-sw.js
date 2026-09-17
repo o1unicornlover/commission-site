@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v86";
+const ADMIN_CACHE = "commission-admin-v87";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html",
@@ -77,9 +77,12 @@ self.addEventListener("fetch", event => {
   if (isAdminNavigation) {
     event.respondWith((async () => {
       try {
-        const preload = await event.preloadResponse;
-        if (preload) return preload;
-        return await fetch(event.request);
+        const response = (await event.preloadResponse) || await fetch(event.request);
+        if (response.ok) {
+          const cache = await caches.open(ADMIN_CACHE);
+          await cache.put("./admin.html", response.clone());
+        }
+        return response;
       } catch (_) {
         return (await caches.match("./admin.html")) || Response.error();
       }

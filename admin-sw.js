@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v84";
+const ADMIN_CACHE = "commission-admin-v85";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html",
@@ -100,7 +100,10 @@ self.addEventListener("notificationclick", event => {
   const commissionId = event.notification?.data?.commissionId || "";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(clients => {
-      const existing = clients.find(client => client.url.includes("admin.html"));
+      const adminClients = clients.filter(client => client.url.includes("admin.html"));
+      const existing = adminClients.find(client => client.focused)
+        || adminClients.find(client => client.visibilityState === "visible")
+        || adminClients[0];
       if (existing) {
         existing.postMessage({ type: "open-inbox-commission", commissionId });
         return existing.focus();

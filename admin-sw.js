@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v91";
+const ADMIN_CACHE = "commission-admin-v92";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html", "./style.css", "./admin-runtime.js", "./admin-manifest.webmanifest",
@@ -29,9 +29,13 @@ self.addEventListener("fetch", event => {
 });
 self.addEventListener("notificationclick", event => {
   event.notification.close();
-  const commissionId = event.notification?.data?.commissionId || "";
+  const rawCommissionId = event.notification?.data?.commissionId;
+  const commissionId = typeof rawCommissionId === "string" || typeof rawCommissionId === "number" ? String(rawCommissionId).trim() : "";
   event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(clients => {
-    const adminClients = clients.filter(client => client.url.includes("admin.html"));
+    const adminClients = clients.filter(client => {
+      try { const url = new URL(client.url); return url.origin === self.location.origin && url.pathname === ADMIN_PATH; }
+      catch (_) { return false; }
+    });
     const existing = adminClients.find(client => client.focused) || adminClients.find(client => client.visibilityState === "visible") || adminClients[0];
     if (existing) { existing.postMessage({ type: "open-inbox-commission", commissionId }); return existing.focus(); }
     const suffix = commissionId ? `#message-${encodeURIComponent(commissionId)}` : "#inbox";

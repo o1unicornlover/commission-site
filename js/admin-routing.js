@@ -11,7 +11,11 @@
   const PAGE_HASHES = new Map([
     ["#home", "overview"],
     ["#inbox", "inbox"],
-    ["#commissions", "commissions"]
+    ["#commissions", "commissions"],
+    ["#slots", "slots"],
+    ["#gallery", "gallery"],
+    ["#archives", "archives"],
+    ["#settings", "settings"]
   ]);
   const HASH_BY_PAGE = new Map(Array.from(PAGE_HASHES, ([hash, page]) => [page, hash]));
 

@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v85";
+const ADMIN_CACHE = "commission-admin-v86";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html",
@@ -87,12 +87,19 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  event.respondWith(
-    fetch(event.request).catch(async () => {
+  event.respondWith((async () => {
+    try {
+      const response = await fetch(event.request);
+      if (response.ok) {
+        const cache = await caches.open(ADMIN_CACHE);
+        await cache.put(event.request, response.clone());
+      }
+      return response;
+    } catch (_) {
       const hit = await caches.match(event.request, { ignoreSearch: true });
       return hit || Response.error();
-    })
-  );
+    }
+  })());
 });
 
 self.addEventListener("notificationclick", event => {

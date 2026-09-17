@@ -23,6 +23,20 @@
       "description": "Open commission management",
       "url": "./admin.html#commissions",
       "icons": [{ "src": "./admin-icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Gallery",
+      "short_name": "Gallery",
+      "description": "Open gallery management",
+      "url": "./admin.html#gallery",
+      "icons": [{ "src": "./admin-icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Site Settings",
+      "short_name": "Settings",
+      "description": "Open site settings and branding controls",
+      "url": "./admin.html#settings",
+      "icons": [{ "src": "./admin-icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" }]
     }
   ],
   "icons": [

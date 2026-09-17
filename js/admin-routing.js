@@ -8,6 +8,7 @@
   let commissionListObserver = null;
   let pendingCommissionRoute = '';
   const PENDING_ROUTE_KEY = 'adminPendingMessageRoute';
+  const GENERIC_INBOX_ROUTE = 'inbox';
   const PAGE_HASHES = new Map([
     ['#home', 'overview'], ['#inbox', 'inbox'], ['#commissions', 'commissions'], ['#slots', 'slots'],
     ['#gallery', 'gallery'], ['#archives', 'archives'], ['#settings', 'settings']
@@ -34,9 +35,9 @@
   }
 
   function consumePreloginRoute() {
-    const id = String(sessionStorage.getItem(PENDING_ROUTE_KEY) || '').trim();
-    if (id) sessionStorage.removeItem(PENDING_ROUTE_KEY);
-    return id;
+    const route = String(sessionStorage.getItem(PENDING_ROUTE_KEY) || '').trim();
+    if (route) sessionStorage.removeItem(PENDING_ROUTE_KEY);
+    return route;
   }
 
   function syncSectionHash(page) {
@@ -137,11 +138,15 @@
   function startRouting() {
     addCommissionQuickLinks();
     observeCommissionList();
-    const preloginId = consumePreloginRoute();
-    if (preloginId) {
+    const preloginRoute = consumePreloginRoute();
+    if (preloginRoute === GENERIC_INBOX_ROUTE) {
       syncDocumentTitle('inbox');
-      pendingCommissionRoute = preloginId;
-      setTimeout(() => openInboxConversation(preloginId), 100);
+      history.replaceState(null, '', '#inbox');
+      setTimeout(() => window.showAdminPage?.('inbox', 'notification-route'), 100);
+    } else if (preloginRoute) {
+      syncDocumentTitle('inbox');
+      pendingCommissionRoute = preloginRoute;
+      setTimeout(() => openInboxConversation(preloginRoute), 100);
     } else routeFromHash();
   }
 
@@ -172,6 +177,7 @@
     } else {
       syncDocumentTitle('inbox');
       window.showAdminPage?.('inbox', 'notification-route');
+      if (location.hash !== '#inbox') history.replaceState(null, '', '#inbox');
     }
   });
 })();

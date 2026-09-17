@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v77";
+const ADMIN_CACHE = "commission-admin-v78";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html",
@@ -54,13 +54,14 @@ self.addEventListener("install", event => {
 
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
+    Promise.all([
+      caches.keys().then(keys => Promise.all(
         keys
           .filter(key => key.startsWith(ADMIN_CACHE_PREFIX) && key !== ADMIN_CACHE)
           .map(key => caches.delete(key))
-      ))
-      .then(() => self.clients.claim())
+      )),
+      self.registration.navigationPreload?.enable?.().catch(() => {})
+    ]).then(() => self.clients.claim())
   );
 });
 
@@ -74,7 +75,15 @@ self.addEventListener("fetch", event => {
   if (!isAdminNavigation && !isAdminAsset) return;
 
   if (isAdminNavigation) {
-    event.respondWith(fetch(event.request).catch(() => caches.match("./admin.html")));
+    event.respondWith((async () => {
+      try {
+        const preload = await event.preloadResponse;
+        if (preload) return preload;
+        return await fetch(event.request);
+      } catch (_) {
+        return (await caches.match("./admin.html")) || Response.error();
+      }
+    })());
     return;
   }
 

@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-22";
+  const version = "admin-runtime-23";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -31,6 +31,12 @@
     "./js/admin-pwa-updates.js",
     "./js/admin-accessibility.js"
   ];
+
+  function normalizeCommissionId(value) {
+    if (typeof value !== "string" && typeof value !== "number") return "";
+    const id = String(value).trim();
+    return id && id.length <= 128 && !/[\u0000-\u001F\u007F]/.test(id) ? id : "";
+  }
 
   function standaloneAdminMode() {
     return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
@@ -252,7 +258,7 @@
 
   navigator.serviceWorker?.addEventListener?.("message", event => {
     if (event.data?.type !== "open-inbox-commission") return;
-    const commissionId = String(event.data?.commissionId || "").trim();
+    const commissionId = normalizeCommissionId(event.data?.commissionId);
     if (sessionStorage.getItem("adminOpen") !== "true") {
       sessionStorage.setItem("adminPendingMessageRoute", commissionId || "inbox");
       return;

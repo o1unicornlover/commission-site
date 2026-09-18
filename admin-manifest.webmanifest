@@ -6,8 +6,14 @@
   "start_url": "./admin.html",
   "scope": "./admin.html",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#fffdfc",
   "theme_color": "#ff4da8",
+  "categories": ["business", "productivity"],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "prefer_related_applications": false,
   "shortcuts": [
     {

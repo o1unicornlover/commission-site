@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v93";
+const ADMIN_CACHE = "commission-admin-v94";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html", "./style.css", "./admin-runtime.js", "./admin-manifest.webmanifest",
@@ -12,6 +12,11 @@ const ADMIN_SHELL = [
 ];
 const ADMIN_PATH = new URL("./admin.html", self.location.href).pathname;
 const ADMIN_ASSET_PATHS = new Set(ADMIN_SHELL.map(path => new URL(path, self.location.href).pathname));
+const normalizeCommissionId = value => {
+  if (typeof value !== "string" && typeof value !== "number") return "";
+  const id = String(value).trim();
+  return id && id.length <= 128 && !/[\u0000-\u001F\u007F]/.test(id) ? id : "";
+};
 self.addEventListener("install", event => { event.waitUntil(caches.open(ADMIN_CACHE).then(cache => cache.addAll(ADMIN_SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", event => { event.waitUntil(Promise.all([caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith(ADMIN_CACHE_PREFIX) && key !== ADMIN_CACHE).map(key => caches.delete(key)))), self.registration.navigationPreload?.enable?.().catch(() => {})]).then(() => self.clients.claim())); });
 self.addEventListener("fetch", event => {
@@ -29,8 +34,7 @@ self.addEventListener("fetch", event => {
 });
 self.addEventListener("notificationclick", event => {
   event.notification.close();
-  const rawCommissionId = event.notification?.data?.commissionId;
-  const commissionId = typeof rawCommissionId === "string" || typeof rawCommissionId === "number" ? String(rawCommissionId).trim() : "";
+  const commissionId = normalizeCommissionId(event.notification?.data?.commissionId);
   event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(clients => {
     const adminClients = clients.filter(client => {
       try { const url = new URL(client.url); return url.origin === self.location.origin && url.pathname === ADMIN_PATH; }

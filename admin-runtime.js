@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-24";
+  const version = "admin-runtime-25";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -88,7 +88,7 @@
     if (!document.querySelector('meta[name="theme-color"]')) {
       const theme = document.createElement("meta");
       theme.name = "theme-color";
-      theme.content = "#ff4da8";
+      theme.content = "#fffdfc";
       document.head.appendChild(theme);
     }
     isolateInstalledAdmin();

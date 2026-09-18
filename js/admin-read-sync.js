@@ -50,11 +50,13 @@
   });
 
   // Installed PWAs and mobile browsers can restore a frozen page without
-  // rerunning startup code. Reconcile unread state when that page resumes so
-  // badges and the title do not remain stale until the next poll/message.
+  // rerunning startup code. Reconcile unread state whenever the app becomes
+  // usable again so badges and the title do not wait for the next poll.
   window.addEventListener('pageshow', event => {
     if (event.persisted) scheduleRefresh();
   });
+  window.addEventListener('focus', scheduleRefresh);
+  window.addEventListener('online', scheduleRefresh);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') scheduleRefresh();
   });

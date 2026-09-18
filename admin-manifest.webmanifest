@@ -38,6 +38,13 @@
       "icons": [{ "src": "./admin-icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" }]
     },
     {
+      "name": "Commission Slots",
+      "short_name": "Slots",
+      "description": "Open commission slot controls",
+      "url": "./admin.html#slots",
+      "icons": [{ "src": "./admin-icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" }]
+    },
+    {
       "name": "Gallery",
       "short_name": "Gallery",
       "description": "Open gallery management",

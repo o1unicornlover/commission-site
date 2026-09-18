@@ -8,6 +8,7 @@
   let refreshTimer = null;
   let refreshBusy = false;
   let refreshAgain = false;
+  let refreshPendingOnline = false;
 
   function inboxActive() {
     return document.getElementById('adminPage-inbox')?.classList.contains('active');
@@ -15,16 +16,25 @@
 
   function scheduleRefresh() {
     clearTimeout(refreshTimer);
+    if (navigator.onLine === false) {
+      refreshPendingOnline = true;
+      return;
+    }
     refreshTimer = setTimeout(refreshUnreadState, 80);
   }
 
   async function refreshUnreadState() {
+    if (navigator.onLine === false) {
+      refreshPendingOnline = true;
+      return;
+    }
     if (refreshBusy) {
       refreshAgain = true;
       return;
     }
     if (typeof window.renderAdminInbox !== 'function') return;
 
+    refreshPendingOnline = false;
     refreshBusy = true;
     try {
       // renderAdminInbox owns the canonical unread calculation and updates the
@@ -56,7 +66,9 @@
     if (event.persisted) scheduleRefresh();
   });
   window.addEventListener('focus', scheduleRefresh);
-  window.addEventListener('online', scheduleRefresh);
+  window.addEventListener('online', () => {
+    if (refreshPendingOnline || document.visibilityState === 'visible') scheduleRefresh();
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') scheduleRefresh();
   });

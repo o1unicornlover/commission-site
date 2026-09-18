@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-23";
+  const version = "admin-runtime-24";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -11,25 +11,14 @@
     "./api/chat-api.js"
   ];
   const coreModules = [
-    "./js/constants.js",
-    "./js/utils.js",
-    "./js/legacy-app.js",
-    "./js/admin-dashboard-core.js",
-    "./js/admin-controls-core.js"
+    "./js/constants.js", "./js/utils.js", "./js/legacy-app.js",
+    "./js/admin-dashboard-core.js", "./js/admin-controls-core.js"
   ];
   const enhancementModules = [
-    "./js/admin-mobile.js",
-    "./js/autosync.js",
-    "./js/clean-appearance.js",
-    "./js/admin-routing.js",
-    "./js/admin-productivity.js",
-    "./js/admin-dashboard-lite.js",
-    "./js/admin-inbox-workspace.js",
-    "./js/admin-inbox-tools.js",
-    "./js/admin-read-sync.js",
-    "./js/admin-app-health.js",
-    "./js/admin-pwa-updates.js",
-    "./js/admin-accessibility.js"
+    "./js/admin-mobile.js", "./js/autosync.js", "./js/clean-appearance.js",
+    "./js/admin-routing.js", "./js/admin-productivity.js", "./js/admin-dashboard-lite.js",
+    "./js/admin-inbox-workspace.js", "./js/admin-inbox-tools.js", "./js/admin-read-sync.js",
+    "./js/admin-app-health.js", "./js/admin-pwa-updates.js", "./js/admin-accessibility.js"
   ];
 
   function normalizeCommissionId(value) {
@@ -106,9 +95,7 @@
     wireAdminLockControl();
     registerAdminServiceWorker();
     setTimeout(registerAdminServiceWorker, 1800);
-    loadOne("./js/admin-app.js").catch(error => {
-      console.warn("Admin PWA shell failed to load", error);
-    });
+    loadOne("./js/admin-app.js").catch(error => console.warn("Admin PWA shell failed to load", error));
   }
 
   function loadOne(src, { external = false } = {}) {
@@ -128,18 +115,13 @@
     });
   }
 
-  async function loadSerial(sources) {
-    for (const src of sources) await loadOne(src);
-  }
+  async function loadSerial(sources) { for (const src of sources) await loadOne(src); }
 
   async function loadEnhancementsBestEffort() {
     const failures = [];
     for (const src of enhancementModules) {
       try { await loadOne(src); }
-      catch (error) {
-        failures.push(src);
-        console.warn(`Optional admin enhancement failed to load: ${src}`, error);
-      }
+      catch (error) { failures.push(src); console.warn(`Optional admin enhancement failed to load: ${src}`, error); }
     }
     return failures;
   }
@@ -162,10 +144,7 @@
   function setLoginBusy(busy) {
     const button = document.querySelector('#adminLogin button[onclick*="adminLogin"]');
     const input = document.getElementById("adminPassword");
-    if (button) {
-      button.disabled = busy;
-      button.textContent = busy ? "Opening studio…" : "Enter";
-    }
+    if (button) { button.disabled = busy; button.textContent = busy ? "Opening studio…" : "Enter"; }
     if (input) input.disabled = busy;
   }
 
@@ -188,10 +167,7 @@
     }
     revealDashboard();
     window.installAdminDashboardNavigationRefresh?.();
-    const jobs = [
-      window.renderAdmin?.(), window.renderAdminGallery?.(), window.renderSlotAdmin?.(),
-      window.loadSettingsAdmin?.(), window.updateAdminOverview?.(), window.refreshAdminDashboardCore?.()
-    ].filter(Boolean);
+    const jobs = [window.renderAdmin?.(), window.renderAdminGallery?.(), window.renderSlotAdmin?.(), window.loadSettingsAdmin?.(), window.updateAdminOverview?.(), window.refreshAdminDashboardCore?.()].filter(Boolean);
     if (jobs.length) await Promise.allSettled(jobs);
   }
 
@@ -246,32 +222,30 @@
   async function restoreOrPrepareLogin() {
     if (sessionStorage.getItem("adminOpen") === "true") {
       setBootStatus("Restoring studio…");
-      try {
-        await bootAdminApplication();
-        return;
-      } catch (_) {
-        // bootAdminApplication clears the stale flag and exposes retry UI.
-      }
+      try { await bootAdminApplication(); return; }
+      catch (_) { /* boot clears stale state and exposes retry UI. */ }
     }
     prepareLogin();
   }
 
   navigator.serviceWorker?.addEventListener?.("message", event => {
     if (event.data?.type !== "open-inbox-commission") return;
-    const commissionId = normalizeCommissionId(event.data?.commissionId);
+    const rawCommissionId = event.data?.commissionId;
+    const commissionId = normalizeCommissionId(rawCommissionId);
+    const malformedSpecificRoute = rawCommissionId !== undefined && rawCommissionId !== null && String(rawCommissionId).trim() !== "" && !commissionId;
     if (sessionStorage.getItem("adminOpen") !== "true") {
       sessionStorage.setItem("adminPendingMessageRoute", commissionId || "inbox");
+      if (malformedSpecificRoute) event.stopImmediatePropagation?.();
       return;
     }
-    // Commission-specific routes are handled by admin-routing once the studio is open.
     if (commissionId) return;
     window.showAdminPage?.("inbox");
     if (location.hash !== "#inbox") history.replaceState(null, "", "#inbox");
+    if (malformedSpecificRoute) event.stopImmediatePropagation?.();
   });
 
   wirePwaShell();
   document.documentElement.dataset.adminBoot = "idle";
-
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", restoreOrPrepareLogin, { once: true });
   else restoreOrPrepareLogin();
 })();

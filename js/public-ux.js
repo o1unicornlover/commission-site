@@ -101,6 +101,14 @@
     setTimeout(() => target?.focus?.({ preventScroll: true }), 30);
   }
 
+  function syncGalleryPreviewDescription(trigger) {
+    const modalImage = document.getElementById("galleryModalImage");
+    if (!modalImage) return;
+    const sourceImage = trigger?.closest?.(".gallery-image-btn")?.querySelector("img") || trigger?.querySelector?.("img");
+    const sourceAlt = sourceImage?.getAttribute("alt")?.trim();
+    modalImage.alt = sourceAlt ? `Expanded ${sourceAlt}` : "Expanded gallery artwork";
+  }
+
   function wrapDialogFunctions() {
     if (typeof window.openPasswordModal === "function" && !window.openPasswordModal.__publicUxWrapped) {
       const originalOpen = window.openPasswordModal;
@@ -135,9 +143,11 @@
       const originalGalleryOpen = window.openGalleryPreview;
       const wrappedGalleryOpen = async function(...args) {
         lastDialogTrigger = document.activeElement;
+        const trigger = lastDialogTrigger;
         const result = await originalGalleryOpen.apply(this, args);
         const modal = document.getElementById("galleryModal");
         setupDialog(modal, "Gallery preview");
+        syncGalleryPreviewDescription(trigger);
         lockDialogScroll();
         focusFirst(modal);
         announce("Gallery preview opened.");

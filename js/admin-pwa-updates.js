@@ -70,6 +70,27 @@
     }
   }
 
+  function waitForWorkerActivation(registration, timeout = 5000) {
+    const worker = registration.installing || registration.waiting;
+    if (!worker || worker.state === 'activated') return Promise.resolve();
+    return new Promise(resolve => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        worker.removeEventListener('statechange', onStateChange);
+        clearTimeout(timer);
+        resolve();
+      };
+      const onStateChange = () => {
+        if (worker.state === 'activated' || worker.state === 'redundant') finish();
+      };
+      const timer = setTimeout(finish, timeout);
+      worker.addEventListener('statechange', onStateChange);
+      onStateChange();
+    });
+  }
+
   async function checkForUpdate() {
     if (checking || repairing) return;
     const button = document.getElementById('adminCheckUpdate');
@@ -93,8 +114,9 @@
 
       await registration.update();
       if (registration.installing || registration.waiting) {
-        if (button) button.textContent = 'Update found — reload';
-        setTimeout(() => location.reload(), 500);
+        if (button) button.textContent = 'Update found — applying…';
+        await waitForWorkerActivation(registration);
+        location.reload();
       } else {
         statusButton('adminCheckUpdate', 'App is up to date', 'Check for app update');
       }
@@ -130,16 +152,7 @@
       await Promise.all(adminKeys.map(key => caches.delete(key)));
 
       const registration = await navigator.serviceWorker.register('./admin-sw.js', { scope: './admin.html' });
-      if (registration.installing) {
-        await new Promise(resolve => {
-          const worker = registration.installing;
-          const done = () => {
-            if (worker.state === 'activated' || worker.state === 'redundant') resolve();
-          };
-          worker.addEventListener('statechange', done);
-          done();
-        });
-      }
+      await waitForWorkerActivation(registration);
 
       const url = new URL(location.href);
       url.searchParams.set('app-repair', String(Date.now()));

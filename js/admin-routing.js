@@ -140,11 +140,19 @@
   }
 
   function routeFromHash() {
+    const hasMessageHash = location.hash.startsWith('#message-');
     const id = decodeMessageHash();
     if (id) {
       syncDocumentTitle('inbox');
       pendingCommissionRoute = id;
       setTimeout(() => openInboxConversation(id, { updateHash: false }), 700);
+      return;
+    }
+    if (hasMessageHash) {
+      pendingCommissionRoute = '';
+      syncDocumentTitle('inbox');
+      if (location.hash !== '#inbox') history.replaceState(null, '', '#inbox');
+      setTimeout(() => window.showAdminPage?.('inbox', 'invalid-message-route'), 100);
       return;
     }
     const page = PAGE_HASHES.get(location.hash.toLowerCase());

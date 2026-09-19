@@ -23,16 +23,16 @@
   </header>
 
   <main>
-    <section class="panel compact-panel fancy-panel">
+    <section class="panel compact-panel fancy-panel" aria-labelledby="progressTitle">
       <div class="section-title">
         <div>
           <p class="eyebrow">Private client space</p>
-          <h1 class="page-title">Progress</h1>
+          <h1 id="progressTitle" class="page-title">Progress</h1>
           <p class="small">Your commission updates, payment status, files, and messages stay together here.</p>
         </div>
         <a class="btn" href="queue.html">← Back to Queue</a>
       </div>
-      <div id="progressArea" aria-live="polite">
+      <div id="progressArea" aria-live="polite" aria-busy="true">
         <div class="progress-card">
           <p class="small">Loading private progress…</p>
         </div>

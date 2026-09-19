@@ -20,17 +20,17 @@
     </nav>
   </header>
 
-  <main>
-    <section class="panel compact-panel fancy-panel">
+  <main id="mainContent" tabindex="-1">
+    <section class="panel compact-panel fancy-panel" aria-labelledby="galleryTitle" aria-describedby="galleryIntro">
       <div class="section-title">
         <div>
           <p class="eyebrow">Selected work</p>
-          <h1 class="page-title">Gallery</h1>
-          <p class="small">Finished pieces uploaded by the artist appear here. Tap any piece for a larger preview.</p>
+          <h1 class="page-title" id="galleryTitle">Gallery</h1>
+          <p class="small" id="galleryIntro">Finished pieces uploaded by the artist appear here. Tap any piece for a larger preview.</p>
         </div>
         <a class="btn" href="pricing.html">Commission Menu →</a>
       </div>
-      <div id="galleryGrid" class="gallery-grid"></div>
+      <div id="galleryGrid" class="gallery-grid" aria-label="Commission artwork gallery"></div>
     </section>
 
     <section class="home-footer-strip" aria-label="Gallery footer">

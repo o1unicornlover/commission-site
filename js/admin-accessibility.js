@@ -8,6 +8,7 @@
   let lastPage = '';
   let queued = false;
   let observer = null;
+  let titleObserver = null;
 
   function ensureLiveRegion() {
     let region = document.getElementById('adminLiveRegion');
@@ -124,17 +125,27 @@
   }
 
   function startObserver() {
-    if (observer) return;
-    const root = document.getElementById('adminDashboard') || document.body;
-    if (!root) return;
-    observer = new MutationObserver(queueSync);
-    observer.observe(root, {
-      subtree: true,
-      childList: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: ['class', 'disabled']
-    });
+    if (!observer) {
+      const root = document.getElementById('adminDashboard') || document.body;
+      if (root) {
+        observer = new MutationObserver(queueSync);
+        observer.observe(root, {
+          subtree: true,
+          childList: true,
+          characterData: true,
+          attributes: true,
+          attributeFilter: ['class', 'disabled']
+        });
+      }
+    }
+
+    if (!titleObserver) {
+      const title = document.querySelector('title');
+      if (title) {
+        titleObserver = new MutationObserver(queueSync);
+        titleObserver.observe(title, { subtree: true, childList: true, characterData: true });
+      }
+    }
   }
 
   function initialize() {

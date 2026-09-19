@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-25";
+  const version = "admin-runtime-26";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -142,7 +142,7 @@
   }
 
   function setLoginBusy(busy) {
-    const button = document.querySelector('#adminLogin button[onclick*="adminLogin"]');
+    const button = document.querySelector('#adminLogin button[type="submit"]');
     const input = document.getElementById("adminPassword");
     if (button) { button.disabled = busy; button.textContent = busy ? "Opening studio…" : "Enter"; }
     if (input) input.disabled = busy;
@@ -211,11 +211,6 @@
     if (!input) return;
     input.setAttribute("autocomplete", "current-password");
     input.setAttribute("enterkeyhint", "go");
-    input.addEventListener("keydown", event => {
-      if (event.key !== "Enter" || event.repeat || input.disabled) return;
-      event.preventDefault();
-      window.adminLogin();
-    });
     input.focus();
   }
 

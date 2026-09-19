@@ -20,17 +20,17 @@
     </nav>
   </header>
 
-  <main>
-    <section class="panel compact-panel fancy-panel" aria-labelledby="queueTitle">
+  <main tabindex="-1" aria-labelledby="queueTitle">
+    <section class="panel compact-panel fancy-panel" aria-labelledby="queueTitle" aria-describedby="queueIntro">
       <div class="section-title">
         <div>
           <p class="eyebrow">Current workload</p>
           <h1 id="queueTitle" class="page-title">Waiting List</h1>
-          <p class="small">A simple public view of active commissions. Private details stay inside each client progress page.</p>
+          <p id="queueIntro" class="small">A simple public view of active commissions. Private details stay inside each client progress page.</p>
         </div>
         <span id="queueCount" class="pill" aria-live="polite">0 active</span>
       </div>
-      <div id="queueGrid" class="queue-grid" aria-live="polite" aria-busy="true">
+      <div id="queueGrid" class="queue-grid" aria-label="Active commission queue" aria-busy="true">
         <p class="small">Loading commission queue…</p>
       </div>
     </section>

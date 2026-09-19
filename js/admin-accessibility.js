@@ -59,6 +59,19 @@
       else button.removeAttribute('aria-current');
     });
 
+    document.querySelectorAll('[data-settings-tab]').forEach(button => {
+      const panel = document.getElementById(`settings-${button.dataset.settingsTab || ''}`);
+      const selected = Boolean(panel && !panel.classList.contains('hidden'));
+      button.setAttribute('aria-selected', selected ? 'true' : 'false');
+      button.setAttribute('role', 'tab');
+      if (panel) {
+        if (!panel.id) return;
+        button.setAttribute('aria-controls', panel.id);
+        panel.setAttribute('role', 'tabpanel');
+      }
+    });
+    document.querySelectorAll('.settings-menu').forEach(menu => menu.setAttribute('role', 'tablist'));
+
     const name = pageName(active);
     if (name && name !== lastPage) {
       if (lastPage) announce(`${name} section opened.`);

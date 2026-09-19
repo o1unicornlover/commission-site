@@ -23,10 +23,10 @@
     <section class="panel compact-panel admin-panel">
       <h1 class="page-title">Admin</h1>
       <p class="warning">Concept demo only: this admin page is not secure yet. Data is now saved in Supabase.</p>
-      <div id="adminLogin">
-        <input id="adminPassword" type="password" placeholder="Admin password" />
-        <button class="btn primary" onclick="adminLogin()">Enter</button>
-      </div>
+      <form id="adminLogin" aria-label="Admin studio access" onsubmit="event.preventDefault(); adminLogin();">
+        <input id="adminPassword" type="password" placeholder="Admin password" aria-label="Admin password" />
+        <button class="btn primary" type="submit">Enter</button>
+      </form>
 
       <div id="adminDashboard" class="hidden">
         <aside class="admin-sidebar">

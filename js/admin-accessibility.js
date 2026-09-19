@@ -64,10 +64,11 @@
       const selected = Boolean(panel && !panel.classList.contains('hidden'));
       button.setAttribute('aria-selected', selected ? 'true' : 'false');
       button.setAttribute('role', 'tab');
+      button.tabIndex = selected ? 0 : -1;
       if (panel) {
-        if (!panel.id) return;
         button.setAttribute('aria-controls', panel.id);
         panel.setAttribute('role', 'tabpanel');
+        panel.setAttribute('aria-labelledby', button.id || ensureTabId(button));
       }
     });
     document.querySelectorAll('.settings-menu').forEach(menu => menu.setAttribute('role', 'tablist'));
@@ -77,6 +78,39 @@
       if (lastPage) announce(`${name} section opened.`);
       lastPage = name;
     }
+  }
+
+  function ensureTabId(button) {
+    if (button.id) return button.id;
+    const key = String(button.dataset.settingsTab || 'setting').replace(/[^a-z0-9_-]/gi, '-');
+    button.id = `settings-tab-${key}`;
+    return button.id;
+  }
+
+  function wireSettingsKeyboardNavigation() {
+    document.querySelectorAll('.settings-menu').forEach(menu => {
+      if (menu.dataset.keyboardTabsReady === 'true') return;
+      menu.dataset.keyboardTabsReady = 'true';
+      menu.addEventListener('keydown', event => {
+        const current = event.target.closest('[data-settings-tab]');
+        if (!current || !menu.contains(current)) return;
+        const tabs = [...menu.querySelectorAll('[data-settings-tab]:not([disabled])')];
+        const index = tabs.indexOf(current);
+        if (index < 0) return;
+
+        let nextIndex = null;
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (index + 1) % tabs.length;
+        else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (index - 1 + tabs.length) % tabs.length;
+        else if (event.key === 'Home') nextIndex = 0;
+        else if (event.key === 'End') nextIndex = tabs.length - 1;
+        if (nextIndex === null) return;
+
+        event.preventDefault();
+        const next = tabs[nextIndex];
+        next.focus();
+        next.click();
+      });
+    });
   }
 
   function unreadFromTitle() {
@@ -126,6 +160,7 @@
   function syncAll() {
     queued = false;
     ensureLiveRegion();
+    wireSettingsKeyboardNavigation();
     syncNavigationState();
     syncUnreadAnnouncement();
     syncSemantics();

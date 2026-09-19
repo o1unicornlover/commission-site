@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-26";
+  const version = "admin-runtime-27";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -134,9 +134,10 @@
       status = document.createElement("p");
       status.id = "adminBootStatus";
       status.className = "small";
-      status.setAttribute("role", "status");
       login.appendChild(status);
     }
+    status.setAttribute("role", failed ? "alert" : "status");
+    status.setAttribute("aria-live", failed ? "assertive" : "polite");
     status.textContent = message || "";
     status.dataset.state = failed ? "error" : "loading";
   }
@@ -201,7 +202,12 @@
 
   window.adminLogin = async function adminLoginShell() {
     const input = document.getElementById("adminPassword");
-    if ((input?.value || "") !== demoPass) return alert("Wrong admin password.");
+    if ((input?.value || "") !== demoPass) {
+      setBootStatus("That admin password is incorrect. Try again.", true);
+      input?.select();
+      return;
+    }
+    setBootStatus("");
     sessionStorage.setItem("adminOpen", "true");
     await bootAdminApplication();
   };

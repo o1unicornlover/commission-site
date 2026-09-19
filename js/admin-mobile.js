@@ -98,6 +98,7 @@
         <button type="button" class="btn" data-mobile-jump="dash">Home</button>
         <button type="button" class="btn" data-mobile-jump="inbox">Inbox</button>
         <button type="button" class="btn" data-mobile-jump="commissions">Commissions</button>
+        <button type="button" class="btn" data-mobile-jump="slots">Slots</button>
       </div>
       <label class="small" for="adminMobilePageSelect">More
         <select id="adminMobilePageSelect" aria-label="Choose another admin section"></select>

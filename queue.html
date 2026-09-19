@@ -21,16 +21,18 @@
   </header>
 
   <main>
-    <section class="panel compact-panel fancy-panel">
+    <section class="panel compact-panel fancy-panel" aria-labelledby="queueTitle">
       <div class="section-title">
         <div>
           <p class="eyebrow">Current workload</p>
-          <h1 class="page-title">Waiting List</h1>
+          <h1 id="queueTitle" class="page-title">Waiting List</h1>
           <p class="small">A simple public view of active commissions. Private details stay inside each client progress page.</p>
         </div>
-        <span id="queueCount" class="pill">0 active</span>
+        <span id="queueCount" class="pill" aria-live="polite">0 active</span>
       </div>
-      <div id="queueGrid" class="queue-grid"></div>
+      <div id="queueGrid" class="queue-grid" aria-live="polite" aria-busy="true">
+        <p class="small">Loading commission queue…</p>
+      </div>
     </section>
 
     <section class="home-footer-strip" aria-label="Queue information">
@@ -40,15 +42,16 @@
     </section>
   </main>
 
-  <div id="passwordModal" class="modal hidden">
+  <div id="passwordModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle" aria-describedby="passwordModalDescription">
     <div class="modal-card">
       <button class="close" onclick="closeModal()" aria-label="Close">×</button>
       <p class="eyebrow">Private client access</p>
-      <h2>Open Progress</h2>
-      <p class="small">Enter the password you received with your commission. Your progress page contains updates, payment status, and messages.</p>
+      <h2 id="passwordModalTitle">Open Progress</h2>
+      <p id="passwordModalDescription" class="small">Enter the password you received with your commission. Your progress page contains updates, payment status, and messages.</p>
+      <label class="sr-only" for="clientPassword">Commission password</label>
       <input id="clientPassword" type="password" placeholder="Password" autocomplete="current-password" />
       <button class="btn primary full" onclick="checkPassword()">Open Progress Page</button>
-      <p id="passwordError" class="error"></p>
+      <p id="passwordError" class="error" role="alert" aria-live="assertive"></p>
     </div>
   </div>
 

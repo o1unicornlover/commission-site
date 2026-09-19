@@ -50,13 +50,28 @@
     return String(page.id || '').replace(/^adminPage-/, '') || 'Admin';
   }
 
+  function ensureAdminNavId(button) {
+    if (button.id) return button.id;
+    const key = String(button.dataset.adminPage || 'section').replace(/[^a-z0-9_-]/gi, '-');
+    button.id = `admin-nav-${key}`;
+    return button.id;
+  }
+
   function syncNavigationState() {
     const active = currentPage();
     const activeKey = active?.id?.replace(/^adminPage-/, '') || '';
     document.querySelectorAll('[data-admin-page]').forEach(button => {
-      const selected = button.dataset.adminPage === activeKey;
+      const key = button.dataset.adminPage || '';
+      const panel = document.getElementById(`adminPage-${key}`);
+      const selected = key === activeKey;
       if (selected) button.setAttribute('aria-current', 'page');
       else button.removeAttribute('aria-current');
+      if (panel) {
+        button.setAttribute('aria-controls', panel.id);
+        panel.setAttribute('role', 'region');
+        panel.setAttribute('aria-labelledby', ensureAdminNavId(button));
+        panel.setAttribute('aria-hidden', selected ? 'false' : 'true');
+      }
     });
 
     document.querySelectorAll('[data-settings-tab]').forEach(button => {
@@ -69,6 +84,7 @@
         button.setAttribute('aria-controls', panel.id);
         panel.setAttribute('role', 'tabpanel');
         panel.setAttribute('aria-labelledby', button.id || ensureTabId(button));
+        panel.setAttribute('aria-hidden', selected ? 'false' : 'true');
       }
     });
     document.querySelectorAll('.settings-menu').forEach(menu => menu.setAttribute('role', 'tablist'));

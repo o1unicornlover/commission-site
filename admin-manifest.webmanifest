@@ -3,6 +3,8 @@
   "name": "Commission Studio Admin",
   "short_name": "Studio Admin",
   "description": "Private commission management dashboard for commissions, progress, payments, chat, gallery, pricing, and site settings.",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "./admin.html#home",
   "scope": "./admin.html",
   "display": "standalone",

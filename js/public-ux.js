@@ -207,11 +207,16 @@
   function setupLoadingState(node, text) {
     if (!node || node.dataset.publicLoadingReady) return;
     node.dataset.publicLoadingReady = "true";
-    node.setAttribute("aria-busy", "true");
 
-    if (!node.textContent.trim() && !node.children.length) {
-      node.innerHTML = `<p class="small" data-public-loading aria-live="polite">${text}</p>`;
+    // Data scripts can finish before this helper's DOMContentLoaded callback runs.
+    // Never mark already-rendered content busy or replace it with loading copy.
+    if (node.children.length || node.textContent.trim()) {
+      node.removeAttribute("aria-busy");
+      return;
     }
+
+    node.setAttribute("aria-busy", "true");
+    node.innerHTML = `<p class="small" data-public-loading aria-live="polite">${text}</p>`;
 
     const observer = new MutationObserver(() => {
       const loading = node.querySelector("[data-public-loading]");

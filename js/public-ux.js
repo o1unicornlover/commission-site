@@ -187,6 +187,7 @@
 
   function labelGalleryButtons() {
     document.querySelectorAll(".gallery-image-btn").forEach((button, index) => {
+      button.type = "button";
       if (button.getAttribute("aria-label")) return;
       const alt = button.querySelector("img")?.getAttribute("alt")?.trim();
       button.setAttribute("aria-label", alt ? `Open ${alt}` : `Open gallery artwork ${index + 1}`);

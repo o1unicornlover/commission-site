@@ -20,17 +20,17 @@
     </nav>
   </header>
 
-  <main>
-    <section class="panel compact-panel fancy-panel">
+  <main id="mainContent" tabindex="-1" aria-labelledby="tosTitle">
+    <section class="panel compact-panel fancy-panel" aria-labelledby="tosTitle" aria-describedby="tosIntro">
       <div class="section-title">
         <div>
           <p class="eyebrow">Before commissioning</p>
-          <h1 class="page-title">Terms of Service</h1>
-          <p class="small">Please read these before requesting a commission. The current saved terms appear below.</p>
+          <h1 id="tosTitle" class="page-title">Terms of Service</h1>
+          <p id="tosIntro" class="small">Please read these before requesting a commission. The current saved terms appear below.</p>
         </div>
         <a class="btn" href="pricing.html">View Pricing →</a>
       </div>
-      <div id="tosGrid" class="tos-grid"></div>
+      <div id="tosGrid" class="tos-grid" aria-label="Commission terms"></div>
     </section>
 
     <section class="home-footer-strip" aria-label="Terms footer">

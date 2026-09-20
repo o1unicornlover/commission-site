@@ -50,7 +50,8 @@
     const quickButton = mobileBar?.querySelector('[data-mobile-jump="inbox"]');
     if (quickButton) {
       quickButton.textContent = label;
-      quickButton.setAttribute("aria-label", unread ? `Inbox, ${unread} unread messages` : "Inbox");
+      quickButton.setAttribute("aria-label", unread ? `Inbox, ${unread} unread messages` : "Inbox, no unread messages");
+      quickButton.dataset.unreadCount = String(unread);
     }
     const option = pageSelect?.querySelector('option[value="inbox"]');
     if (option) option.textContent = label;
@@ -101,7 +102,7 @@
     mobileBar.innerHTML = `
       <div class="button-row" aria-label="Primary admin sections">
         <button type="button" class="btn" data-mobile-jump="dash">Home</button>
-        <button type="button" class="btn" data-mobile-jump="inbox">Inbox</button>
+        <button type="button" class="btn" data-mobile-jump="inbox" aria-live="polite" aria-atomic="true">Inbox</button>
         <button type="button" class="btn" data-mobile-jump="commissions">Commissions</button>
         <button type="button" class="btn" data-mobile-jump="slots">Slots</button>
       </div>

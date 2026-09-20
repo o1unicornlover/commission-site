@@ -82,12 +82,23 @@
   }
 
   function navigate(destination) {
+    if (!document.getElementById(`adminPage-${destination}`)) return;
     window.showAdminPage?.(destination, "mobile-nav");
     syncSelect(destination);
     const content = document.querySelector(".admin-content");
     const top = Math.max(0, (content?.offsetTop || 0) - 72);
     window.scrollTo({ top, behavior: reducedMotion.matches ? "auto" : "smooth" });
     window.setTimeout(() => focusDestination(destination), reducedMotion.matches ? 0 : 180);
+  }
+
+  function syncAvailableDestinations() {
+    mobileBar?.querySelectorAll("[data-mobile-jump]").forEach(button => {
+      const destination = button.dataset.mobileJump;
+      const page = document.getElementById(`adminPage-${destination}`);
+      button.hidden = !page;
+      if (page) button.setAttribute("aria-controls", page.id);
+      else button.removeAttribute("aria-controls");
+    });
   }
 
   function buildMobileBar() {
@@ -115,7 +126,7 @@
     pageSelect = mobileBar.querySelector("#adminMobilePageSelect");
 
     ADMIN_PAGES.forEach(([value, label]) => {
-      if (value !== "inbox" && !document.getElementById(`adminPage-${value}`)) return;
+      if (!document.getElementById(`adminPage-${value}`)) return;
       const option = document.createElement("option");
       option.value = value;
       option.textContent = label;
@@ -127,6 +138,7 @@
     });
     pageSelect.addEventListener("change", () => navigate(pageSelect.value));
 
+    syncAvailableDestinations();
     setMobileState();
     syncSelect();
     syncInboxBadge();
@@ -153,6 +165,7 @@
 
   window.addEventListener("admin-runtime-ready", () => {
     if (!document.getElementById("adminMobileNav")) buildMobileBar();
+    syncAvailableDestinations();
     syncSelect();
     syncInboxBadge();
     watchInboxBadge();

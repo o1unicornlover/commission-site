@@ -40,9 +40,9 @@
     </section>
   </main>
 
-  <div id="galleryModal" class="modal hidden">
+  <div id="galleryModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Gallery artwork preview">
     <div class="image-modal-card">
-      <button class="close" onclick="closeGalleryPreview()" aria-label="Close preview">×</button>
+      <button class="close" type="button" onclick="closeGalleryPreview()" aria-label="Close preview">×</button>
       <img id="galleryModalImage" src="" alt="Expanded gallery art">
     </div>
   </div>

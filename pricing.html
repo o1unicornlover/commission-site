@@ -30,7 +30,9 @@
         </div>
         <a class="btn" href="queue.html">Check Queue →</a>
       </div>
-      <div id="pricingGrid" class="pricing-grid"></div>
+      <div id="pricingGrid" class="pricing-grid" aria-busy="true" aria-live="polite" aria-labelledby="pricingTitle" aria-describedby="pricingIntro">
+        <p class="small" role="status">Loading commission options…</p>
+      </div>
     </section>
 
     <section class="home-footer-strip" aria-label="Commission reminder">

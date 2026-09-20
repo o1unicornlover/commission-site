@@ -44,13 +44,13 @@
 
   <div id="passwordModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle" aria-describedby="passwordModalDescription">
     <div class="modal-card">
-      <button class="close" onclick="closeModal()" aria-label="Close">×</button>
+      <button type="button" class="close" onclick="closeModal()" aria-label="Close progress access dialog">×</button>
       <p class="eyebrow">Private client access</p>
       <h2 id="passwordModalTitle">Open Progress</h2>
       <p id="passwordModalDescription" class="small">Enter the password you received with your commission. Your progress page contains updates, payment status, and messages.</p>
       <label class="sr-only" for="clientPassword">Commission password</label>
       <input id="clientPassword" type="password" placeholder="Password" autocomplete="current-password" />
-      <button class="btn primary full" onclick="checkPassword()">Open Progress Page</button>
+      <button type="button" class="btn primary full" onclick="checkPassword()">Open Progress Page</button>
       <p id="passwordError" class="error" role="alert" aria-live="assertive"></p>
     </div>
   </div>

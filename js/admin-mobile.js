@@ -22,6 +22,12 @@
     return active?.id.replace("adminPage-", "") || "dash";
   }
 
+  function normalizeNavigationButtons() {
+    document.querySelectorAll(".admin-sidebar [data-admin-page], [data-admin-jump]").forEach(button => {
+      if (button.tagName === "BUTTON" && !button.hasAttribute("type")) button.type = "button";
+    });
+  }
+
   function syncSelect(page = currentPage()) {
     document.querySelectorAll(".admin-sidebar [data-admin-page]").forEach(button => {
       const active = button.dataset.adminPage === page;
@@ -148,6 +154,7 @@
   function initialize() {
     if (initialized) return;
     initialized = true;
+    normalizeNavigationButtons();
     buildMobileBar();
     media.addEventListener?.("change", setMobileState);
   }
@@ -164,6 +171,7 @@
   }
 
   window.addEventListener("admin-runtime-ready", () => {
+    normalizeNavigationButtons();
     if (!document.getElementById("adminMobileNav")) buildMobileBar();
     syncAvailableDestinations();
     syncSelect();

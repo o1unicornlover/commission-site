@@ -23,6 +23,11 @@
   }
 
   function syncSelect(page = currentPage()) {
+    document.querySelectorAll(".admin-sidebar [data-admin-page]").forEach(button => {
+      const active = button.dataset.adminPage === page;
+      if (active) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    });
     if (!pageSelect) return;
     if ([...pageSelect.options].some(option => option.value === page)) pageSelect.value = page;
     mobileBar?.querySelectorAll("[data-mobile-jump]").forEach(button => {

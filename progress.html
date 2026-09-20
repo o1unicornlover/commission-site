@@ -22,17 +22,17 @@
     </nav>
   </header>
 
-  <main id="mainContent" tabindex="-1">
-    <section class="panel compact-panel fancy-panel" aria-labelledby="progressTitle">
+  <main id="mainContent" tabindex="-1" aria-labelledby="progressTitle">
+    <section class="panel compact-panel fancy-panel" aria-labelledby="progressTitle" aria-describedby="progressIntro">
       <div class="section-title">
         <div>
           <p class="eyebrow">Private client space</p>
           <h1 id="progressTitle" class="page-title">Progress</h1>
-          <p class="small">Your commission updates, payment status, files, and messages stay together here.</p>
+          <p id="progressIntro" class="small">Your commission updates, payment status, files, and messages stay together here.</p>
         </div>
         <a class="btn" href="queue.html">← Back to Queue</a>
       </div>
-      <div id="progressArea" aria-busy="true" aria-labelledby="progressTitle">
+      <div id="progressArea" aria-busy="true" aria-labelledby="progressTitle" aria-describedby="progressIntro">
         <div class="progress-card">
           <p class="small" role="status">Loading private progress…</p>
         </div>

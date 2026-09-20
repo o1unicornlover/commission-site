@@ -59,6 +59,13 @@
     if (event.key === READ_KEY) scheduleRefresh();
   });
 
+  // Notification clicks can wake an installed PWA without a normal page
+  // navigation. Reconcile the canonical unread state as soon as that route
+  // arrives so the sidebar, title, app badge, and inbox rows stay in sync.
+  navigator.serviceWorker?.addEventListener?.('message', event => {
+    if (event.data?.type === 'open-inbox-commission') scheduleRefresh();
+  });
+
   // Installed PWAs and mobile browsers can restore a frozen page without
   // rerunning startup code. Reconcile unread state whenever the app becomes
   // usable again so badges and the title do not wait for the next poll.

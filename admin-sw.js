@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v100";
+const ADMIN_CACHE = "commission-admin-v101";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html", "./style.css", "./admin-runtime.js", "./admin-manifest.webmanifest",
@@ -27,10 +27,36 @@ self.addEventListener("fetch", event => {
   const isAdminAsset = ADMIN_ASSET_PATHS.has(url.pathname);
   if (!isAdminNavigation && !isAdminAsset) return;
   if (isAdminNavigation) {
-    event.respondWith((async () => { try { const response = (await event.preloadResponse) || await fetch(event.request); if (response.ok) { const cache = await caches.open(ADMIN_CACHE); await cache.put("./admin.html", response.clone()); } return response; } catch (_) { return (await caches.match("./admin.html")) || Response.error(); } })());
+    event.respondWith((async () => {
+      const cached = await caches.match("./admin.html");
+      try {
+        const response = (await event.preloadResponse) || await fetch(event.request);
+        if (response.ok) {
+          const cache = await caches.open(ADMIN_CACHE);
+          await cache.put("./admin.html", response.clone());
+          return response;
+        }
+        return cached || response;
+      } catch (_) {
+        return cached || Response.error();
+      }
+    })());
     return;
   }
-  event.respondWith((async () => { try { const response = await fetch(event.request); if (response.ok) { const cache = await caches.open(ADMIN_CACHE); await cache.put(event.request, response.clone()); } return response; } catch (_) { const hit = await caches.match(event.request, { ignoreSearch: true }); return hit || Response.error(); } })());
+  event.respondWith((async () => {
+    const cached = await caches.match(event.request, { ignoreSearch: true });
+    try {
+      const response = await fetch(event.request);
+      if (response.ok) {
+        const cache = await caches.open(ADMIN_CACHE);
+        await cache.put(event.request, response.clone());
+        return response;
+      }
+      return cached || response;
+    } catch (_) {
+      return cached || Response.error();
+    }
+  })());
 });
 self.addEventListener("notificationclick", event => {
   event.notification.close();

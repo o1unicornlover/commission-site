@@ -40,6 +40,13 @@
       "icons": [{ "src": "./admin-icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" }]
     },
     {
+      "name": "Payments & Progress",
+      "short_name": "Payments",
+      "description": "Open commission progress and payment management",
+      "url": "./admin.html#commissions",
+      "icons": [{ "src": "./admin-icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" }]
+    },
+    {
       "name": "Commission Slots",
       "short_name": "Slots",
       "description": "Open commission slot controls",

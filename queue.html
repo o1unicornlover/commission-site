@@ -20,7 +20,7 @@
     </nav>
   </header>
 
-  <main tabindex="-1" aria-labelledby="queueTitle">
+  <main id="mainContent" tabindex="-1" aria-labelledby="queueTitle">
     <section class="panel compact-panel fancy-panel" aria-labelledby="queueTitle" aria-describedby="queueIntro">
       <div class="section-title">
         <div>
@@ -49,7 +49,7 @@
       <h2 id="passwordModalTitle">Open Progress</h2>
       <p id="passwordModalDescription" class="small">Enter the password you received with your commission. Your progress page contains updates, payment status, and messages.</p>
       <label class="sr-only" for="clientPassword">Commission password</label>
-      <input id="clientPassword" type="password" placeholder="Password" autocomplete="current-password" />
+      <input id="clientPassword" type="password" placeholder="Password" autocomplete="current-password" aria-describedby="passwordModalDescription passwordError" />
       <button type="button" class="btn primary full" onclick="checkPassword()">Open Progress Page</button>
       <p id="passwordError" class="error" role="alert" aria-live="assertive"></p>
     </div>

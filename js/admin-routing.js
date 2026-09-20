@@ -28,7 +28,7 @@
   }
 
   function unreadTitlePrefix() {
-    return document.title.match(/^\(\d+\)\s*/)?.[0] || '';
+    return document.title.match(/^(\d+)\s*/)?.[0] || document.title.match(/^\(\d+\)\s*/)?.[0] || '';
   }
 
   function syncDocumentTitle(page) {
@@ -159,7 +159,12 @@
     if (page) {
       syncDocumentTitle(page);
       setTimeout(() => window.showAdminPage?.(page, 'pwa-route'), 100);
-    } else syncDocumentTitle('dash');
+      return;
+    }
+    pendingCommissionRoute = '';
+    syncDocumentTitle('dash');
+    if (location.hash) history.replaceState(null, '', '#home');
+    setTimeout(() => window.showAdminPage?.('dash', 'pwa-route-fallback'), 100);
   }
 
   function startRouting() {

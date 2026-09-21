@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v101";
+const ADMIN_CACHE = "commission-admin-v102";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html", "./style.css", "./admin-runtime.js", "./admin-manifest.webmanifest",
@@ -17,7 +17,21 @@ const normalizeCommissionId = value => {
   const id = String(value).trim();
   return id && id.length <= 128 && !/[\u0000-\u001F\u007F]/.test(id) ? id : "";
 };
-self.addEventListener("install", event => { event.waitUntil(caches.open(ADMIN_CACHE).then(cache => cache.addAll(ADMIN_SHELL)).then(() => self.skipWaiting())); });
+self.addEventListener("install", event => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(ADMIN_CACHE);
+    try {
+      await cache.addAll(ADMIN_SHELL);
+      await self.skipWaiting();
+    } catch (error) {
+      // Do not leave a partially populated new-version cache behind. The
+      // currently active worker/cache remains usable if an update download is
+      // interrupted or one shell asset temporarily fails.
+      await caches.delete(ADMIN_CACHE);
+      throw error;
+    }
+  })());
+});
 self.addEventListener("activate", event => { event.waitUntil(Promise.all([caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith(ADMIN_CACHE_PREFIX) && key !== ADMIN_CACHE).map(key => caches.delete(key)))), self.registration.navigationPreload?.enable?.().catch(() => {})]).then(() => self.clients.claim())); });
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;

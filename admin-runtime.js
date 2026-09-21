@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-27";
+  const version = "admin-runtime-28";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -140,6 +140,11 @@
     status.setAttribute("aria-live", failed ? "assertive" : "polite");
     status.textContent = message || "";
     status.dataset.state = failed ? "error" : "loading";
+    const input = document.getElementById("adminPassword");
+    if (input) {
+      if (message) input.setAttribute("aria-describedby", status.id);
+      else input.removeAttribute("aria-describedby");
+    }
   }
 
   function setLoginBusy(busy) {
@@ -203,10 +208,12 @@
   window.adminLogin = async function adminLoginShell() {
     const input = document.getElementById("adminPassword");
     if ((input?.value || "") !== demoPass) {
+      input?.setAttribute("aria-invalid", "true");
       setBootStatus("That admin password is incorrect. Try again.", true);
       input?.select();
       return;
     }
+    input?.removeAttribute("aria-invalid");
     setBootStatus("");
     sessionStorage.setItem("adminOpen", "true");
     await bootAdminApplication();
@@ -217,6 +224,11 @@
     if (!input) return;
     input.setAttribute("autocomplete", "current-password");
     input.setAttribute("enterkeyhint", "go");
+    input.addEventListener("input", () => {
+      if (input.getAttribute("aria-invalid") !== "true") return;
+      input.removeAttribute("aria-invalid");
+      setBootStatus("");
+    });
     input.focus();
   }
 

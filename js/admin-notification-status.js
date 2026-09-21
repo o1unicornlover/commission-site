@@ -95,7 +95,26 @@
       }
     });
 
-    panel.querySelector('#adminAlertStatusTest')?.addEventListener('click', () => window.adminAlertPreferences?.testChime?.());
+    panel.querySelector('#adminAlertStatusTest')?.addEventListener('click', async event => {
+      const button = event.currentTarget;
+      const status = panel.querySelector('#adminAlertActionStatus');
+      if (button) button.disabled = true;
+      if (status) status.textContent = 'Playing test chime…';
+      try {
+        const testChime = window.adminAlertPreferences?.testChime;
+        if (typeof testChime !== 'function') {
+          if (status) status.textContent = 'The chime is still loading. Try again in a moment.';
+          return;
+        }
+        await Promise.resolve(testChime());
+        if (status) status.textContent = 'Test chime played. If you did not hear it, check this device’s volume and browser audio settings.';
+      } catch (error) {
+        console.warn('Could not play admin notification chime', error);
+        if (status) status.textContent = 'The test chime could not play. Check this device’s audio settings and try again.';
+      } finally {
+        if (button?.isConnected) button.disabled = false;
+      }
+    });
     return panel;
   }
 

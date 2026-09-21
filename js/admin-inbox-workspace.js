@@ -223,10 +223,10 @@
       reply.disabled = false;
       reply.value = draftFor(nextCommissionId);
     }
-    if (sendButton) sendButton.disabled = false;
+    if (sendButton) sendButton.disabled = navigator.onLine === false;
     if (status) {
       status.dataset.sendState = '';
-      status.textContent = '';
+      status.textContent = navigator.onLine === false ? 'Offline — your reply stays saved as a draft.' : '';
     }
     updateDraftStatus();
     await refreshThread({ forceBottom: previousId !== nextCommissionId });
@@ -258,6 +258,11 @@
       input?.focus();
       return;
     }
+    if (navigator.onLine === false) {
+      saveDraft(commissionId, input?.value || message);
+      if (status) status.textContent = 'Offline — your reply is saved as a draft and was not sent.';
+      return;
+    }
 
     const button = document.getElementById('adminInboxSendReply');
     if (button) button.disabled = true;
@@ -279,12 +284,14 @@
     }
 
     if (activeCommissionId !== commissionId) return;
-    if (button) button.disabled = false;
+    if (button) button.disabled = navigator.onLine === false;
     if (input) input.disabled = false;
     if (!sent) {
       if (status) {
         status.dataset.sendState = '';
-        status.textContent = 'Message could not be sent. Your draft is still saved.';
+        status.textContent = navigator.onLine === false
+          ? 'Connection lost — your reply is still saved as a draft.'
+          : 'Message could not be sent. Your draft is still saved.';
       }
       saveDraft(commissionId, input?.value || message);
       input?.focus();
@@ -355,12 +362,30 @@
     refreshThread({ markRead: true });
   }
 
+  function syncConnectionState() {
+    if (!activeCommissionId) return;
+    const button = document.getElementById('adminInboxSendReply');
+    const status = document.getElementById('adminInboxReplyStatus');
+    const input = document.getElementById('adminInboxReply');
+    const offline = navigator.onLine === false;
+    if (button) button.disabled = offline || status?.dataset.sendState === 'busy';
+    if (offline) {
+      if (input?.value) saveDraft(activeCommissionId, input.value);
+      if (status && status.dataset.sendState !== 'busy') status.textContent = 'Offline — your reply stays saved as a draft.';
+      return;
+    }
+    if (status && status.dataset.sendState !== 'busy') updateDraftStatus();
+    refreshThread({ markRead: document.visibilityState === 'visible' });
+  }
+
   function bootInboxWorkspace() {
     if (initialized) return;
     initialized = true;
     interceptInboxOpen();
     document.addEventListener('visibilitychange', markVisibleThreadRead);
     window.addEventListener('hashchange', openHashThread);
+    window.addEventListener('online', syncConnectionState);
+    window.addEventListener('offline', syncConnectionState);
     ensureWorkspace();
     subscribeThread();
     openHashThread();

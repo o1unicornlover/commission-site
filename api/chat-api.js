@@ -49,3 +49,4 @@ async function deleteChatMessage(id) {
   }
 
   return true;
+}

@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-29";
+  const version = "admin-runtime-30";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -18,7 +18,8 @@
     "./js/admin-mobile.js", "./js/autosync.js", "./js/clean-appearance.js",
     "./js/admin-routing.js", "./js/admin-productivity.js", "./js/admin-dashboard-lite.js",
     "./js/admin-inbox-workspace.js", "./js/admin-inbox-tools.js", "./js/admin-read-sync.js",
-    "./js/admin-app-health.js", "./js/admin-pwa-updates.js", "./js/admin-accessibility.js"
+    "./js/admin-app-health.js", "./js/admin-pwa-updates.js", "./js/admin-accessibility.js",
+    "./js/admin-notification-status.js"
   ];
 
   function normalizeCommissionId(value) {
@@ -76,9 +77,6 @@
         scope: "./admin.html",
         updateViaCache: "none"
       });
-      // Do not wait for the browser's normal service-worker update interval.
-      // The worker owns an atomic versioned shell cache, so checking here is
-      // safe and makes installed Studio builds pick up fixes predictably.
       await registration.update().catch(error => console.warn("Admin service worker update check failed", error));
       return registration;
     } catch (error) {

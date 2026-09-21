@@ -80,6 +80,11 @@
       if (copy) copy.textContent = 'Message alerts are off on this device. Unread inbox badges still update while the Studio is open.';
       return;
     }
+    if (!navigator.onLine) {
+      if (pill) pill.textContent = 'Offline';
+      if (copy) copy.textContent = 'Alert settings are saved, but new client messages cannot arrive until this device reconnects. The Studio will refresh unread messages when you are back online.';
+      return;
+    }
     if (state.desktop && state.permission === 'granted') {
       if (pill) pill.textContent = 'Ready';
       if (copy) copy.textContent = state.sound ? 'Browser notifications and the client-message chime are enabled.' : 'Browser notifications are enabled; the message chime is off.';
@@ -99,6 +104,8 @@
     window.addEventListener('admin-alert-preferences-changed', render);
     window.addEventListener('admin-page-change', event => { if (event.detail?.page === 'dash') render(); });
     window.addEventListener('focus', render);
+    window.addEventListener('online', render);
+    window.addEventListener('offline', render);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });

@@ -28,13 +28,35 @@
       </div>
       <p class="small" id="adminAlertStatusCopy">Checking this device’s message-alert settings…</p>
       <div class="button-row">
-        <button type="button" class="btn" id="adminAlertStatusOpen">Alert settings</button>
+        <button type="button" class="btn" id="adminAlertStatusToggle">Turn alerts on</button>
         <button type="button" class="btn" id="adminAlertStatusTest">Test chime</button>
-      </div>`;
+      </div>
+      <p class="small" id="adminAlertActionStatus" role="status" aria-live="polite"></p>`;
     const quick = dash.querySelector('.panel.compact-panel');
     if (quick) quick.insertAdjacentElement('afterend', panel);
     else dash.appendChild(panel);
-    panel.querySelector('#adminAlertStatusOpen')?.addEventListener('click', () => document.getElementById('adminNotificationToggle')?.click());
+
+    panel.querySelector('#adminAlertStatusToggle')?.addEventListener('click', async event => {
+      const button = event.currentTarget;
+      const status = panel.querySelector('#adminAlertActionStatus');
+      const current = prefs();
+      if (button) button.disabled = true;
+      if (status) status.textContent = current.enabled ? 'Turning alerts off…' : 'Turning alerts on…';
+      try {
+        if (window.adminAlertPreferences?.set) {
+          await window.adminAlertPreferences.set({ enabled: !current.enabled });
+        } else {
+          document.getElementById('adminNotificationToggle')?.click();
+        }
+        if (status) status.textContent = prefs().enabled ? 'Message alerts are on for this device.' : 'Message alerts are off for this device.';
+        render();
+      } catch (error) {
+        console.warn('Could not change admin alert preference', error);
+        if (status) status.textContent = 'Alert settings could not be changed. Try again.';
+      } finally {
+        if (button?.isConnected) button.disabled = false;
+      }
+    });
     panel.querySelector('#adminAlertStatusTest')?.addEventListener('click', () => window.adminAlertPreferences?.testChime?.());
     return panel;
   }
@@ -45,7 +67,12 @@
     const state = prefs();
     const pill = panel.querySelector('#adminAlertStatusPill');
     const copy = panel.querySelector('#adminAlertStatusCopy');
+    const toggle = panel.querySelector('#adminAlertStatusToggle');
     const test = panel.querySelector('#adminAlertStatusTest');
+    if (toggle) {
+      toggle.textContent = state.enabled ? 'Turn alerts off' : 'Turn alerts on';
+      toggle.setAttribute('aria-pressed', String(Boolean(state.enabled)));
+    }
     if (test) test.hidden = state.sound === false;
 
     if (!state.enabled) {

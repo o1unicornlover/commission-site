@@ -19,7 +19,7 @@
     </nav>
   </header>
 
-  <main>
+  <main id="adminMain">
     <section class="panel compact-panel admin-panel">
       <h1 class="page-title">Admin</h1>
       <p class="warning">Concept demo only: this admin page is not secure yet. Data is now saved in Supabase.</p>
@@ -29,7 +29,7 @@
       </form>
 
       <div id="adminDashboard" class="hidden">
-        <aside class="admin-sidebar">
+        <nav class="admin-sidebar" aria-label="Admin workspace sections">
           <button type="button" class="admin-nav-btn active" data-admin-page="dash">Dashboard</button>
           <button type="button" class="admin-nav-btn" data-admin-page="inbox">Inbox</button>
           <button type="button" class="admin-nav-btn" data-admin-page="commissions">Commissions</button>
@@ -37,7 +37,7 @@
           <button type="button" class="admin-nav-btn" data-admin-page="gallery">Gallery</button>
           <button type="button" class="admin-nav-btn" data-admin-page="archives">Archives</button>
           <button type="button" class="admin-nav-btn" data-admin-page="settings">Site Settings</button>
-        </aside>
+        </nav>
 
         <div class="admin-content">
           <section id="adminPage-dash" class="admin-page active">
@@ -79,9 +79,9 @@
 
           <section id="adminPage-settings" class="admin-page">
             <h2>Site Settings</h2><p class="small">Manage homepage content, permanent branding assets, social links, pricing, news, terms, and payments. The live visual system stays fixed in style.css.</p>
-            <div class="settings-layout"><aside class="settings-menu">
+            <div class="settings-layout"><nav class="settings-menu" aria-label="Site settings sections">
               <button type="button" class="settings-tab active" data-settings-tab="general">General</button><button type="button" class="settings-tab" data-settings-tab="appearance">Assets &amp; Branding</button><button type="button" class="settings-tab" data-settings-tab="social">Social Links</button><button type="button" class="settings-tab" data-settings-tab="pricing">Pricing Page</button><button type="button" class="settings-tab" data-settings-tab="news">Latest News</button><button type="button" class="settings-tab" data-settings-tab="tos">TOS Editor</button><button type="button" class="settings-tab" data-settings-tab="payments">Payments</button>
-            </aside><div class="settings-content">
+            </nav><div class="settings-content">
               <section id="settings-general" class="settings-panel"><h3>Homepage Text</h3><input id="settingTitle" placeholder="Homepage title"><textarea id="settingSubtitle" placeholder="Homepage subtitle"></textarea><input id="settingNote" placeholder="Commission info note"><button type="button" class="btn primary" onclick="saveTextSettings()">Save Text</button></section>
               <section id="settings-appearance" class="settings-panel hidden"><h3>Assets &amp; Branding</h3><p class="small">Manage permanent site artwork and branding. The live pink, cyan, lime, black, and off-white palette is fixed in <code>style.css</code>; saved legacy theme colors are not applied here.</p><label class="small">Default banner image</label><input id="defaultBannerFile" type="file" accept="image/*"><label class="small">Default page doll image</label><input id="defaultDollFile" type="file" accept="image/*"><label class="small">Website background image / pattern</label><input id="backgroundFile" type="file" accept="image/*"><label class="small">Header icon / logo symbol</label><input id="navIconInput" placeholder="✧, ♡, ☆, or paste an icon"><label class="small">Favicon image</label><input id="faviconFile" type="file" accept="image/*"><p class="small">Favicons work best as square images, like 64×64 or 128×128.</p><label class="small">Custom gallery image border / frame</label><input id="galleryBorderFile" type="file" accept="image/*"><p class="small">Best resolution: upload a transparent PNG frame around 1024×1024 px or 1200×1200 px. Keep the center transparent so the artwork shows through. Square frames work best because gallery thumbnails are square.</p><label class="small"><input id="galleryBorderEnabled" type="checkbox"> Enable custom gallery borders</label><div class="button-row"><button type="button" class="btn primary" onclick="saveDefaultAppearance()">Save Assets &amp; Branding</button><button type="button" class="btn" onclick="clearDefaultImages()">Clear Images</button></div><p class="small">Saving updates only these permanent assets and branding controls; it does not change the site's fixed color system.</p></section>
               <section id="settings-social" class="settings-panel hidden"><h3>Social / Contact Links</h3><p class="small">These show on the homepage banner contact card.</p><div id="socialAdminList" class="social-admin-list"></div><div class="form-grid"><input id="socialLabel" placeholder="Label, e.g. Discord"><input id="socialIcon" placeholder="Icon text or Font Awesome class, e.g. fa-brands fa-discord"><input id="socialUrl" placeholder="Link or username"></div><button type="button" class="btn primary" onclick="addSocialLink()">Add Link</button></section>

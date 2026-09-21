@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-28";
+  const version = "admin-runtime-29";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 
@@ -72,9 +72,18 @@
         if (isAdminWorker && registration.scope !== desiredScope) return registration.unregister();
         return Promise.resolve(false);
       }));
-      await navigator.serviceWorker.register("./admin-sw.js", { scope: "./admin.html" });
+      const registration = await navigator.serviceWorker.register("./admin-sw.js", {
+        scope: "./admin.html",
+        updateViaCache: "none"
+      });
+      // Do not wait for the browser's normal service-worker update interval.
+      // The worker owns an atomic versioned shell cache, so checking here is
+      // safe and makes installed Studio builds pick up fixes predictably.
+      await registration.update().catch(error => console.warn("Admin service worker update check failed", error));
+      return registration;
     } catch (error) {
       console.warn("Admin service worker registration failed", error);
+      return null;
     }
   }
 

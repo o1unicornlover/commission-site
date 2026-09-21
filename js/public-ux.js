@@ -171,14 +171,30 @@
   function setupLoadingState(node, text) {
     if (!node || node.dataset.publicLoadingReady) return;
     node.dataset.publicLoadingReady = "true";
-    if (node.children.length || node.textContent.trim()) { node.removeAttribute("aria-busy"); return; }
+
+    let loading = node.querySelector("[data-public-loading]");
+    if (!loading && node.children.length === 1) {
+      const candidate = node.firstElementChild;
+      if (candidate?.getAttribute("role") === "status" && /loading/i.test(candidate.textContent || "")) {
+        loading = candidate;
+        loading.setAttribute("data-public-loading", "");
+      }
+    }
+
+    if (!loading && (node.children.length || node.textContent.trim())) return;
+    if (!loading) {
+      node.innerHTML = `<p class="small" role="status" data-public-loading>${text}</p>`;
+      loading = node.querySelector("[data-public-loading]");
+    }
+
     node.setAttribute("aria-busy", "true");
-    node.innerHTML = `<p class="small" data-public-loading aria-live="polite">${text}</p>`;
     const observer = new MutationObserver(() => {
-      const loading = node.querySelector("[data-public-loading]");
-      const hasRealContent = [...node.children].some(child => child !== loading && !child.hasAttribute("data-public-loading"));
-      if (!hasRealContent && loading) return;
-      node.removeAttribute("aria-busy"); loading?.remove(); observer.disconnect();
+      const currentLoading = node.querySelector("[data-public-loading]");
+      const hasRealContent = [...node.children].some(child => child !== currentLoading && !child.hasAttribute("data-public-loading"));
+      if (!hasRealContent && currentLoading) return;
+      node.removeAttribute("aria-busy");
+      currentLoading?.remove();
+      observer.disconnect();
     });
     observer.observe(node, { childList: true, subtree: false });
   }

@@ -1,4 +1,4 @@
-const ADMIN_CACHE = "commission-admin-v102";
+const ADMIN_CACHE = "commission-admin-v103";
 const ADMIN_CACHE_PREFIX = "commission-admin-";
 const ADMIN_SHELL = [
   "./admin.html", "./style.css", "./admin-runtime.js", "./admin-manifest.webmanifest",
@@ -8,7 +8,8 @@ const ADMIN_SHELL = [
   "./js/constants.js", "./js/utils.js", "./js/legacy-app.js", "./js/admin-dashboard-core.js", "./js/admin-controls-core.js",
   "./js/admin-app.js", "./js/admin-mobile.js", "./js/autosync.js", "./js/clean-appearance.js",
   "./js/admin-routing.js", "./js/admin-productivity.js", "./js/admin-dashboard-lite.js", "./js/admin-inbox-workspace.js",
-  "./js/admin-inbox-tools.js", "./js/admin-read-sync.js", "./js/admin-app-health.js", "./js/admin-pwa-updates.js", "./js/admin-accessibility.js"
+  "./js/admin-inbox-tools.js", "./js/admin-read-sync.js", "./js/admin-app-health.js", "./js/admin-pwa-updates.js", "./js/admin-accessibility.js",
+  "./js/admin-notification-status.js"
 ];
 const ADMIN_PATH = new URL("./admin.html", self.location.href).pathname;
 const ADMIN_ASSET_PATHS = new Set(ADMIN_SHELL.map(path => new URL(path, self.location.href).pathname));

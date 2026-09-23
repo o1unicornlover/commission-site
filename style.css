@@ -469,6 +469,12 @@ textarea { min-height: 100px; resize: vertical; }
 .price-example-card { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: center; gap: 14px; min-height: 138px; padding: 8px; border: 1.5px solid var(--ink); border-radius: 14px; background: #fff; }
 .price-example-thumb, .price-example-placeholder { display: grid; place-items: center; width: 140px; height: 120px; overflow: hidden; border-radius: 9px; background: var(--pink-pale); color: var(--pink); }
 .price-example-thumb img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.price-example-thumb { position: relative; cursor: zoom-in; border: 2px solid transparent; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.price-example-thumb::after { content: "View full image"; position: absolute; right: 5px; bottom: 5px; left: 5px; padding: 5px 4px; border-radius: 6px; background: rgba(25, 23, 29, .88); color: #fff; font-size: 12px; font-weight: 800; text-align: center; opacity: 0; transform: translateY(6px); transition: opacity .18s ease, transform .18s ease; pointer-events: none; }
+.price-example-thumb:hover, .price-example-thumb:focus-visible { transform: translateY(-3px); border-color: var(--pink); box-shadow: 3px 3px 0 var(--ink); }
+.price-example-thumb:hover::after, .price-example-thumb:focus-visible::after { opacity: 1; transform: translateY(0); }
+@media (hover: none) { .price-example-thumb::after { content: "Tap to view"; opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .price-example-thumb, .price-example-thumb::after { transition: none; } }
 .price-example-body { min-width: 0; }
 .price-example-body h3 { margin: 0; font-size: 16px; }
 .price-example-body p { margin: 3px 0 0; color: var(--ink-soft); font-size: 14px; line-height: 1.4; }

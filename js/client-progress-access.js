@@ -1,7 +1,5 @@
-/* Private progress access + resilient page owner.
-   This page-specific module deliberately does not depend on legacy-app.js to
-   render the client workspace. The shared Supabase API modules remain the data
-   source, while existing realtime/polling can call the globals installed here. */
+/* Private progress access. Load this before network dependencies so a stalled
+   script cannot leave the page on its initial loading message forever. */
 (function initClientProgressAccess() {
   const onProgress = /(^|\/)progress\.html$/i.test(location.pathname) || location.pathname.endsWith('/progress.html');
   if (!onProgress) return;
@@ -10,6 +8,7 @@
   let unlockBusy = false;
   let renderBusy = false;
   let lastCommission = null;
+  const REQUEST_TIMEOUT_MS = 10000;
 
   const $ = id => document.getElementById(id);
 
@@ -70,6 +69,7 @@
 
   function apiReady() {
     return (
+      Boolean(window.supabaseClient) &&
       typeof window.getCommissionById === 'function' &&
       typeof window.getProgressUpdates === 'function' &&
       typeof window.getChatMessages === 'function' &&
@@ -84,6 +84,16 @@
       await new Promise(resolve => setTimeout(resolve, 80));
     }
     return false;
+  }
+
+  function withTimeout(request, message = 'The connection timed out.') {
+    let timer;
+    return Promise.race([
+      Promise.resolve(request),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), REQUEST_TIMEOUT_MS);
+      })
+    ]).finally(() => clearTimeout(timer));
   }
 
   function renderMissingLink() {
@@ -111,7 +121,7 @@
           <a class="btn" href="queue.html">Back to Queue</a>
         </div>
       </div>`;
-    $('progressRetry')?.addEventListener('click', () => boot({ forcePrompt: false }));
+    $('progressRetry')?.addEventListener('click', () => location.reload());
   }
 
   function renderAccessPrompt(message = '') {
@@ -264,7 +274,7 @@
 
     const shouldFollow = box.scrollHeight - box.scrollTop - box.clientHeight < 100;
     try {
-      const messages = await window.getChatMessages(id);
+      const messages = await withTimeout(window.getChatMessages(id));
       const html = chatMessagesHTML(messages);
       if (box.dataset.lastHtml !== html) {
         box.innerHTML = html;
@@ -294,11 +304,11 @@
     if (status) status.textContent = 'Sending…';
 
     try {
-      const sent = await window.createChatMessage({
+      const sent = await withTimeout(window.createChatMessage({
         commission_id: String(id),
         sender: 'client',
         message
-      });
+      }));
       if (!sent) throw new Error('Message was not saved.');
       if (input) {
         input.value = '';
@@ -321,8 +331,8 @@
 
     try {
       const [updates, payment] = await Promise.all([
-        window.getProgressUpdates(commission.id),
-        paymentHTML(commission)
+        withTimeout(window.getProgressUpdates(commission.id)),
+        withTimeout(paymentHTML(commission))
       ]);
       const progress = progressPercent(updates);
       const status = latestStatus(commission, updates);
@@ -389,7 +399,7 @@
   async function loadAuthorizedCommission() {
     const id = commissionId();
     if (!id) return null;
-    const commission = await window.getCommissionById(id);
+    const commission = await withTimeout(window.getCommissionById(id));
     if (!commission || String(commission.status || '').toLowerCase() === 'archived') return null;
     return commission;
   }
@@ -444,7 +454,7 @@
     try {
       const ready = await waitForApi();
       if (!ready) throw new Error('Progress API did not finish loading.');
-      const commission = await window.getCommissionById(id);
+      const commission = await withTimeout(window.getCommissionById(id));
       const archived = String(commission?.status || '').toLowerCase() === 'archived';
 
       if (!commission || archived || password !== String(commission.password || '')) {
@@ -474,14 +484,18 @@
       return;
     }
 
-    const ready = await waitForApi();
-    if (!ready) {
-      renderLoadError('The progress tools did not finish loading. Try again to reconnect.');
+    // A direct private link can show its password form without any network
+    // request. Only a returning client with saved access needs to load first.
+    if (options.forcePrompt || String(readAccess().id || '') !== String(id)) {
+      renderAccessPrompt();
       return;
     }
 
-    if (options.forcePrompt) {
-      renderAccessPrompt();
+    target.innerHTML = '<div class="progress-card"><p class="small" role="status">Loading private progress…</p></div>';
+
+    const ready = await waitForApi();
+    if (!ready) {
+      renderLoadError('The progress tools did not finish loading. Try again to reconnect.');
       return;
     }
 
@@ -525,9 +539,15 @@
     refreshProgressSectionsStandalone().catch(() => {});
   });
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', scheduleBoot, { once: true });
-  } else {
+  if (area()) {
     scheduleBoot();
+  } else {
+    document.addEventListener('DOMContentLoaded', scheduleBoot, { once: true });
   }
+
+  // Keep the private workspace current without loading the legacy site bundle.
+  setInterval(() => refreshProgressSectionsStandalone().catch(() => {}), 12000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshProgressSectionsStandalone().catch(() => {});
+  });
 })();

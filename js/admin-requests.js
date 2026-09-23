@@ -4,7 +4,7 @@
   window.__adminRequestsReady = true;
   const esc = value => String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#039;");
   const code = () => Math.random().toString(36).slice(2, 8).toUpperCase();
-  const isRequest = c => String(c.request_status || "").toLowerCase() === "pending" || /^request\s*[—-]/i.test(String(c.status || ""));
+  const isRequest = c => String(c.status || "").toLowerCase() !== "archived" && String(c.request_status || "").toLowerCase() === "pending";
   function ensurePanel() {
     const nav = document.querySelector(".admin-sidebar");
     const content = document.querySelector(".admin-content");

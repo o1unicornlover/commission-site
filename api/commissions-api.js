@@ -50,7 +50,7 @@ async function createCommission(values) {
     requested_budget: values.requested_budget || "",
     quote_amount: values.quote_amount || "",
     quote_message: values.quote_message || "",
-    request_status: values.request_status || "pending",
+    request_status: values.request_status || "accepted",
     client_access_code: values.client_access_code || ""
   };
 

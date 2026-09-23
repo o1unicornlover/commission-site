@@ -1,33 +1,17 @@
 (function initCommissionRequest() {
   const form = document.getElementById("commissionRequestForm");
   const status = document.getElementById("requestStatus");
-  if (!form || typeof createCommission !== "function") return;
-  form.addEventListener("submit", async event => {
-    event.preventDefault();
-    if (!form.reportValidity()) return;
-    const button = form.querySelector("button[type=submit]");
-    button.disabled = true;
-    status.textContent = "Sending your request…";
-    const values = Object.fromEntries(new FormData(form).entries());
-    const created = await createCommission({
-      display_name: values.display_name,
-      client_name: values.display_name,
-      commission_type: values.commission_type,
-      request_contact: values.request_contact,
-      request_details: values.request_details,
-      reference_url: values.reference_url,
-      requested_budget: values.requested_budget,
-      request_status: "pending",
-      status: "Request — Pending",
-      password: "",
-      client_access_code: ""
-    });
-    button.disabled = false;
-    if (!created) {
-      status.textContent = "I couldn’t save that request. Please try again in a moment.";
-      return;
-    }
-    form.reset();
-    status.textContent = `Request received! Keep this request number: #${created.id}. I’ll contact you after reviewing it.`;
-  });
+  const choices = document.getElementById("commissionTypeChoices");
+  const itemSelect = document.getElementById("pricingItemSelect");
+  const quote = document.getElementById("quotePreview");
+  if (!form || !choices || typeof createCommission !== "function") return;
+  let groups = [];
+  const make = (tag, text, className) => { const el = document.createElement(tag); if (text != null) el.textContent = text; if (className) el.className = className; return el; };
+  function selectedGroup() { return groups.find(group => String(group.id) === String(form.querySelector('input[name="commission_category"]:checked')?.value)); }
+  function updateQuote() { const item = selectedGroup()?.items.find(row => String(row.id) === String(itemSelect.value)); quote.querySelector("strong").textContent = `Estimated quote: ${item?.price || "—"}`; quote.querySelector("small").textContent = item ? "This is the starting price. I’ll confirm the final quote after reviewing your details." : "Choose an option to see the starting price."; }
+  function renderGroups() { choices.replaceChildren(); groups.forEach(group => { const input = document.createElement("input"); input.type = "radio"; input.name = "commission_category"; input.id = `commissionCategory-${group.id}`; input.value = group.id; input.required = true; const label = make("label", null, "choice-card"); label.htmlFor = input.id; label.append(make("strong", group.name), make("small", `${group.items.length} option${group.items.length === 1 ? "" : "s"}`)); choices.append(input, label); input.addEventListener("change", () => { itemSelect.replaceChildren(make("option", "Choose an option")); group.items.forEach(item => { const option = make("option", `${item.name} — ${item.price || "Price TBA"}`); option.value = item.id; itemSelect.append(option); }); document.getElementById("pricingPick").hidden = false; updateQuote(); }); }); }
+  async function loadPricing() { const [categories, items] = await Promise.all([getPricingCategories(), getPricingItems()]); groups = categories.map(category => ({ ...category, items: items.filter(item => String(item.category_id) === String(category.id)) })).filter(group => group.items.length); if (!groups.length) { choices.replaceChildren(make("p", "No commission options are available yet. Please check back soon.", "small")); return; } renderGroups(); }
+  itemSelect.addEventListener("change", updateQuote);
+  form.addEventListener("submit", async event => { event.preventDefault(); if (!form.reportValidity()) return; const button = form.querySelector("button[type=submit]"); button.disabled = true; status.textContent = "Sending your request…"; const values = Object.fromEntries(new FormData(form).entries()); const group = selectedGroup(); const item = group?.items.find(row => String(row.id) === String(values.pricing_item)); const created = await createCommission({ display_name: values.display_name, client_name: values.display_name, commission_type: `${group?.name || "Commission"} — ${item?.name || "Custom"}`, selected_pricing_item: item ? `${item.name} — ${item.price || "Price TBA"}` : "", contact_platform: values.contact_platform, contact_username: values.contact_username, request_contact: `${values.contact_platform}: ${values.contact_username}`, request_details: values.request_details, reference_url: values.reference_url, quote_amount: item?.price || "", request_status: "pending", status: "Request — Pending", password: "", client_access_code: "" }); button.disabled = false; if (!created) { status.textContent = "I couldn’t save that request. Please try again in a moment."; return; } form.reset(); document.getElementById("pricingPick").hidden = true; quote.querySelector("strong").textContent = "Estimated quote: —"; quote.querySelector("small").textContent = "Choose an option to see the starting price."; status.textContent = `Request received! Keep request #${created.id}. I’ll contact you on ${values.contact_platform} after reviewing it.`; });
+  loadPricing().catch(error => { console.error(error); choices.replaceChildren(make("p", "Pricing could not load. Please refresh and try again.", "small")); });
 })();

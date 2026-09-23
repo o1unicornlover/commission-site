@@ -45,13 +45,16 @@ async function createCommission(values) {
     payment_status: values.payment_status || "Not requested",
     paypal_link: values.paypal_link || "",
     request_contact: values.request_contact || "",
+    contact_platform: values.contact_platform || "",
+    contact_username: values.contact_username || "",
     request_details: values.request_details || "",
     reference_url: values.reference_url || "",
     requested_budget: values.requested_budget || "",
     quote_amount: values.quote_amount || "",
     quote_message: values.quote_message || "",
     request_status: values.request_status || "accepted",
-    client_access_code: values.client_access_code || ""
+    client_access_code: values.client_access_code || "",
+    selected_pricing_item: values.selected_pricing_item || ""
   };
 
   const { data, error } = await supabaseClient

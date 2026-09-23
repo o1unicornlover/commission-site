@@ -1,39 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Request a Commission</title>
-  <link rel="stylesheet" href="style.css?v=request1" />
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commission Form</title><link rel="stylesheet" href="style.css?v=request2" />
+  <style>
+    .commission-form-shell{max-width:820px;margin-inline:auto}.commission-form-shell>p{max-width:650px}.form-section{border:2px solid var(--ink,#211d29);border-radius:20px;padding:16px;margin-top:14px;background:rgba(255,255,255,.68)}.form-section h2{font-size:1.25rem;margin:0 0 10px}.form-section>p{margin:0 0 12px}.choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px}.choice-grid input{position:absolute;opacity:0;pointer-events:none}.choice-card{display:block;border:2px solid var(--ink,#211d29);border-radius:14px;padding:11px 12px;cursor:pointer;background:#fff;transition:.15s transform,.15s background}.choice-card:hover{transform:translateY(-2px);background:#fff0f8}.choice-grid input:checked+.choice-card{background:#ff4fae;color:#fff;border-color:#211d29;box-shadow:3px 3px 0 #211d29}.choice-card strong{display:block}.choice-card small{display:block;margin-top:3px;opacity:.8}.pricing-pick{margin-top:12px}.pricing-pick[hidden]{display:none}.pricing-pick select{width:100%}.contact-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}.contact-options{display:flex;gap:7px;flex-wrap:wrap}.contact-option{border:1.5px solid var(--ink,#211d29);border-radius:999px;padding:7px 11px;background:#fff;cursor:pointer;font-size:.9rem}.contact-option:has(input:checked){background:#c9f8f0}.contact-option input{margin-right:5px}.quote-preview{border:2px dashed #ff4fae;border-radius:15px;padding:12px;margin-top:12px;background:#fff8fc}.quote-preview strong{font-size:1.15rem}.quote-preview small{display:block;margin-top:3px}.form-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}.form-actions button{min-width:150px}.check-row{display:flex;gap:8px;align-items:flex-start;font-size:.92rem}.check-row input{margin-top:4px}@media(max-width:620px){.contact-row{grid-template-columns:1fr}.commission-form-shell{padding:0}.form-section{padding:13px}}
+  </style>
 </head>
 <body>
-  <header class="site-header">
-    <a class="brand" href="index.html">YourName</a>
-    <nav aria-label="Primary navigation">
-      <a href="index.html">Home</a><a href="pricing.html">Pricing</a><a href="queue.html">Queue</a><a href="gallery.html">Gallery</a><a href="tos.html">TOS</a>
-    </nav>
-  </header>
-  <main id="mainContent" tabindex="-1">
-    <section class="panel compact-panel fancy-panel" aria-labelledby="requestTitle">
-      <p class="eyebrow">Commission request</p>
-      <h1 id="requestTitle" class="page-title">Tell me what you want made</h1>
-      <p class="small">Send the details below. This is a request, not a payment. I’ll review it and send a quote before anything starts.</p>
-      <form id="commissionRequestForm" class="form-grid" novalidate>
-        <label>Your name or username<input name="display_name" required maxlength="80" autocomplete="name" placeholder="How should I address you?"></label>
-        <label>How should I contact you?<input name="request_contact" required maxlength="160" placeholder="Discord, email, or another contact"></label>
-        <label>Commission type<input name="commission_type" required maxlength="80" placeholder="2D art, 3D model, etc."></label>
-        <label>Budget (optional)<input name="requested_budget" maxlength="80" placeholder="Example: $40–$60"></label>
-        <label class="full-span">What do you need?<textarea name="request_details" required maxlength="3000" rows="7" placeholder="Describe the character, size, pose, style, deadline, and anything else that matters."></textarea></label>
-        <label class="full-span">Reference link (optional)<input name="reference_url" type="url" maxlength="500" placeholder="https://..."></label>
-        <label class="full-span check-row"><input name="tos_accepted" type="checkbox" required> I read the <a href="tos.html" target="_blank" rel="noopener">TOS</a> and, if I’m under 18, I have a parent or guardian’s permission to request and pay for a commission.</label>
-        <button class="btn primary" type="submit">Send Request</button>
-      </form>
-      <p id="requestStatus" class="small" role="status" aria-live="polite"></p>
-    </section>
-  </main>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js?v=2"></script>
-  <script src="api/commissions-api.js?v=request1"></script>
-  <script src="js/request-public.js?v=request1"></script>
-</body>
-</html>
+  <header class="site-header"><a class="brand" href="index.html">YourName</a><nav aria-label="Primary navigation"><a href="index.html">Home</a><a href="pricing.html">Pricing</a><a href="queue.html">Queue</a><a href="gallery.html">Gallery</a><a href="tos.html">TOS</a></nav></header>
+  <main id="mainContent" tabindex="-1"><section class="panel compact-panel fancy-panel commission-form-shell" aria-labelledby="requestTitle">
+    <p class="eyebrow">Start a project</p><h1 id="requestTitle" class="page-title">Commission Form</h1><p class="small">Choose an option, add your contact, and tell me what you have in mind. The estimate is a starting point, not a payment request.</p>
+    <form id="commissionRequestForm" novalidate>
+      <div class="form-section"><h2>1. Your contact</h2><div class="contact-row"><div class="contact-options" role="radiogroup" aria-label="Contact platform"><label class="contact-option"><input type="radio" name="contact_platform" value="TikTok" required>TikTok</label><label class="contact-option"><input type="radio" name="contact_platform" value="Discord">Discord</label><label class="contact-option"><input type="radio" name="contact_platform" value="Toyhouse">Toyhouse</label></div><label>Username<input name="contact_username" required maxlength="80" autocomplete="username" placeholder="your username"></label></div></div>
+      <div class="form-section"><h2>2. Choose a commission</h2><p class="small">Pick a category to see the options you can edit from the admin pricing page.</p><div id="commissionTypeChoices" class="choice-grid" role="radiogroup" aria-label="Commission type"><p class="small">Loading options…</p></div><div id="pricingPick" class="pricing-pick" hidden><label>Specific option<select id="pricingItemSelect" name="pricing_item" required><option value="">Choose an option</option></select></label></div><div id="quotePreview" class="quote-preview" aria-live="polite"><strong>Estimated quote: —</strong><small>Choose an option to see the starting price.</small></div></div>
+      <div class="form-section"><h2>3. Details</h2><label>Username for the progress page<input name="display_name" required maxlength="80" placeholder="The name you want shown privately"></label><label style="margin-top:10px;display:block">What do you need?<textarea name="request_details" required maxlength="3000" rows="5" placeholder="Character, style, pose, deadline, and anything else that matters."></textarea></label><label style="margin-top:10px;display:block">Reference link <span class="small">(optional)</span><input name="reference_url" type="url" maxlength="500" placeholder="https://..."></label></div>
+      <div class="form-actions"><label class="check-row"><input name="tos_accepted" type="checkbox" required><span>I have read and agree to the <a href="tos.html" target="_blank" rel="noopener">TOS</a>.</span></label><button class="btn primary" type="submit">Send Request</button></div>
+    </form><p id="requestStatus" class="small" role="status" aria-live="polite"></p>
+  </section></main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js?v=2"></script><script src="api/commissions-api.js?v=request2"></script><script src="api/pricing-api.js?v=request2"></script><script src="js/request-public.js?v=request2"></script>
+</body></html>

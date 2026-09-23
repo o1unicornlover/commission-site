@@ -43,7 +43,15 @@ async function createCommission(values) {
     status: values.status || "Waiting / Not started",
     price: values.price || "",
     payment_status: values.payment_status || "Not requested",
-    paypal_link: values.paypal_link || ""
+    paypal_link: values.paypal_link || "",
+    request_contact: values.request_contact || "",
+    request_details: values.request_details || "",
+    reference_url: values.reference_url || "",
+    requested_budget: values.requested_budget || "",
+    quote_amount: values.quote_amount || "",
+    quote_message: values.quote_message || "",
+    request_status: values.request_status || "pending",
+    client_access_code: values.client_access_code || ""
   };
 
   const { data, error } = await supabaseClient

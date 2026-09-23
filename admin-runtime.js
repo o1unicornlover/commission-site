@@ -19,7 +19,7 @@
     "./js/admin-routing.js", "./js/admin-productivity.js", "./js/admin-dashboard-lite.js",
     "./js/admin-inbox-workspace.js", "./js/admin-inbox-tools.js", "./js/admin-read-sync.js",
     "./js/admin-app-health.js", "./js/admin-pwa-updates.js", "./js/admin-accessibility.js",
-    "./js/admin-notification-status.js"
+    "./js/admin-notification-status.js", "./js/admin-requests.js"
   ];
 
   function normalizeCommissionId(value) {

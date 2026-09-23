@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Request a Commission</title>
+  <link rel="stylesheet" href="style.css?v=request1" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html">YourName</a>
+    <nav aria-label="Primary navigation">
+      <a href="index.html">Home</a><a href="pricing.html">Pricing</a><a href="queue.html">Queue</a><a href="gallery.html">Gallery</a><a href="tos.html">TOS</a>
+    </nav>
+  </header>
+  <main id="mainContent" tabindex="-1">
+    <section class="panel compact-panel fancy-panel" aria-labelledby="requestTitle">
+      <p class="eyebrow">Commission request</p>
+      <h1 id="requestTitle" class="page-title">Tell me what you want made</h1>
+      <p class="small">Send the details below. This is a request, not a payment. I’ll review it and send a quote before anything starts.</p>
+      <form id="commissionRequestForm" class="form-grid" novalidate>
+        <label>Your name or username<input name="display_name" required maxlength="80" autocomplete="name" placeholder="How should I address you?"></label>
+        <label>How should I contact you?<input name="request_contact" required maxlength="160" placeholder="Discord, email, or another contact"></label>
+        <label>Commission type<input name="commission_type" required maxlength="80" placeholder="2D art, 3D model, etc."></label>
+        <label>Budget (optional)<input name="requested_budget" maxlength="80" placeholder="Example: $40–$60"></label>
+        <label class="full-span">What do you need?<textarea name="request_details" required maxlength="3000" rows="7" placeholder="Describe the character, size, pose, style, deadline, and anything else that matters."></textarea></label>
+        <label class="full-span">Reference link (optional)<input name="reference_url" type="url" maxlength="500" placeholder="https://..."></label>
+        <label class="full-span check-row"><input name="tos_accepted" type="checkbox" required> I read the <a href="tos.html" target="_blank" rel="noopener">TOS</a> and, if I’m under 18, I have a parent or guardian’s permission to request and pay for a commission.</label>
+        <button class="btn primary" type="submit">Send Request</button>
+      </form>
+      <p id="requestStatus" class="small" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js?v=2"></script>
+  <script src="api/commissions-api.js?v=request1"></script>
+  <script src="js/request-public.js?v=request1"></script>
+</body>
+</html>

@@ -15,8 +15,8 @@
     previewFile: 'Main commission board image', galleryFile: 'Gallery artwork image', settingTitle: 'Homepage title', settingSubtitle: 'Homepage subtitle',
     settingNote: 'Commission information note', defaultBannerFile: 'Default banner image', defaultDollFile: 'Default page doll image',
     backgroundFile: 'Website background image or pattern', navIconInput: 'Header icon or logo symbol', faviconFile: 'Favicon image',
-    galleryBorderFile: 'Custom gallery image border or frame', galleryBorderEnabled: 'Enable custom gallery borders', socialLabel: 'Social link label',
-    socialIcon: 'Social link icon', socialUrl: 'Social link URL or username', priceCategoryTitle: 'Pricing category title',
+    galleryBorderFile: 'Custom gallery image border or frame', galleryBorderEnabled: 'Enable custom gallery borders', socialLabel: 'Contact platform',
+    socialUsername: 'Username', socialUrl: 'Link, optional', priceCategoryTitle: 'Pricing category title',
     priceCategoryNote: 'Pricing category note', priceCategorySelect: 'Pricing category for new item', priceItemName: 'Pricing item name',
     priceItemAmount: 'Pricing item amount', priceItemImage: 'Pricing item example image', newsDate: 'News date', newsText: 'News text',
     paymentPaypalUsername: 'PayPal username', paymentCurrency: 'Payment currency', tosTitle: 'Terms of Service section title', tosText: 'Terms of Service section text'

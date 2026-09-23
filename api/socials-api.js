@@ -30,6 +30,22 @@ async function addSocial(values) {
   return data;
 }
 
+async function updateSocial(id, values) {
+  const { data, error } = await supabaseClient
+    .from("socials")
+    .update(values)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating social contact:", error);
+    return null;
+  }
+
+  return data;
+}
+
 async function deleteSocial(id) {
   const { error } = await supabaseClient
     .from("socials")

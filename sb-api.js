@@ -10,7 +10,7 @@
 
   if (onAdmin) return;
 
-  const version = "stage2-api21";
+  const version = "stage2-api22";
   [
     "./api/site-api.js",
     "./api/slots-api.js",

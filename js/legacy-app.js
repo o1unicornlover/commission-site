@@ -714,15 +714,44 @@ async function renderSocialLinks() {
   if (!box) return;
 
   const socials = await getSocials();
+  box.replaceChildren();
+  if (!socials.length) {
+    box.innerHTML = `<p class="small">Contacts will appear here soon.</p>`;
+    return;
+  }
 
-  box.innerHTML = socials.map(link => `
-    <a class="social-link" href="${safeLink(link.url)}" title="${link.url || link.name}">
-      <span class="social-icon">${renderSocialIcon(link.icon)}</span>
-      <em>${escapeHTML(link.name)}</em>
-      <small>${escapeHTML(link.url || "Add URL in admin")}</small>
-    </a>
-  `).join("") || `<p class="small">No social links yet.</p>`;
+  socials.forEach(link => {
+    const href = safeLink(link.url);
+    const row = document.createElement(href === "#" ? "div" : "a");
+    row.className = "social-contact";
+    if (href !== "#") {
+      row.href = href;
+      row.target = "_blank";
+      row.rel = "noopener noreferrer";
+    }
+    const icon = document.createElement("span");
+    icon.className = "social-icon";
+    const iconClass = socialIconFor(link.name) !== "♡" ? socialIconFor(link.name) : String(link.icon || "").trim();
+    if (/^fa-(?:brands|solid) fa-[a-z0-9-]+$/.test(iconClass)) {
+      const symbol = document.createElement("i");
+      symbol.className = iconClass;
+      symbol.setAttribute("aria-hidden", "true");
+      icon.append(symbol);
+    } else icon.textContent = "♡";
+
+    const copy = document.createElement("span");
+    copy.className = "social-contact-copy";
+    const platform = document.createElement("strong");
+    platform.textContent = `${link.name}${href === "#" ? "" : " ↗"}`;
+    const username = document.createElement("small");
+    const handle = String(link.username || "").trim().replace(/^@/, "");
+    username.textContent = handle ? `@${handle}` : (href === "#" ? "Username coming soon" : "Open profile");
+    copy.append(platform, username);
+    row.append(icon, copy);
+    box.append(row);
+  });
 }
+if (document.getElementById("socialLinks")) renderSocialLinks();
 async function renderFeaturedGallery() {
   const box = document.getElementById("featuredGallery");
   if (!box) return;
@@ -1051,37 +1080,77 @@ async function renderSocialAdmin() {
   box.innerHTML = socials.map(link => `
     <div class="social-admin-row">
       <span>
-        ${link.icon || "♡"} 
         <strong>${escapeHTML(link.name)}</strong>
-        <small>${escapeHTML(link.url || "No URL added")}</small>
+        <small>${escapeHTML(link.username ? `@${String(link.username).replace(/^@/, "")}` : "Username not set")}</small>
+        <small>${escapeHTML(link.url || "No link added")}</small>
       </span>
-      <button class="btn danger" onclick="deleteSocialLink('${link.id}')">Delete</button>
+      <details class="social-admin-edit">
+        <summary>Edit contact</summary>
+        <div class="form-grid">
+          <label>Platform<input id="socialPlatform-${link.id}" value="${escapeHTML(link.name)}"></label>
+          <label>Username<input id="socialUsername-${link.id}" value="${escapeHTML(link.username || "")}"></label>
+          <label>Link (optional)<input id="socialLink-${link.id}" type="url" value="${escapeHTML(link.url || "")}" placeholder="https://..."></label>
+        </div>
+        <div class="button-row">
+          <button type="button" class="btn" onclick="updateSocialLink('${link.id}')">Save Contact</button>
+          <button type="button" class="btn danger" onclick="deleteSocialLink('${link.id}')">Delete</button>
+        </div>
+      </details>
     </div>
   `).join("") || `<p class="small">No links yet.</p>`;
 }
 
+function socialIconFor(name) {
+  const label = String(name || "").toLowerCase();
+  if (label === "tiktok") return "fa-brands fa-tiktok";
+  if (label === "discord") return "fa-brands fa-discord";
+  if (label === "toyhouse" || label === "toyhou.se") return "fa-solid fa-house";
+  return "♡";
+}
+
+function validOptionalSocialLink(url) {
+  if (!url) return true;
+  try { return ["https:", "http:"].includes(new URL(url).protocol); }
+  catch { return false; }
+}
+
 async function addSocialLink() {
   const name = document.getElementById("socialLabel")?.value.trim();
-  const icon = document.getElementById("socialIcon")?.value.trim() || "♡";
-  const url = document.getElementById("socialUrl")?.value.trim();
+  const username = document.getElementById("socialUsername")?.value.trim().replace(/^@/, "");
+  const url = document.getElementById("socialUrl")?.value.trim() || "";
 
-  if (!name || !url) return alert("Add a label and URL first.");
+  if (!name || !username) return alert("Choose a platform and add a username.");
+  if (!validOptionalSocialLink(url)) return alert("Use a full http or https link, or leave it blank.");
 
-  await addSocial({
+  const added = await addSocial({
     name,
-    icon,
+    username,
+    icon: socialIconFor(name),
     url,
     enabled: true,
     sort_order: 0
   });
+  if (!added) return alert("Could not save this contact.");
 
-  ["socialLabel", "socialIcon", "socialUrl"].forEach(id => {
+  ["socialUsername", "socialUrl"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
 
-  renderSocialAdmin();
-  renderSocialLinks();
+  await renderSocialAdmin();
+  await renderSocialLinks();
+}
+
+async function updateSocialLink(id) {
+  const name = document.getElementById(`socialPlatform-${id}`)?.value.trim();
+  const username = document.getElementById(`socialUsername-${id}`)?.value.trim().replace(/^@/, "");
+  const url = document.getElementById(`socialLink-${id}`)?.value.trim() || "";
+  if (!name || !username) return alert("Add a platform and username.");
+  if (!validOptionalSocialLink(url)) return alert("Use a full http or https link, or leave it blank.");
+  const updated = await updateSocial(id, { name, username, url, icon: socialIconFor(name) });
+  if (!updated) return alert("Could not update this contact.");
+  await renderSocialAdmin();
+  await renderSocialLinks();
 }
 
 async function deleteSocialLink(id) {

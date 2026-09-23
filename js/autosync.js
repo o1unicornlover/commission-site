@@ -108,7 +108,7 @@ async function runFallbackSync() {
   if (document.getElementById("featuredGallery")) await renderFeaturedGallery?.();
   if (document.getElementById("pricingPage")) await renderPricingPage?.();
   if (document.getElementById("tosPage")) await renderTosPage?.();
-  if (document.querySelector(".social-links")) await renderSocialLinks?.();
+  if (document.getElementById("socialLinks")) await renderSocialLinks?.();
   if (document.getElementById("homeHero")) await applySupabaseHomepageSettings?.();
   await refreshProgressSafely();
 }

@@ -465,14 +465,19 @@ textarea { min-height: 100px; resize: vertical; }
 .pricing-category[open] summary::after { content: "−"; }
 .pricing-category summary small { font-size: 13px; font-weight: 750; color: var(--ink-soft); }
 .pricing-category summary:focus-visible, .price-example-thumb:focus-visible { outline: 3px solid var(--pink); outline-offset: -3px; }
-.pricing-card-grid { display: grid; gap: 10px; padding: 14px; }
-.price-example-card { display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; align-items: center; gap: 14px; min-height: 82px; padding: 8px 12px 8px 8px; border: 1.5px solid var(--ink); border-radius: 14px; background: #fff; }
-.price-example-thumb, .price-example-placeholder { display: grid; place-items: center; width: 74px; height: 66px; overflow: hidden; border-radius: 9px; background: var(--pink-pale); color: var(--pink); }
-.price-example-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pricing-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 12px; padding: 14px; }
+.price-example-card { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: center; gap: 14px; min-height: 138px; padding: 8px; border: 1.5px solid var(--ink); border-radius: 14px; background: #fff; }
+.price-example-thumb, .price-example-placeholder { display: grid; place-items: center; width: 140px; height: 120px; overflow: hidden; border-radius: 9px; background: var(--pink-pale); color: var(--pink); }
+.price-example-thumb img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .price-example-body { min-width: 0; }
 .price-example-body h3 { margin: 0; font-size: 16px; }
 .price-example-body p { margin: 3px 0 0; color: var(--ink-soft); font-size: 14px; line-height: 1.4; }
-.price-example-amount { white-space: nowrap; color: var(--ink); font-size: 16px; }
+.price-example-amount { display: block; margin-top: 7px; color: var(--ink); font-size: 16px; }
+.pricing-image-dialog { width: min(94vw, 1100px); max-width: 1100px; max-height: 94vh; padding: 12px; border: 2px solid var(--ink); border-radius: 18px; background: #fff; box-shadow: var(--shadow); }
+.pricing-image-dialog::backdrop { background: rgba(25, 23, 29, .82); }
+.pricing-image-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 10px; }
+.pricing-image-dialog-head h2 { margin: 0; font-size: 18px; }
+.pricing-image-dialog > img { display: block; width: 100%; max-height: calc(94vh - 82px); object-fit: contain; background: #f6f4f7; border-radius: 10px; }
 .price-admin-preview { flex: 0 0 70px; width: 70px; height: 70px; overflow: hidden; border-radius: 9px; background: var(--pink-pale); }
 .price-admin-preview .price-example-image, .price-admin-preview .price-example-placeholder { display: block; width: 100%; height: 100%; object-fit: cover; }
 .price-admin-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px; border: 1px solid var(--ink); border-radius: 12px; background: #fff; }
@@ -482,9 +487,8 @@ textarea { min-height: 100px; resize: vertical; }
 .price-admin-edit summary { cursor: pointer; font-weight: 750; color: var(--pink); }
 .price-admin-edit .form-grid { margin-top: 10px; }
 @media (max-width: 500px) {
-  .price-example-card { grid-template-columns: 58px minmax(0, 1fr); gap: 10px; }
-  .price-example-thumb, .price-example-placeholder { width: 58px; height: 58px; }
-  .price-example-amount { grid-column: 2; margin-top: -4px; }
+  .price-example-card { grid-template-columns: 100px minmax(0, 1fr); gap: 10px; min-height: 110px; }
+  .price-example-thumb, .price-example-placeholder { width: 100px; height: 92px; }
 }
 .tos-grid { display: grid; gap: 14px; margin-top: 20px; }
 .tos-card, .tos-section { padding: 18px; background: #fff; border: 2px solid var(--ink); border-radius: 18px; }

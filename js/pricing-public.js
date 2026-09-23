@@ -3,6 +3,19 @@
 (function initPublicPricing() {
   const grid = document.getElementById("pricingGrid");
   if (!grid) return;
+  const viewer = document.getElementById("pricingImageDialog");
+  const viewerImage = document.getElementById("pricingImageFull");
+  const viewerTitle = document.getElementById("pricingImageTitle");
+  let lastImageTrigger = null;
+
+  viewer?.querySelector("[data-close-pricing-image]")?.addEventListener("click", () => viewer.close());
+  viewer?.addEventListener("click", event => {
+    if (event.target === viewer) viewer.close();
+  });
+  viewer?.addEventListener("close", () => {
+    viewerImage.removeAttribute("src");
+    lastImageTrigger?.focus();
+  });
 
   function make(tag, className, text) {
     const element = document.createElement(tag);
@@ -44,9 +57,17 @@
           if (item.image_url && /^https:\/\//i.test(item.image_url)) {
             const link = make("a", "price-example-thumb");
             link.href = item.image_url;
-            link.target = "_blank";
             link.rel = "noopener noreferrer";
             link.setAttribute("aria-label", `Open ${item.name} example image`);
+            link.addEventListener("click", event => {
+              if (!viewer?.showModal) return;
+              event.preventDefault();
+              lastImageTrigger = link;
+              viewerImage.src = item.image_url;
+              viewerImage.alt = `${item.name} example at full size`;
+              viewerTitle.textContent = item.name;
+              viewer.showModal();
+            });
             const image = make("img");
             image.src = item.image_url;
             image.alt = `${item.name} example`;
@@ -61,7 +82,8 @@
           const body = make("div", "price-example-body");
           body.append(make("h3", "", item.name));
           if (item.description) body.append(make("p", "", item.description));
-          card.append(body, make("strong", "price-example-amount", item.price || "Price TBA"));
+          body.append(make("strong", "price-example-amount", item.price || "Price TBA"));
+          card.append(body);
           list.append(card);
         });
         section.append(list);

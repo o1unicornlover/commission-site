@@ -1199,11 +1199,18 @@ async function renderPricingAdmin() {
                 <strong>${escapeHTML(item.name)}</strong>
                 <small>${escapeHTML(item.price || "Price TBA")}</small>
                 ${item.description ? `<small>${escapeHTML(item.description)}</small>` : ""}
-                <div class="button-row">
-                  <input id="priceImage-${item.id}" type="file" accept="image/*">
-                  <button type="button" class="btn" onclick="updatePricingItemImage('${item.id}')">Upload / Replace Image</button>
-                  <button type="button" class="btn danger mini-btn" onclick="deletePricingItem('${group.id}','${item.id}')">Delete</button>
-                </div>
+                <details class="price-admin-edit">
+                  <summary>Edit option</summary>
+                  <div class="form-grid">
+                    <input id="priceName-${item.id}" aria-label="Name for ${escapeHTML(item.name)}" value="${escapeHTML(item.name)}">
+                    <input id="priceAmount-${item.id}" aria-label="Price for ${escapeHTML(item.name)}" value="${escapeHTML(item.price || "")}">
+                    <textarea id="priceDescription-${item.id}" aria-label="Description for ${escapeHTML(item.name)}" placeholder="What is included (optional)">${escapeHTML(item.description || "")}</textarea>
+                    <button type="button" class="btn" onclick="updatePricingItemDetails('${item.id}')">Save Details</button>
+                    <input id="priceImage-${item.id}" type="file" accept="image/*" aria-label="Example image for ${escapeHTML(item.name)}">
+                    <button type="button" class="btn" onclick="updatePricingItemImage('${item.id}')">Upload / Replace Image</button>
+                    <button type="button" class="btn danger mini-btn" onclick="deletePricingItem('${group.id}','${item.id}')">Delete</button>
+                  </div>
+                </details>
               </div>
             </div>
           `).join("") || `<p class="small">No items yet.</p>`}
@@ -1250,6 +1257,7 @@ async function addPricingItem() {
   const categoryId = document.getElementById("priceCategorySelect")?.value;
   const name = document.getElementById("priceItemName")?.value.trim();
   const price = document.getElementById("priceItemAmount")?.value.trim();
+  const description = document.getElementById("priceItemDescription")?.value.trim() || "";
   const file = document.getElementById("priceItemImage")?.files?.[0];
 
   if (!categoryId) return alert("Add or choose a pricing category first.");
@@ -1265,20 +1273,30 @@ async function addPricingItem() {
     category_id: Number(categoryId),
     name,
     price,
-    description: "",
+    description,
     image_url: imageUrl,
     sort_order: 0
   });
 
   if (!added) return alert("Could not add pricing item.");
 
-  ["priceItemName", "priceItemAmount", "priceItemImage"].forEach(id => {
+  ["priceItemName", "priceItemAmount", "priceItemDescription", "priceItemImage"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
 
   renderPricingAdmin();
   renderPricingPage();
+}
+
+async function updatePricingItemDetails(itemId) {
+  const name = document.getElementById(`priceName-${itemId}`)?.value.trim();
+  const price = document.getElementById(`priceAmount-${itemId}`)?.value.trim();
+  const description = document.getElementById(`priceDescription-${itemId}`)?.value.trim() || "";
+  if (!name || !price) return alert("Add a name and price first.");
+  const updated = await updatePricingItem(itemId, { name, price, description });
+  if (!updated) return alert("Could not save pricing details.");
+  await renderPricingAdmin();
 }
 
 async function updatePricingItemImage(itemId) {

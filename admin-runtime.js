@@ -1,6 +1,6 @@
 /* Admin-only runtime: hard-clean boot. */
 (function initAdminRuntime() {
-  const version = "admin-runtime-30";
+  const version = "admin-runtime-31";
   const demoPass = ["admin", "123"].join("");
   let bootPromise = null;
 

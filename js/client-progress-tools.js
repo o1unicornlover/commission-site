@@ -64,9 +64,10 @@
     if (!textarea || !note) return;
 
     const online = navigator.onLine !== false;
-    note.textContent = online
+    const message = online
       ? 'Messages sync with the artist automatically.'
       : 'You are offline. Your draft is saved on this device and can be sent when you reconnect.';
+    if (note.textContent !== message) note.textContent = message;
     note.dataset.state = online ? 'online' : 'offline';
     textarea.setAttribute('aria-describedby', note.id || '');
     if (!note.id) {
@@ -143,7 +144,9 @@
   function startObserver() {
     if (observer) return;
     observer = new MutationObserver(() => decorate());
-    observer.observe(document.getElementById('progressArea') || document.body, { childList: true, subtree: true });
+    // The workspace is replaced as a direct child of progressArea. Observing
+    // descendants also catches this helper's own note updates and can loop.
+    observer.observe(document.getElementById('progressArea') || document.body, { childList: true });
   }
 
   function handleOnline() {

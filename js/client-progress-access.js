@@ -58,6 +58,29 @@
     sessionStorage.removeItem('progressAccess');
   }
 
+  function draftKey() {
+    return `clientProgressDraft:${commissionId() || 'unknown'}`;
+  }
+
+  function wireComposer(id) {
+    const input = $('clientChatInput');
+    const button = $('clientChatSend');
+    if (!input || !button) return;
+    try { input.value = localStorage.getItem(draftKey()) || ''; } catch (_) {}
+    input.addEventListener('input', () => {
+      try {
+        if (input.value.trim()) localStorage.setItem(draftKey(), input.value);
+        else localStorage.removeItem(draftKey());
+      } catch (_) {}
+    });
+    button.addEventListener('click', () => sendClientMessage(id));
+    input.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return;
+      event.preventDefault();
+      sendClientMessage(id);
+    });
+  }
+
   function hasAccessFor(commission) {
     const access = readAccess();
     return Boolean(
@@ -347,6 +370,8 @@
               <div id="progressPreviewBox">${commission.preview_image_url ? `<img class="preview progress-main-preview" src="${escapeHTML(commission.preview_image_url)}" alt="Commission preview">` : ''}</div>
               <div class="progress-bar"><div id="progressPageFill" class="progress-fill" style="width:${progress}%"></div></div>
               <p id="progressPagePercent" class="small">${progress}% complete</p>
+              <button id="progressRefresh" class="btn" type="button">Refresh updates</button>
+              <p id="progressRefreshStatus" class="small" role="status" aria-live="polite"></p>
               <div id="progressStageList" class="stage-list">${updatesHTML(updates)}</div>
             </div>
             <aside class="client-chat">
@@ -356,11 +381,21 @@
                 <p class="small">Send questions, revision notes, or replies here.</p>
                 <div id="clientChatMessages" class="chat-messages"></div>
                 <textarea id="clientChatInput" placeholder="Type your message..." aria-label="Message to artist"></textarea>
-                <button id="clientChatSend" class="btn primary" type="button" onclick="sendChatMessage('${escapeHTML(commission.id)}', 'client')">Send Message</button>
+                <button id="clientChatSend" class="btn primary" type="button">Send Message</button>
                 <p id="clientChatSendStatus" class="small" role="status" aria-live="polite"></p>
               </div>
             </aside>
           </div>`;
+        wireComposer(commission.id);
+        $('progressRefresh')?.addEventListener('click', async () => {
+          const button = $('progressRefresh');
+          const status = $('progressRefreshStatus');
+          if (button) button.disabled = true;
+          if (status) status.textContent = 'Checking for updates…';
+          const refreshed = await refreshProgressSectionsStandalone();
+          if (status?.isConnected) status.textContent = refreshed ? 'Up to date.' : 'Could not refresh. Try again.';
+          if (button?.isConnected) button.disabled = false;
+        });
         const stageList = $('progressStageList');
         if (stageList) stageList.dataset.lastHtml = stageList.innerHTML;
         const paymentArea = $('clientPaymentArea');
@@ -421,16 +456,18 @@
   }
 
   async function refreshProgressSectionsStandalone() {
-    if (document.hidden || renderBusy) return;
+    if (document.hidden || renderBusy) return false;
     const ready = await waitForApi(1500);
-    if (!ready) return;
+    if (!ready) return false;
 
     try {
       const commission = await loadAuthorizedCommission();
-      if (!commission || !hasAccessFor(commission)) return;
+      if (!commission || !hasAccessFor(commission)) return false;
       await renderWorkspace(commission, { sectionsOnly: true });
+      return true;
     } catch (error) {
       console.error('Progress refresh failed:', error);
+      return false;
     }
   }
 

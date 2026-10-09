@@ -1373,3 +1373,142 @@ a:hover { text-decoration-color: #ff4fa9; }
     height: 104px;
   }
 }
+
+
+/* === DARK STUDIO HOTFIX 2 === */
+/* Explicit fixes for the issues visible in the live screenshots. */
+
+/* The earlier base rules used !important with the old dark text variable.
+   Override the actual row containers, not just their children. */
+.slot-home-row,
+.home-table-row,
+.news-item {
+  color: #f5f1f6 !important;
+}
+.slot-home-row *,
+.home-table-row *,
+.news-item * {
+  color: inherit !important;
+}
+.slot-home-row .pill,
+.home-table-row .pill,
+.news-item .pill {
+  color: #fff4d1 !important;
+}
+.home-dashboard .mini-title h2 {
+  color: #ffffff !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,.25);
+}
+.home-dashboard .mini-title .eyebrow {
+  color: #ff68b6 !important;
+}
+.home-dashboard .small,
+.home-dashboard em {
+  color: #c8c1cb !important;
+}
+
+/* Make the accents obvious again instead of mostly charcoal. */
+.home-dashboard .mini-panel:nth-child(1) {
+  box-shadow: inset 4px 0 0 #ff4fa9;
+}
+.home-dashboard .mini-panel:nth-child(2) {
+  box-shadow: inset 4px 0 0 #57d9e8;
+}
+.home-dashboard .mini-panel:nth-child(3) {
+  box-shadow: inset 4px 0 0 #dff36a;
+}
+.home-dashboard .mini-panel:nth-child(1):hover {
+  box-shadow: inset 4px 0 0 #ff4fa9, 0 16px 30px rgba(0,0,0,.28);
+}
+.home-dashboard .mini-panel:nth-child(2):hover {
+  box-shadow: inset 4px 0 0 #57d9e8, 0 16px 30px rgba(0,0,0,.28);
+}
+.home-dashboard .mini-panel:nth-child(3):hover {
+  box-shadow: inset 4px 0 0 #dff36a, 0 16px 30px rgba(0,0,0,.28);
+}
+
+/* Standard price cards stay comfortably visual. */
+.pricing-card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.price-example-card {
+  grid-template-columns: 180px minmax(0, 1fr);
+  min-height: 164px;
+}
+.price-example-thumb,
+.price-example-placeholder {
+  width: 180px;
+  height: 144px;
+}
+
+/* A category with ONE option gets a deliberately compact card.
+   This no longer depends on :has(), so it works consistently. */
+.pricing-card-grid.single-option {
+  display: block;
+  max-width: 590px;
+}
+.pricing-card-grid.single-option .price-example-card {
+  width: 100%;
+  grid-template-columns: 165px minmax(0, 1fr);
+  min-height: 146px;
+}
+.pricing-card-grid.single-option .price-example-thumb,
+.pricing-card-grid.single-option .price-example-placeholder {
+  width: 165px;
+  height: 128px;
+}
+.pricing-card-grid.single-option .price-example-body h3 {
+  font-size: 16px;
+}
+
+/* neutralize the older :has() rules if the browser supports them */
+.pricing-card-grid:has(> .price-example-card:only-child) {
+  grid-template-columns: none;
+  justify-content: initial;
+}
+.pricing-card-grid:has(> .price-example-card:only-child) .price-example-card {
+  grid-template-columns: 165px minmax(0, 1fr);
+}
+.pricing-card-grid:has(> .price-example-card:only-child) .price-example-thumb,
+.pricing-card-grid:has(> .price-example-card:only-child) .price-example-placeholder {
+  width: 165px;
+  height: 128px;
+}
+
+/* Keep the image itself visible without turning the card into a panorama. */
+.price-example-thumb img {
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Stronger readable secondary text site-wide on the dark scheme. */
+.pricing-category summary small,
+.price-example-body p,
+.small,
+.file-note {
+  color: #bdb6c1;
+}
+.pricing-category summary,
+.price-example-body h3,
+.price-example-amount {
+  color: #faf7fb;
+}
+
+@media (max-width: 760px) {
+  .pricing-card-grid { grid-template-columns: 1fr; }
+  .price-example-card,
+  .pricing-card-grid.single-option .price-example-card,
+  .pricing-card-grid:has(> .price-example-card:only-child) .price-example-card {
+    grid-template-columns: 125px minmax(0, 1fr);
+    min-height: 118px;
+  }
+  .price-example-thumb,
+  .price-example-placeholder,
+  .pricing-card-grid.single-option .price-example-thumb,
+  .pricing-card-grid.single-option .price-example-placeholder,
+  .pricing-card-grid:has(> .price-example-card:only-child) .price-example-thumb,
+  .pricing-card-grid:has(> .price-example-card:only-child) .price-example-placeholder {
+    width: 125px;
+    height: 104px;
+  }
+}

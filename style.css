@@ -1197,3 +1197,179 @@ body:has(#adminMain) main,
   #adminLogin { grid-template-columns: 1fr; }
 }
 /* === END OCTOBER DARK STUDIO REWORK === */
+
+
+/* === DARK STUDIO BALANCE FIXES === */
+/* Keep the dark direction, but restore contrast and stronger playful accents. */
+
+/* Public text contrast: no near-black text sitting on charcoal cards. */
+.home-dashboard .mini-panel,
+.home-dashboard .mini-panel h2,
+.home-dashboard .mini-panel h3,
+.home-dashboard .mini-panel strong,
+.home-dashboard .mini-panel p,
+.home-dashboard .mini-panel span,
+.home-dashboard .mini-panel a,
+.slot-home-row *,
+.home-table-row *,
+.news-item *,
+.social-card,
+.social-card h3,
+.social-card strong,
+.social-card span,
+.social-card a,
+.pricing-category,
+.price-example-card,
+.tos-card,
+.tos-section,
+.commission-card,
+.stage-card,
+.payment-card,
+.client-chat-box {
+  color: #f7f3f8;
+}
+.home-dashboard .mini-panel .small,
+.home-dashboard .mini-panel .home-table-row em,
+.home-dashboard .mini-panel .news-item .small,
+.social-card small,
+.price-example-body p {
+  color: #c1bac5 !important;
+}
+.home-dashboard .mini-title .eyebrow { color: var(--pink) !important; }
+
+/* Bring back the bright Harajuku / McBling accents without losing the dark base. */
+.home-dashboard .mini-panel:nth-child(1) {
+  background:
+    linear-gradient(145deg, rgba(255,79,169,.18), transparent 62%),
+    #1f1a21 !important;
+  border-color: #763753;
+}
+.home-dashboard .mini-panel:nth-child(2) {
+  background:
+    linear-gradient(145deg, rgba(121,223,233,.15), transparent 62%),
+    #191e22 !important;
+  border-color: #35606a;
+}
+.home-dashboard .mini-panel:nth-child(3) {
+  background:
+    linear-gradient(145deg, rgba(223,243,106,.12), transparent 62%),
+    #1d2018 !important;
+  border-color: #59632e;
+}
+.home-dashboard .mini-panel:nth-child(1) .icon-badge { background: #ff4fa9; }
+.home-dashboard .mini-panel:nth-child(2) .icon-badge { background: #4fd5e4; color: #101216 !important; }
+.home-dashboard .mini-panel:nth-child(3) .icon-badge { background: #dff36a; color: #11130e !important; }
+.home-dashboard .mini-panel:nth-child(1) .btn.full { border-color: #9c4a71; }
+.home-dashboard .mini-panel:nth-child(2) .btn.full { border-color: #4c7b83; }
+.home-dashboard .mini-panel:nth-child(3) .btn.full { border-color: #6c783a; }
+.home-dashboard .mini-panel:nth-child(1) .btn.full:hover { background: #4b2035; }
+.home-dashboard .mini-panel:nth-child(2) .btn.full:hover { background: #17343a; }
+.home-dashboard .mini-panel:nth-child(3) .btn.full:hover { background: #30351c; }
+
+.eyebrow { color: #ff5aad !important; }
+.text-btn { color: #ff66b5; }
+a:hover { text-decoration-color: #ff4fa9; }
+.pricing-category summary::after { color: #ff58ae; }
+.pricing-category:nth-child(3n + 2) summary::after { color: #66ddea; }
+.pricing-category:nth-child(3n) summary::after { color: #dff36a; }
+
+/* Pricing images: larger than before, but a lone option should not become a billboard. */
+.pricing-card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+.price-example-card {
+  grid-template-columns: 210px minmax(0, 1fr);
+  min-height: 194px;
+}
+.price-example-thumb,
+.price-example-placeholder {
+  width: 210px;
+  height: 174px;
+}
+.pricing-card-grid:has(> .price-example-card:only-child) {
+  grid-template-columns: minmax(0, 700px);
+  justify-content: start;
+}
+.pricing-card-grid:has(> .price-example-card:only-child) .price-example-card {
+  grid-template-columns: 235px minmax(0, 1fr);
+}
+.pricing-card-grid:has(> .price-example-card:only-child) .price-example-thumb,
+.pricing-card-grid:has(> .price-example-card:only-child) .price-example-placeholder {
+  width: 235px;
+  height: 184px;
+}
+
+/* Gallery and queue art stay generous, but don't balloon on sparse pages. */
+.gallery-grid:has(> :only-child) {
+  grid-template-columns: minmax(0, 520px);
+  justify-content: start;
+}
+.queue-grid:has(> :only-child) {
+  grid-template-columns: minmax(0, 520px);
+  justify-content: start;
+}
+.queue-grid:has(> :only-child) .preview {
+  height: 340px;
+}
+
+/* Keep accents visibly saturated on the dark canvas. */
+.btn.primary,
+.admin-nav-btn.active,
+.settings-tab.active {
+  box-shadow: 0 0 0 1px rgba(255,113,186,.18), 0 8px 20px rgba(255,79,169,.15);
+}
+.progress-fill {
+  background: linear-gradient(90deg, #ff4fa9 0%, #ff78bc 48%, #5ddce9 78%, #dff36a 100%);
+}
+.pill:not(.closed-pill) {
+  color: #f5f2d9;
+  background: #2d321c;
+  border-color: #59642f;
+}
+
+/* Make the top-right contact card readable even before hover. */
+#socialLinks .social-contact,
+#socialLinks .social-contact-copy strong { color: #f3eef5; }
+#socialLinks .social-contact-copy small { color: #b4acb8 !important; }
+
+/* Admin keeps the compact layout but gets a little more personality. */
+.admin-page {
+  background:
+    linear-gradient(135deg, rgba(255,79,169,.035), transparent 28%),
+    #17161b;
+}
+.admin-sidebar {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 12px 28px rgba(0,0,0,.20);
+}
+.settings-tab.active { background: linear-gradient(135deg, #c8327d, #a52869); }
+.admin-nav-btn.active { background: linear-gradient(135deg, #d43a86, #ad286e); }
+
+@media (max-width: 920px) {
+  .pricing-card-grid { grid-template-columns: 1fr; }
+  .price-example-card,
+  .pricing-card-grid:has(> .price-example-card:only-child) .price-example-card {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+  .price-example-thumb,
+  .price-example-placeholder,
+  .pricing-card-grid:has(> .price-example-card:only-child) .price-example-thumb,
+  .pricing-card-grid:has(> .price-example-card:only-child) .price-example-placeholder {
+    width: 180px;
+    height: 154px;
+  }
+}
+@media (max-width: 560px) {
+  .price-example-card,
+  .pricing-card-grid:has(> .price-example-card:only-child) .price-example-card {
+    grid-template-columns: 112px minmax(0, 1fr);
+    min-height: 118px;
+  }
+  .price-example-thumb,
+  .price-example-placeholder,
+  .pricing-card-grid:has(> .price-example-card:only-child) .price-example-thumb,
+  .pricing-card-grid:has(> .price-example-card:only-child) .price-example-placeholder {
+    width: 112px;
+    height: 104px;
+  }
+}

@@ -1302,7 +1302,7 @@ a:hover { text-decoration-color: #ff4fa9; }
 
 /* Gallery and queue art stay generous, but don't balloon on sparse pages. */
 .gallery-grid:has(> :only-child) {
-  grid-template-columns: minmax(0, 520px);
+  grid-template-columns: minmax(0, 420px);
   justify-content: start;
 }
 .queue-grid:has(> :only-child) {

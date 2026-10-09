@@ -50,7 +50,7 @@
         const summary = make("summary");
         summary.append(make("span", "", category.name), make("small", "", `${groupItems.length} options`));
         section.append(summary);
-        const list = make("div", "pricing-card-grid");
+        const list = make("div", groupItems.length === 1 ? "pricing-card-grid single-option" : "pricing-card-grid");
 
         groupItems.forEach(item => {
           const card = make("article", "price-example-card");

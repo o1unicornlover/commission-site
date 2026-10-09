@@ -10,8 +10,8 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "any",
-  "background_color": "#fffdfc",
-  "theme_color": "#fffdfc",
+  "background_color": "#111014",
+  "theme_color": "#111014",
   "categories": ["business", "productivity"],
   "launch_handler": {
     "client_mode": "navigate-existing"
